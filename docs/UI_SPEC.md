@@ -68,7 +68,7 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - Columns: `#` | Text | Ht | **Angle** (dim value) | **Orient** (vector label) | Flip | Justify | Align | Font.
 - **Ht** is two-way with triad **unified scale** (same `heightParameter`); typed Ht resets triad scale factor to 1.0.
 - Text `<input>`: `style.fontFamily = selectedFont`.
-- Angle `<input>`: **angular dimension** value (not a SketchText angle — that API is retired); placeholder `0`; unit `deg`. Disabled until Orient is set.
+- Angle `<input>`: **angular dimension** value (not a SketchText angle — that API is retired); placeholder `0`; unit `deg`. **Hidden** until Orient is set.
 - Orient: short label of selected vector + per-row pick control (or “global”).
 - Flip: two 16×16 icon toggles (stock Fusion Flip H/V). `aria-pressed` + tooltips.
 - Justify: exclusive group of three icon buttons — Left / Center / Right (stock Fusion). `role="radiogroup"`; one `aria-checked` at a time. Default Center.
