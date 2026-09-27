@@ -22,18 +22,30 @@
   let mockOrient = false;
   let mockRef = false;
 
+  const btnApplyRef = document.getElementById("btn-apply-ref");
+
   if (btnRef) {
     btnRef.addEventListener("click", function () {
       mockRef = !mockRef;
       if (refLabel) {
         refLabel.textContent = mockRef
-          ? "Mock ref (H/V dims on add)"
-          : "Optional XY dims";
+          ? "Mock ref ready"
+          : "New or existing free pts";
       }
       if (statusEl) {
         statusEl.textContent = mockRef
-          ? "Next Add Point would project ref associatively and create H/V dims — dummy UI"
+          ? "Ref set — Add Point or Apply Ref Dims on unconstrained point — dummy UI"
           : "";
+      }
+    });
+  }
+
+  if (btnApplyRef) {
+    btnApplyRef.addEventListener("click", function () {
+      if (statusEl) {
+        statusEl.textContent = mockRef
+          ? "Would apply associative H/V dims to active unconstrained point — dummy UI"
+          : "Select a Ref point first — dummy UI";
       }
     });
   }

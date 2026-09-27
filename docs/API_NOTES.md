@@ -175,30 +175,39 @@ cg.deleteMe()  # or clear group
 
 ### Optional Ref point → associative project + H/V dimensions
 
+Shared helper for **new Add Point targets** and **existing unconstrained sketch points**:
+
 ```python
-# After new_pt is created, if user selected a reference entity:
-proj = sketch.project2(ref_entity, True)  # linked / associative
-proj_ref_pt = as_sketch_point(proj)
+def apply_ref_dims(sketch, target_pt, ref_entity):
+    # Existing points: require unconstrained / able to accept dims
+    if not can_accept_xy_dims(target_pt):
+        raise TextConstraintError("ref dims blocked", "point is constrained", row_id)
 
-dims = sketch.sketchDimensions
-dim_h = dims.addDistanceDimension(
-    proj_ref_pt, new_pt,
-    adsk.fusion.DimensionOrientations.HorizontalDimensionOrientation,
-    text_pt_h, True)  # driving
-dim_v = dims.addDistanceDimension(
-    proj_ref_pt, new_pt,
-    adsk.fusion.DimensionOrientations.VerticalDimensionOrientation,
-    text_pt_v, True)  # driving
+    proj = sketch.project2(ref_entity, True)  # linked / associative
+    proj_ref_pt = as_sketch_point(proj)
 
-# Move manipulator / DistanceValueCommandInput → update dim_h/dim_v.parameter
-# Dimension lines update as the point transforms; linked proj follows Ref source
+    dims = sketch.sketchDimensions
+    dim_h = dims.addDistanceDimension(
+        proj_ref_pt, target_pt,
+        adsk.fusion.DimensionOrientations.HorizontalDimensionOrientation,
+        text_pt_h, True)  # driving
+    dim_v = dims.addDistanceDimension(
+        proj_ref_pt, target_pt,
+        adsk.fusion.DimensionOrientations.VerticalDimensionOrientation,
+        text_pt_v, True)  # driving
+    return dim_h, dim_v
+
+# Call sites:
+# - Add Point commit with Ref selected → apply_ref_dims(sketch, new_pt, ref)
+# - Active existing unconstrained row + Ref → Apply Ref Dims → apply_ref_dims(...)
+# Move manipulator → update dim_h/dim_v.parameter (not free SketchPoint.move)
 ```
 
 - Destroy CG on `preSelectEnd`, cancel, destroy, or after commit.
 - Do not leave custom graphics after placement mode ends.
 - Filter preselect: `args.isSelectable = False` when hit cannot project onto the target plane.
-- Hard-fail stages: `ref associative project failed`, `horizontal dimension failed`, `vertical dimension failed`.
-- With Ref dims present, do not free-move the point in a way that conflicts with driving dimensions — edit the dim parameters instead.
+- Hard-fail stages: `ref dims blocked`, `ref associative project failed`, `horizontal dimension failed`, `vertical dimension failed`.
+- With Ref dims present, edit dim parameters instead of free-moving the point.
 
 ## Stock transform manipulators
 

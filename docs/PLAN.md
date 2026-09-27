@@ -42,7 +42,7 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 │  Engraving Text on Point                                       [?] │
 ├──────────────────────────────────────────────────────────────────────┤
 │  ⊙ Point(s)  [ Select ]  [ + Add Point ]   3 selected                │
-│  ✛ Ref Pt    [ Select ]  (optional — XY dims from ref to new point)  │
+│  ✛ Ref Pt    [ Select ]  [ Apply Ref Dims ]  (new or existing free pts) │
 │  ▭ Sketch    [ Select ]  (optional — used by Add Point)              │
 │  ↗ Orient    [ Select ]  (vector for text angle — required)          │
 │  ⬚ Target Body  [ Select ]     (Cut only)                            │
