@@ -309,7 +309,7 @@
       '<div class="place-xy place-xy-pair"' +
       (mockRefDims ? "" : " hidden") +
       ">" +
-      '<label class="place-row"><span class="place-key">X</span>' +
+      '<label class="place-row"><span class="place-key">Pos X</span>' +
       '<input type="text" class="row-dx' +
       lockCls +
       '" value="' +
@@ -319,7 +319,7 @@
       '"' +
       lockAttr +
       " /></label>" +
-      '<label class="place-row"><span class="place-key">Y</span>' +
+      '<label class="place-row"><span class="place-key">Pos Y</span>' +
       '<input type="text" class="row-dy' +
       lockCls +
       '" value="' +
@@ -455,8 +455,8 @@
 
   function bindPlacementInputs() {
     [
-      { sel: ".row-dx", key: "dx", label: "dX", xyOnly: true },
-      { sel: ".row-dy", key: "dy", label: "dY", xyOnly: true },
+      { sel: ".row-dx", key: "dx", label: "Pos X", xyOnly: true },
+      { sel: ".row-dy", key: "dy", label: "Pos Y", xyOnly: true },
       { sel: ".row-angle", key: "angle", label: "Angle" },
       { sel: ".row-ht", key: "height", label: "Ht" },
     ].forEach(function (spec) {
@@ -653,10 +653,10 @@
       mockRef = !mockRef;
       if (!mockRef) {
         mockRefDims = false;
-        if (refLabel) refLabel.textContent = "Auto-applies dX/dY to free pts";
+        if (refLabel) refLabel.textContent = "Auto-applies Pos X/Y to free pts";
         syncPlacementVisibility();
         renderRows();
-        if (statusEl) statusEl.textContent = "Ref cleared — dX/dY hidden — dummy UI";
+        if (statusEl) statusEl.textContent = "Ref cleared — Pos X/Y hidden — dummy UI";
         return;
       }
       if (refLabel) refLabel.textContent = "Origin (auto-applied)";
@@ -665,7 +665,7 @@
       renderRows();
       if (statusEl) {
         statusEl.textContent =
-          "Ref selected — dX/dY auto-applied to free points (constrained greyed) — dummy UI";
+          "Ref selected — Pos X/Y auto-applied to free points (constrained greyed) — dummy UI";
       }
     });
   }
@@ -686,9 +686,9 @@
     renderRows();
     if (statusEl) {
       statusEl.textContent =
-        "Would auto-apply Ref dims to driving (after debounce), sync table dX/dY/Angle, reset scale factor, then doExecutePreview — dummy UI (dX=" +
+        "Would auto-apply Ref dims to driving (after debounce), sync table Pos X/Y/Angle, reset scale factor, then doExecutePreview — dummy UI (Pos X=" +
         dx +
-        ", dY=" +
+        ", Pos Y=" +
         dy +
         ", Angle=" +
         angle +

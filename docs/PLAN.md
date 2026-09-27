@@ -42,7 +42,7 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 │  Engraving Text on Point                                       [?] │
 ├──────────────────────────────────────────────────────────────────────┤
 │  ⊙ Point(s)  [ Select ]  [ + Add Point ]   3 selected                │
-│  ✛ Ref Pt    [ Select ]  (auto-applies dX/dY to free pts)               │
+│  ✛ Ref Pt    [ Select ]  (auto-applies Pos X/Y to free pts)             │
 │  ▭ Sketch    [ Select ]  (optional — used by Add Point)              │
 │  ↗ Orient    [ Select ]  (global — applies to all rows; required)    │
 │  ⬚ Target Body  [ Select ]     (Join / Cut / Intersect)              │
@@ -55,7 +55,7 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 │  ☐ Batch sequence …                                                  │
 ├──────────────────────────────────────────────────────────────────────┤
 │  # │ Text │ Ht │ Place │ Format │ Font                               │
-│  … Place cell: X|Y (Ref) + A angle (Orient); Ht via triad scale …  │
+│  … Place cell: Pos X / Pos Y (Ref) + A angle (Orient); Ht via scale …│
 │  … Format = Flip + Justify + Align …                               │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Theme  [ Light ▼ ]                     [ Cancel ]  [ OK ]           │

@@ -69,7 +69,7 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - **Ht column floor:** Ht keeps a hard ~56px width in portrait/narrow; the table scrolls horizontally instead of letting Ht collapse into Text.
 - **Rows are resizable** — drag the right-edge handle (or the Text field’s vertical resize) to grow/shrink row height; Text textarea autosizes with content.
 - Columns: `#` | Text | Ht | **Place** | **Format** | Font. (no Orient column — Orient is global above the table)
-- **Place** (one column), compact trial: **X | Y** on one row (from Ref), **A** (angle vs Orient) below — same rhythm as the Format stack. Column shows when Ref and/or Orient apply; X/Y or A hide until their source is set.
+- **Place** (one column), compact trial: **Pos X** / **Pos Y** (from Ref) stacked, **A** (angle vs Orient) below — same rhythm as the Format stack. Column shows when Ref and/or Orient apply; Pos X/Y or A hide until their source is set.
 - **Format** (one column), stacked like Fusion SketchText:
   1. Flip H | Flip V (mirrored-triangle icons)
   2. Justify L | C | R (text-line icons)
@@ -78,9 +78,9 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - Dummy uses SVG stand-ins under `resources/palette/static/icons/`; prefer stock Fusion PNGs when packaging.
 - **Ht** is two-way with triad **unified scale** (same `heightParameter`); typed Ht resets triad scale factor to 1.0.
 - Text `<input>`: `style.fontFamily = selectedFont`.
-- **Placement in the table** (one **Place** cell): stacked `X` / `Y` (offsets from Ref) and `∠` (vs global Orient) — same driving sketch dimensions as the triad.
-- Place column: **hidden** until Ref and/or Orient is set. X/Y rows appear when Ref is selected (dims auto-apply); Angle row when Orient is set.
-- If a sketch point is **already constrained** (XY locked): keep X/Y inputs visible but **greyed out / disabled** — not editable via GUI or triad translate. Free points stay editable.
+- **Placement in the table** (one **Place** cell): stacked `Pos X` / `Pos Y` (offsets from Ref) and `A` (vs global Orient) — same driving sketch dimensions as the triad.
+- Place column: **hidden** until Ref and/or Orient is set. Pos X/Y rows appear when Ref is selected (dims auto-apply); Angle row when Orient is set.
+- If a sketch point is **already constrained** (XY locked): keep Pos X/Y inputs visible but **greyed out / disabled** — not editable via GUI or triad translate. Free points stay editable.
 - **Font** cell: **Bold (B)** + **Italic (I)** stacked vertically, grouped with the font `<select>`. Active B/I use accent blue border.
 - Font `<select>` + B/I: the row **Text** field updates live the same way — `font-family`, bold weight, and italic style.
 - No card wrappers; hairline row borders only.
@@ -104,7 +104,7 @@ Icon button (16×16) + label + count badge (plain text, not pill chrome).
 | Control | Shown when |
 |---------|------------|
 | **Target Body** | Operation = Join, Cut, or Intersect |
-| Table **Place** column (X/Y rows) | Ref point selected (auto-applied; inputs greyed if that point is already constrained) |
+| Table **Place** column (Pos X / Pos Y) | Ref point selected (auto-applied; inputs greyed if that point is already constrained) |
 | Table **Place** column (∠ row) | Orient set |
 | **OK** | ≥1 point / table row |
 
