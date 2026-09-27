@@ -105,13 +105,12 @@
     if (batchExample) batchExample.textContent = batchTextAt(0);
   }
 
-  /** When Batch is on, rewrite non-overridden row texts from the formula. */
-  function applyBatchToRows(forceAll) {
+  /** When Batch is on, rewrite all row texts from the formula (no per-row Text inputs). */
+  function applyBatchToRows() {
     if (!batchEnabled || !batchEnabled.checked) return;
     rows.forEach(function (row, i) {
-      if (!forceAll && row.batchOverride) return;
       row.text = batchTextAt(i);
-      if (forceAll) row.batchOverride = false;
+      row.batchOverride = false;
     });
     syncBatchExample();
     renderRows();
@@ -644,8 +643,8 @@
     activeRowId = row.id;
     if (mockRef) applyRefDimsToFreeRows();
     if (batchEnabled && batchEnabled.checked) {
-      row.text = batchTextAt(rows.length - 1);
-      row.batchOverride = false;
+      applyBatchToRows();
+      return;
     }
     syncPointsCount();
     syncCommitVisibility();
@@ -910,13 +909,17 @@
     batchEnabled.addEventListener("change", function () {
       if (batchGrid) batchGrid.hidden = !batchEnabled.checked;
       if (batchEnabled.checked) {
-        applyBatchToRows(true);
+        applyBatchToRows();
         if (statusEl) {
           statusEl.textContent =
-            "Batch on — Text = Prefix + number + Suffix (edit a cell to override that row) — dummy UI";
+            "Batch on — Text inputs hidden; driven by Prefix + number + Suffix — dummy UI";
         }
-      } else if (statusEl) {
-        statusEl.textContent = "Batch off — Text is per-row manual — dummy UI";
+      } else {
+        renderRows();
+        if (statusEl) {
+          statusEl.textContent =
+            "Batch off — Text inputs shown for per-row editing — dummy UI";
+        }
       }
       syncBatchExample();
     });
@@ -928,11 +931,11 @@
       if (!el) return;
       el.addEventListener("input", function () {
         syncBatchExample();
-        if (batchEnabled && batchEnabled.checked) applyBatchToRows(false);
+        if (batchEnabled && batchEnabled.checked) applyBatchToRows();
       });
       el.addEventListener("change", function () {
         syncBatchExample();
-        if (batchEnabled && batchEnabled.checked) applyBatchToRows(false);
+        if (batchEnabled && batchEnabled.checked) applyBatchToRows();
       });
     }
   );
