@@ -119,13 +119,49 @@ Same semantics as the Sketch Text dialog. Apply before `add`. Center constraints
 
 | Event | Role |
 |-------|------|
-| `inputChanged` (triad) | Fast pose: `sketch.move` existing text; no solids |
-| `inputChanged` (definition fields) | Update sketch text / frame only; debounced |
-| `executePreview` | **Avoid for triad.** Optional/rare for non-solid setup if Fusion requires a tick — never rebuild extrude here |
-| `execute` | Create/update **extrude or cut** once from current sketch pose |
-| `destroy` | Teardown session sketch text / uncommitted solids; clear tokens |
+| `inputChanged` (triad) | Fast pose: snap (unless Alt) + `sketch.move` existing text; **no** solids |
+| `mouseDragEnd` | Start debounce timer for solid preview |
+| Debounce fire | `command.doExecutePreview()` if drag still settled and not busy |
+| `executePreview` | Build/update **extrude or cut** preview from current sketch pose |
+| `inputChanged` (definition / snap / op) | Update sketch/state; debounced `doExecutePreview` when solids affected |
+| `execute` | **Final commit only** (OK / `doExecute`) |
+| `destroy` | Cancel timers; teardown preview; clear tokens |
 
-Do not rebuild on theme-only changes or Add Point hover (CG only).
+```python
+_busy = False
+_preview_token = 0
+
+def on_triad_input_changed(triad):
+    global _busy
+    if _busy:
+        return
+    _busy = True
+    try:
+        step = snap_step_unless_alt(mouse_args_or_cached_modifiers)
+        delta = delta_matrix(triad.transform, triad.lastTransform, step)
+        sketch.move(existing_text_entities, delta)
+    finally:
+        _busy = False
+
+def on_mouse_drag_end(args):
+    global _preview_token
+    _preview_token += 1
+    token = _preview_token
+    # schedule ~100ms later:
+    def fire():
+        if token != _preview_token or _busy:
+            return
+        _busy = True
+        try:
+            frame.on_triad_settled()
+            cmd.doExecutePreview()
+        finally:
+            _busy = False
+```
+
+- Detect Alt bypass from `MouseEventArgs` modifiers during drag when available; cache last-known modifier state for triad `inputChanged` if needed.
+- Never call `doExecutePreview` from inside `executePreview`.
+- Do not rebuild on theme-only changes or Add Point hover (CG only).
 
 ## Extrude from text
 
@@ -192,20 +228,22 @@ frame = TransformFrame.apply(
 frame.ensure_visible(sketch)
 frame.bind_triad(triad)
 
-# inputChanged (triad) — FAST PATH: sketch.move existing text; no executePreview; no solids
+# inputChanged (triad) — FAST PATH: snap + sketch.move; no doExecutePreview
 frame.on_triad_changed(triad)
 
-# drag settle — restore driving dims from pose
+# mouseDragEnd → debounce → doExecutePreview (solid preview)
 frame.on_triad_settled()
+cmd.doExecutePreview()
 
-# execute — SOLID PATH ONLY
-extrude_or_cut_from_current_sketch_text(...)
+# execute — FINAL COMMIT ONLY
+commit_sketch_and_solids(...)
 ```
 
 - Triad ticks: matrix-move existing sketch text only; dims driven during gesture, visible always.
-- Extrude/cut **only** in `execute`.
+- Solid preview: after `mouseDragEnd` + debounce via `doExecutePreview`.
+- Final commit: `execute` / `doExecute` only.
+- Re-entrancy: single-flight around move + preview; cancel stale debounce tokens.
 - Destroy CG on `preSelectEnd`, cancel, destroy, or after commit.
-- Hard-fail stages include `sketch move failed`, `restore driving dims failed`, plus project/dim stages.
 
 ## Palette
 

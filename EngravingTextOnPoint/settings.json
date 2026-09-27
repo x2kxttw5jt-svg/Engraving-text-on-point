@@ -1,6 +1,9 @@
 {
   "theme": "light",
   "livePreview": true,
+  "solidPreviewDebounceMs": 100,
+  "snapLinear": "1 mm",
+  "snapAngular": "5 deg",
   "defaultHeight": "3 mm",
   "defaultDistance": "1 mm",
   "defaultAngle": "0 deg",

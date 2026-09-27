@@ -6,18 +6,16 @@ Fusion 360 add-in: place centered sketch text on selected sketch points, then ex
 
 Planning complete — see [docs/PLAN.md](docs/PLAN.md).
 
-**Build order:** Phase 1 = **dummy UI** → Phase 2 = **`sketch_transform_frame` + Triad fast path** (no solids) → Phase 3 = extrude/cut on **`execute` only**.
+**Build order:** Dummy UI → Triad fast path + settle `doExecutePreview` → cut/target polish. **`execute` = final commit only.**
 
 ## Highlights
 
-- Table-style palette (stock Fusion look)
-- Columns: Text, Height, **Angle** (dim), **Orient**, **Flip**, **Justify**, **Align**, Font
-- Reusable **`sketch_transform_frame`** + **`TriadCommandInput`**: matrix-move existing sketch text on `inputChanged`
-- Ref H/V + Orient angle dims; driven-during-drag; dims visible while positioning
-- **Extrude/cut only on OK** — no solid regen on triad ticks (avoids jitter)
-- **Add Point** with preselect + custom-graphics projection ghost
-- Stock Fusion icons for flip / justify / align
-- Themes: **Light (default)**, Dark, Auto
+- **`TriadCommandInput`**: lightweight `sketch.move` on `inputChanged`
+- **`mouseDragEnd` + debounce → `doExecutePreview`**: solid engraving preview after drag
+- **Snap** dropdowns (linear + angular) with **Alt bypass**; re-entrancy guards
+- Reusable **`sketch_transform_frame`**: Ref H/V + Orient angle dims
+- Add Point with preselect + custom-graphics ghost
+- Themes: **Light (default)** / Dark / Auto
 
 ## Install (once implemented)
 

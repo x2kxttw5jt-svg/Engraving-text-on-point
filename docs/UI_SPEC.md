@@ -79,8 +79,9 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 
 ## Extrude block extras
 
-- **Live preview** checkbox (default checked), left-aligned under Direction.
-- When unchecked, status line: `Preview off — OK will create features`.
+- **Live sketch preview** checkbox (default checked): sketch text + dims update live; **solid** preview runs after triad `mouseDragEnd` + debounce via `doExecutePreview`.
+- **Snap** dropdowns: linear + angular increments; label hint `Alt = free`.
+- When live sketch preview unchecked: still allow triad pose; skip settle `doExecutePreview` if desired; OK commits.
 
 ## Selection rows
 

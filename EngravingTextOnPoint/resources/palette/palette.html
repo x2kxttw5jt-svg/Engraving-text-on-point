@@ -64,7 +64,25 @@
         <label class="check">
           <input type="checkbox" id="live-preview" checked /> Live sketch preview
         </label>
-        <span class="muted">(solids on OK)</span>
+        <span class="muted">(solid preview after drag)</span>
+      </div>
+      <div class="field-row">
+        <label for="snap-linear">Snap</label>
+        <select id="snap-linear" title="Linear snap; hold Alt to bypass">
+          <option value="off">Off</option>
+          <option value="0.1 mm">0.1 mm</option>
+          <option value="0.5 mm">0.5 mm</option>
+          <option value="1 mm" selected>1 mm</option>
+          <option value="5 mm">5 mm</option>
+        </select>
+        <select id="snap-angular" title="Angular snap; hold Alt to bypass">
+          <option value="off">Off</option>
+          <option value="1 deg">1°</option>
+          <option value="5 deg" selected>5°</option>
+          <option value="15 deg">15°</option>
+          <option value="45 deg">45°</option>
+        </select>
+        <span class="muted">Alt = free</span>
       </div>
     </section>
 

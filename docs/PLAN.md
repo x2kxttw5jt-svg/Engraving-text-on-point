@@ -48,7 +48,8 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 │  ⬚ Target Body  [ Select ]     (Cut only)                            │
 │  Active row: Angle dim ✓  Move (dims / free) ✓/✗                     │
 ├──────────────────────────────────────────────────────────────────────┤
-│  Operation / Distance / Direction / Live preview                     │
+│  Operation / Distance / Direction / Live sketch preview              │
+│  Snap        [ 1 mm ▼ ]  [ 5° ▼ ]   (Alt = free)                     │
 ├──────────────────────────────────────────────────────────────────────┤
 │  ☐ Batch sequence …                                                  │
 ├──────────────────────────────────────────────────────────────────────┤
@@ -185,11 +186,23 @@ Use Fusion’s stock **`TriadCommandInput`** for translation + rotation (hide sc
 **Rules**
 
 1. Place triad at active row’s sketch point; orient axes from sketch plane (+ Orient vector when set).
-2. On **`inputChanged`** for the triad: compute `delta = currentTransform * inverse(lastTransform)` (use `transform` / `lastTransform` / `lastChangeMade`) → apply to **existing** sketch entities via matrix move. Immediate viewport feedback; **do not** call `executePreview` here.
-3. During triad drag: frame dims → **driven** (lag avoidance); stay **visible**; do not recreate text or extrude.
-4. On drag settle: restore driving dims from measured pose; sync Angle / H / V UI; mark `needsSolidRegen` if solids exist — still **no** solid regen until execute (or explicit deferred preview — see architecture).
-5. Without Ref / when point locked: disable translate handles or hard status with reason; rotate still available when Orient angle dim exists.
+2. On **`inputChanged`** for the triad: apply **snap** (unless Alt held) → compute delta from `transform` / `lastTransform` → `sketch.move` **existing** sketch text (+ point as needed). Immediate feedback; **do not** call `doExecutePreview` / create solids here.
+3. During triad drag: frame dims → **driven**; stay **visible**; no text recreate; no extrude/cut.
+4. On **`mouseDragEnd`**: start short debounce → then solid preview path (see architecture). On settle also restore driving dims from pose; sync Angle / H / V UI.
+5. Without Ref / when point locked: disable translate or hard status; rotate still available when Orient angle dim exists.
 6. Never permanently drop center constraint or frame dims.
+7. **Re-entrancy guard:** ignore overlapping triad/`doExecutePreview` work while a solid preview or sketch move is in flight (`_busy` / single-flight flag).
+
+#### Snap increments
+
+| UI | Behavior |
+|----|----------|
+| **Snap** dropdown | Linear snap for translate (e.g. `Off`, `0.1 mm`, `0.5 mm`, `1 mm`, `5 mm`) and/or angular snap for rotate (`Off`, `1°`, `5°`, `15°`, `45°`) — stock-like compact dropdown near triad / extrude block |
+| Default | Sensible design-unit default (e.g. `1 mm` / `5°`); persist in `settings.json` |
+| **Alt bypass** | While **Alt** is held during triad drag, disable snapping (free continuous transform). Detect via mouse event modifiers on drag / `inputChanged` when available |
+| Apply | Quantize triad translation/rotation **before** `sketch.move` on the fast path |
+
+Dummy UI: Snap dropdown interactive; Alt noted in status only.
 
 #### Drag cadence (avoid lag) — driven ↔ driving (`drag_cadence.py`)
 
@@ -263,69 +276,86 @@ Persist in `settings.json`. Default `"theme": "light"`.
 
 ## Low-latency interaction architecture
 
-Split **fast visual positioning** from **heavy solid regen** so triad drags never jitter from extrude/cut rebuilds.
+Keep **lightweight sketch updates** on every triad tick; run **solid engraving preview** only after the drag ends (`mouseDragEnd` + debounce via `doExecutePreview`). **`execute` is final commit only.**
 
-### Two paths
+### Three stages
 
-| Path | When | What runs | Must not do |
-|------|------|-----------|-------------|
-| **A — Fast pose** | `Command.inputChanged` on `TriadCommandInput` (every drag tick) | Frame dims → driven; `sketch.move(..., matrix)` on **existing** sketch text box (+ point as needed); update triad; keep dims visible | `executePreview`, create/delete text, create/delete extrude/cut, `computeAll` |
-| **B — Solid regen** | `Command.execute` (OK) only for solids | Build/rebuild **extrude or cut** from current sketch text pose; timeline group | Per-tick solid work |
-
-`executePreview` is **deferred / unused for triad motion**. Use it only when a definition change truly needs a Fusion preview tick (optional): e.g. first placement of sketch text after point select, or text/font/height/flip/justify changes — **never** for triad translate/rotate.
+| Stage | When | What runs | Must not do |
+|-------|------|-----------|-------------|
+| **A — Fast pose** | `inputChanged` on `TriadCommandInput` (each drag tick) | Snap (unless Alt); dims → driven (once/gesture); `sketch.move` **existing** sketch text by delta matrix; dims stay visible | `doExecutePreview`, create/delete text, create/delete extrude/cut, nested re-entry |
+| **B — Solid preview** | `mouseDragEnd` → short debounce → `command.doExecutePreview()` | `executePreview` handler builds/updates **extrude or cut** from current sketch pose (Fusion preview rollback between previews) | Run on every triad tick; call `doExecute` |
+| **C — Final commit** | User OK → `execute` (or `doExecute` from palette) | Commit solids + sketch + timeline group | Fire during drag or as a substitute for preview |
 
 ```
 Triad drag tick (inputChanged)
-  → begin_translate/rotate_drag (dims driven, once per gesture)
-  → delta matrix from triad.transform vs lastTransform
-  → sketch.move(existing text entities, delta)     # immediate feedback
-  → (no executePreview)
+  → if _busy: return                          # re-entrancy guard
+  → apply snap unless Alt held
+  → dims driven (first tick of gesture)
+  → delta from triad.transform / lastTransform
+  → sketch.move(existing text entities, delta)
+  → (no doExecutePreview)
 
-Triad drag end
-  → end_*_drag: write H/V/angle dim values → driving again
-  → sync palette Angle / offsets
-  → flag needsSolidRegen = true                  # solids still stale OK
+mouseDragEnd
+  → schedule solid_preview_timer (e.g. 80–150 ms)
+  → on fire (if no newer drag started):
+        restore driving dims from pose; sync UI
+        if _busy: skip / reschedule
+        _busy = True
+        cmd.doExecutePreview()                # solid engraving preview
+        _busy = False
 
-Definition change (text/font/height/flip/justify/orient/ref apply)
-  → debounced: ensure sketch text + frame dims exist / update in place
-  → still no extrude/cut until execute
+executePreview (handler)
+  → create/update Cut | New Body from current sketch text
+  → keep frame dims visible; do not recreate text if pose-only
 
-OK (execute)
-  → ensure sketch pose + driving dims committed
-  → create/update Extrude Cut | New Body once
-  → timeline group
+execute (OK only)
+  → final commit of sketch + solids + timeline group
+  → not used for interactive preview
 
 Cancel / destroy
-  → teardown preview sketch text / temp solids if any; keep user Add Point + applied Ref dims per earlier decision
+  → cancel debounce timer; teardown preview solids / session text per policy
 ```
+
+### Re-entrancy
+
+- Single-flight flag `_poseBusy` / `_previewBusy` (or one `_busy`).
+- `inputChanged`: if busy, drop or coalesce to latest transform only — never start a second `sketch.move` or preview.
+- `doExecutePreview`: if a drag resumes before debounce fires, **cancel** the pending preview; only preview the latest settled pose.
+- `executePreview` must not call `doExecutePreview` again.
+
+### Snap + Alt
+
+- Snap dropdown drives quantize step for triad translate/rotate on path A.
+- **Alt** held → bypass snap for that gesture/tick.
+- Snapping happens on the fast path before `sketch.move`, so solid preview (path B) always sees the snapped sketch pose.
 
 ### Requirements
 
-- Triad gives immediate sketch-text motion; **extrusion/cut appears/updates only on OK (`execute`)**.
-- Optional “soft” live solid preview may be added later behind an explicit setting — **default off** for low latency. Checkbox **Live preview** means live **sketch text + visible frame dims**, not live solid regen.
-- Transform-frame dims (H/V + angle) visible for the whole session (idle + driven drag).
-- Orient / Ref apply goes through `sketch_transform_frame`; hard-fail with reason on failure.
-- No hover-path geometry work during Add Point preselect (CG only).
+- Triad motion stays jitter-free (sketch-only on ticks).
+- Solid engraving preview appears shortly after the user **releases** the drag, not while dragging.
+- OK/`execute` commits only; preview solids are Fusion preview geometry until commit.
+- Transform-frame dims visible entire session (idle + driven drag + after preview).
+- No hover-path heavy work during Add Point preselect (CG only).
 
 ### Cadence table
 
-| Event | Path | Action |
-|-------|------|--------|
-| Triad translate/rotate tick | **A** | Matrix-move existing sketch text; dims driven; no preview/execute solids |
-| Triad drag end | **A→settle** | Restore driving dims; sync UI; mark solids stale |
-| Point select / Add Point commit | Setup | Create sketch text + center constraint + `TransformFrame.apply` once |
-| Text / height / font / flip / justify | Setup (debounced) | Update/recreate **sketch text only** as needed; no solid |
-| Orient / Ref apply | Setup | Frame project + dims; no solid |
-| Distance / direction / operation / target | UI state only until OK | Stored for execute |
+| Event | Stage | Action |
+|-------|-------|--------|
+| Triad tick | **A** | Snapped (or Alt-free) matrix-move existing sketch text; no solids |
+| `mouseDragEnd` | debounce → **B** | `doExecutePreview` → extrude/cut preview |
+| Point select / Add Point | Setup (+ optional B) | Create sketch text + frame; optional initial `doExecutePreview` after setup |
+| Text / font / height / flip / justify | Setup + debounced **B** | Update sketch text; then `doExecutePreview` |
+| Orient / Ref apply | Setup + **B** | Frame dims; then solid preview |
+| Distance / op / target change | Debounced **B** | Solid preview only (sketch unchanged) |
 | Theme | None | No geometry |
-| OK | **B** | Extrude/cut once from current sketch |
-| Cancel | Teardown | Remove session sketch text / uncommitted solids |
+| OK | **C** | `execute` final commit |
+| Cancel | Teardown | Cancel timers; remove preview |
 
 ### Preview vs final (solids)
 
-- Sketch text + constraints + frame dims are authored during the command (fast path + setup).
-- **Solids only in `execute`** — same builder `lib/extrude_text.py`, commit path only.
-- Prefer text in the point’s existing sketch so constraints stay associative.
+- Sketch text authored on fast path + setup; solids previewed in `executePreview` after settle.
+- **Final solids only in `execute`.** Prefer `isValidResult` carefully — default: preview for display, explicit execute on OK so commit is intentional.
+- Prefer text in the point’s existing sketch for associativity.
 
 ---
 
@@ -532,11 +562,12 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 ### Command pattern
 
 1. Toolbar → start command + show palette + arm selection.
-2. Command hosts **`TriadCommandInput`** (translate + rotate; scaling hidden).
-3. Active row → triad at point; `inputChanged` → matrix-move existing sketch text (path A); **no** `executePreview` on triad ticks.
-4. Definition changes (text/font/…) update sketch text only; solids wait for OK.
-5. OK → `execute` extrude/cut once (path B) + timeline group.
-6. Cancel / destroy → teardown session sketch text / uncommitted solids per policy.
+2. Command hosts **`TriadCommandInput`** (translate + rotate; scaling hidden) + Snap dropdown.
+3. Active row → triad at point; `inputChanged` → snapped matrix-move (path A); re-entrancy guarded.
+4. `mouseDragEnd` → debounce → `doExecutePreview` (path B solid preview).
+5. Definition changes → update sketch + debounced `doExecutePreview`.
+6. OK → `execute` final commit only (path C).
+7. Cancel / destroy → cancel timers; teardown preview per policy.
 
 ---
 
@@ -589,14 +620,14 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 
 **Exit criteria for Phase 1:** UI matches `UI_SPEC.md` in light/dark/auto, table + batch + Add Point chrome feel stock, Ryan signs off before Phase 2.
 
-### Phase 2 — `sketch_transform_frame` + Triad fast path (no solids)
-- Implement **`sketch_transform_frame`** with `TriadCommandInput`, matrix `sketch.move` on `inputChanged`, driven-during-drag, visibility.
-- Selection + Add Point CG; sketch text + center constraint; frame Ref/Orient dims.
-- **No extrude/cut** in this phase — prove jitter-free triad motion.
+### Phase 2 — Triad fast path + settle preview
+- `sketch_transform_frame` + `TriadCommandInput`; matrix `sketch.move` on `inputChanged`.
+- Snap dropdown + Alt bypass; re-entrancy guards.
+- `mouseDragEnd` → debounce → `doExecutePreview` for solid preview.
+- `execute` = final commit only.
 
-### Phase 3 — Solids on `execute` only
-- Extrude Cut / New Body in **`execute`** from current sketch pose; never on triad ticks.
-- Optional deferred soft solid preview remains off by default.
+### Phase 3 — Cut + target body polish
+- Participant bodies, distance/direction in preview + commit; error UX.
 
 ### Phase 4 — Cut + target body
 - `participantBodies`, distance/direction in preview and commit.
@@ -611,9 +642,11 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] Light theme default on first launch
 - [ ] Dark and Auto follow / override correctly
 - [ ] User must select orientation vector before angle is available
-- [ ] `TriadCommandInput` translate/rotate moves **existing** sketch text via matrix on `inputChanged` (no rebuild)
-- [ ] Triad ticks do **not** call `executePreview` or create/delete extrude/cut
-- [ ] Extrude/cut runs only in `execute` (OK)
+- [ ] Triad ticks: lightweight `sketch.move` only; no `doExecutePreview` mid-drag
+- [ ] `mouseDragEnd` + debounce → `doExecutePreview` builds solid engraving preview
+- [ ] `execute` used for final commit only (not interactive preview)
+- [ ] Snap dropdown quantizes translate/rotate; Alt bypasses snap
+- [ ] Re-entrancy: overlapping move/preview ignored or coalesced; no nested preview
 - [ ] Angle column + triad rotate settle update angular dim; no SketchText.angle API
 - [ ] Orient associatively projected; dim to projected line; hard-fail if not
 - [ ] Translate with Ref: driven-during-drag → driving on settle; dims visible; no jitter/flicker
@@ -662,7 +695,9 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | **Text flip** | **Per-row H + V toggles; stock Fusion flip icons; default off** |
 | **Justify / Align** | **Per-row H (L/C/R) + V (T/M/B); stock Fusion align icons; default Center / Middle** |
 | Sketch creation | Use existing sketch of selected/Add Point target; create only when Add Point has no sketch |
-| **Preview** | **Fast path: triad matrix-moves sketch text; solids only on execute; no executePreview on triad ticks** |
+| **Preview** | **Triad ticks = sketch.move; mouseDragEnd+debounce = doExecutePreview solids; execute = commit only** |
+| **Snap** | **Dropdown increments; Alt bypasses** |
+| **Re-entrancy** | **Single-flight guards on pose move and solid preview** |
 | Default height | `3 mm` |
 | Default font | `Arial` |
 | Default distance | `1 mm` |
@@ -680,8 +715,8 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 3. Extrude Cut or New Body with optional target body for Cut.
 4. Batch sequential text with prefix/suffix.
 5. Font-aware text field + font dropdown + **angle dim**, **orient vector**, **flip**, **justify**, **align**.
-6. **Reusable `sketch_transform_frame`** + **`TriadCommandInput`**: matrix-move existing text on `inputChanged`; driven-during-drag; dims visible.
-7. **Solids (extrude/cut) only in `execute`** — never on triad ticks.
+6. **Triad fast path** + **settle `doExecutePreview`** + **`execute` commit only**; snap + Alt; re-entrancy guards.
+7. **Reusable `sketch_transform_frame`** for Ref/Orient dims + triad binding.
 8. **Add Point** with preselect CG ghost; frame on new or existing unconstrained points.
 9. Light / Dark / Auto themes; **Light default**.
 
