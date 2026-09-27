@@ -78,8 +78,8 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - Dummy uses SVG stand-ins under `resources/palette/static/icons/`; prefer stock Fusion PNGs when packaging.
 - **Ht** is two-way with triad **unified scale** (same `heightParameter`); typed Ht resets triad scale factor to 1.0.
 - Text `<input>`: `style.fontFamily = selectedFont`.
-- **Position** column (one cell): stacked `Pos X` / `Pos Y` (offsets from Ref) and `A` (vs global Orient) — same driving sketch dimensions as the triad.
-- Position column: **hidden** until Ref and/or Orient is set. Pos X/Y rows appear when Ref is selected (dims auto-apply); Angle row when Orient is set.
+- **Position** column (one cell): stacked `Pos X` / `Pos Y` (offsets from Ref) and `Angle` (vs global Orient) — same driving sketch dimensions as the triad.
+- Position column: **hidden** until Ref and/or Orient is set. Pos X/Y rows appear when Ref is selected (dims auto-apply); Angle when Orient is set.
 - If a sketch point is **already constrained** (XY locked): keep Pos X/Y inputs visible but **greyed out / disabled** — not editable via GUI or triad translate. Free points stay editable.
 - **Font** cell: **Bold (B)** + **Italic (I)** stacked vertically, grouped with the font `<select>`. Active B/I use accent blue border.
 - Font `<select>` + B/I: the row **Text** field updates live the same way — `font-family`, bold weight, and italic style.
@@ -105,7 +105,7 @@ Icon button (16×16) + label + count badge (plain text, not pill chrome).
 |---------|------------|
 | **Target Body** | Operation = Join, Cut, or Intersect |
 | Table **Position** column (Pos X / Pos Y) | Ref point selected (auto-applied; inputs greyed if that point is already constrained) |
-| Table **Position** column (A row) | Orient set |
+| Table **Position** column (Angle) | Orient set |
 | **OK** | ≥1 point / table row |
 
 ## Buttons
