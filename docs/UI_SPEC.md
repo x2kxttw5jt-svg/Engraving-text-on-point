@@ -65,6 +65,7 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 ## Table
 
 - Sticky header row; table may scroll horizontally in a narrow dock, but **Text wraps** when the palette is compressed so content stays readable.
+- **Skinny dock scaling:** when the palette gets narrow (~400px / 320px / 260px), scale UI font and control heights down (container queries on `.palette`) so labels and table cells don’t crush — prefer readable smaller type over squished 12px chrome.
 - **Rows are resizable** — drag the right-edge handle (or the Text field’s vertical resize) to grow/shrink row height; Text textarea autosizes with content.
 - Columns: `#` | Text | Ht | **dX** | **dY** | **Angle** | **Format** | Font. (no Orient column — Orient is global above the table)
 - **Format** (one column), stacked like Fusion Sketch Text:
