@@ -90,13 +90,13 @@
     }
     if (statusEl) {
       statusEl.textContent =
-        "Would auto-apply Ref dims to driving (after debounce), sync GUI, then doExecutePreview — dummy UI (dX=" +
+        "Would auto-apply Ref dims to driving (after debounce), sync GUI, reset scale factor, then doExecutePreview — dummy UI (dX=" +
         dx +
         ", dY=" +
         dy +
         ", Angle=" +
         angle +
-        ")";
+        ", Ht via unified scale)";
     }
   }
 
