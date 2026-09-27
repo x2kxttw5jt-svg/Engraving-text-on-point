@@ -290,7 +290,7 @@
   }
 
   /**
-   * Single Place cell: stacked X / Y / Angle (trial layout).
+   * Single Place cell (compact trial): X | Y on one row, Angle below.
    * X/Y greyed when point already constrained; fields hide until Ref / Orient.
    */
   function placeCellHtml(row) {
@@ -299,38 +299,40 @@
     var xyTitle = locked
       ? "Point is constrained — XY placement locked"
       : "Offset from Ref";
+    var lockCls = locked ? " is-xy-locked" : "";
+    var lockAttr = locked ? " disabled" : "";
     return (
       '<td class="col-place cell-place"' +
       (showCol ? "" : " hidden") +
       ">" +
       '<div class="place-stack">' +
-      '<label class="place-xy place-row"' +
+      '<div class="place-xy place-xy-pair"' +
       (mockRefDims ? "" : " hidden") +
-      '><span class="place-key">X</span>' +
+      ">" +
+      '<label class="place-row"><span class="place-key">X</span>' +
       '<input type="text" class="row-dx' +
-      (locked ? " is-xy-locked" : "") +
+      lockCls +
       '" value="' +
       escapeHtml(row.dx) +
       '" title="' +
       xyTitle +
       '"' +
-      (locked ? " disabled" : "") +
+      lockAttr +
       " /></label>" +
-      '<label class="place-xy place-row"' +
-      (mockRefDims ? "" : " hidden") +
-      '><span class="place-key">Y</span>' +
+      '<label class="place-row"><span class="place-key">Y</span>' +
       '<input type="text" class="row-dy' +
-      (locked ? " is-xy-locked" : "") +
+      lockCls +
       '" value="' +
       escapeHtml(row.dy) +
       '" title="' +
       xyTitle +
       '"' +
-      (locked ? " disabled" : "") +
+      lockAttr +
       " /></label>" +
+      "</div>" +
       '<label class="place-angle place-row"' +
       (mockOrient ? "" : " hidden") +
-      '><span class="place-key">∠</span>' +
+      '><span class="place-key">A</span>' +
       '<input type="text" class="row-angle" value="' +
       escapeHtml(row.angle) +
       '" title="Rotation vs Orient" /></label>' +
