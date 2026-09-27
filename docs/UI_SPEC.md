@@ -11,7 +11,7 @@ Match Fusion’s native command dialogs (Extrude / Sketch Text density). One fla
 - `Point(s)` Select + **`+ Add Point`** button (stock-style + or point icon).
 - Optional **`Ref Pt` Select** — selecting a Ref **auto-applies** H/V dims to free (unconstrained) points via `sketch_transform_frame` (no separate Apply button). After triad drag: dims stay driven through debounce, then **auto-apply** (convert to driving) before solid preview. Frame dims stay **visible during live preview** (including driven-during-drag).
 - Optional `Sketch` Select (muted helper text: used by Add Point).
-- **`Orient` Select** — **global** orientation vector for **every** table row (not per-row). Required for Angle; angular dims use the same projected reference on each row’s frame.
+- **`Orientation` Select** — **global** orientation vector for **every** table row (not per-row). Required for Angle; angular dims use the same projected reference on each row’s frame.
 - Status strip: `Angle dim ✓` (or `Select orientation vector`), `Move ✓` / `Move locked — point is constrained`, and `Scale→Ht ✓` (triad unified scale drives text height).
 - During Add Point mode, status: `Click to place point — ghost shows projected location`.
 

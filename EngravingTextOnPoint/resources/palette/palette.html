@@ -37,7 +37,7 @@
         </div>
       </div>
       <div class="field-row">
-        <label for="btn-orient">Orient</label>
+        <label for="btn-orient">Orientation</label>
         <div class="control control-cluster">
           <button type="button" class="btn" id="btn-orient">Select</button>
           <span class="muted" id="orient-label">Applies to all rows</span>
@@ -51,7 +51,7 @@
         </div>
       </div>
       <p class="info-line" id="manip-status" role="status">
-        Angle dim (needs Orient) · Move · Scale→Ht
+        Angle dim (needs Orientation) · Move · Scale→Ht
       </p>
     </section>
 
@@ -134,13 +134,18 @@
         <label for="batch-enabled">Batch sequence</label>
         <div class="control">
           <input type="checkbox" id="batch-enabled" class="fusion-check"
-            title="Fill table text with prefix / number / suffix sequence" />
+            title="Auto-fill each row Text as Prefix + number + Suffix in selection order" />
         </div>
       </div>
       <div id="batch-grid" class="batch-fields" hidden>
+        <p class="batch-help muted">
+          Fills Text for each row in order:
+          <code>Prefix</code> + padded number + <code>Suffix</code>.
+          Example: <span id="batch-example">PN-001</span>
+        </p>
         <div class="field-row">
           <label for="batch-prefix">Prefix</label>
-          <div class="control"><input id="batch-prefix" type="text" value="" /></div>
+          <div class="control"><input id="batch-prefix" type="text" value="PN-" /></div>
         </div>
         <div class="field-row">
           <label for="batch-suffix">Suffix</label>
@@ -168,7 +173,7 @@
             <th class="col-idx">#</th>
             <th class="col-text">Text</th>
             <th class="col-ht">Ht</th>
-            <th class="col-place" id="th-place" title="Pos X / Pos Y from Ref · Angle vs Orient" hidden>Position</th>
+            <th class="col-place" id="th-place" title="Pos X / Pos Y from Ref · Angle vs Orientation" hidden>Position</th>
             <th class="col-format" title="Flip · Justify · Align">Format</th>
             <th class="col-font" title="Font + Bold / Italic">Font</th>
             <th class="col-resize" aria-label="Resize"></th>
@@ -195,7 +200,8 @@
       </div>
       <div class="actions">
         <button type="button" class="btn" id="btn-cancel">Cancel</button>
-        <button type="button" class="btn btn-primary" id="btn-ok" hidden>OK</button>
+        <button type="button" class="btn" id="btn-apply" hidden title="Commit engraving, keep palette open, reset for next">Apply</button>
+        <button type="button" class="btn btn-primary" id="btn-ok" hidden title="Commit engraving and close">OK</button>
       </div>
     </section>
 

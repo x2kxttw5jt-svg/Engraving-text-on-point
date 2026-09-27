@@ -44,7 +44,7 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 │  ⊙ Point(s)  [ Select ]  [ + Add Point ]   3 selected                │
 │  ✛ Ref Pt    [ Select ]  (auto-applies Pos X/Y to free pts)             │
 │  ▭ Sketch    [ Select ]  (optional — used by Add Point)              │
-│  ↗ Orient    [ Select ]  (global — applies to all rows; required)    │
+│  ↗ Orientation [ Select ]  (global — applies to all rows; required) │
 │  ⬚ Target Body  [ Select ]     (Join / Cut / Intersect)              │
 │  Active row: Angle dim ✓  Move ✓/✗  Scale→Ht ✓                      │
 ├──────────────────────────────────────────────────────────────────────┤
@@ -58,7 +58,7 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 │  … Position: Pos X / Pos Y (Ref) + Angle (Orient); Ht via scale …   │
 │  … Format = Flip + Justify + Align …                               │
 ├──────────────────────────────────────────────────────────────────────┤
-│  Theme  [ Light ▼ ]                     [ Cancel ]  [ OK ]           │
+│  Theme  [ Light ▼ ]              [ Cancel ]  [ Apply ]  [ OK ]       │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -288,13 +288,13 @@ Optional header “apply to all” for angle / flip / justify / align.
 
 ### Batch sequence behavior
 
-- Toggle **Batch sequence** on → Text column becomes driven by formula:
-  - `display = prefix + str(start + i*step).zfill(digits) + suffix`
-  - Example: `PN-` + `001` + `-A` → `PN-001-A`, `PN-002-A`, …
-- Changing prefix/suffix/start/digits/step re-writes all non-overridden rows **and refreshes live preview**.
-- Per-row “override” flag: user edits Text → that row stops auto-updating until batch is toggled off/on or “Reset batch texts” is clicked.
-- Batch does **not** drive Angle, Flip, Justify, or Align (stay per-row unless “apply to all”).
-- Iteration order = order points were selected (stable).
+- Toggle **Batch sequence** on → each row’s **Text** is auto-filled from:
+  - `Prefix + str(Start + i×Step).zfill(Digits) + Suffix`
+  - Example: Prefix `PN-`, Start `1`, Digits `3`, Step `1` → `PN-001`, `PN-002`, `PN-003`, …
+- Fields update the table **live** as you type (non-overridden rows only).
+- Editing a row’s Text marks that row as **overridden** (keeps your edit); toggling Batch off→on clears overrides and rewrites all.
+- Batch does **not** drive Position, Ht, Format, or Font.
+- Order = point selection / table row order (stable).
 
 ### Stock Fusion visual language
 
@@ -670,18 +670,20 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Point(s) / Sketch / Target Body | Buttons add/remove **fake rows** / fake sketch/body labels |
 | **+ Add Point** | Appends a fake row; status mentions preselect + CG projection preview |
 | **Ref Pt** | Fake select **auto-applies** Pos X/Y to free rows and reveals Position column (no Apply button) |
-| Orient | Fake “Select” sets **global** vector; Angle column appears for all rows |
+| Orientation | Fake “Select” sets **global** vector; Angle appears in Position for all rows |
 | Manipulator status | Click mocks debounce → auto-apply Ref dims to driving → preview; syncs table dX/dY/Angle |
 | Placement columns | Per-row dX/dY/Angle in the table; constrained points grey out dX/dY; edit echoes GUI→driving |
 | Ht / scale | Ht edit echoes “would set heightParameter”; status notes triad unified scale ↔ Ht |
 | Table | Seeded with **3 sample point rows** on open for visual review; Add Point appends more |
 | Font dropdown | Seeded list; text input `font-family` follows selection |
-| Batch | Prefix/suffix/start/digits/step rewrite mock row texts |
+| Batch | Toggle + fields live-rewrite Text (`Prefix`+number+`Suffix`); override on manual edit |
 | Operation dropdown | Icon + name: Join / Cut / Intersect / New Body (no New Component) |
 | Depth / Direction | Depth length + Positive / Negative / Symmetric; boolean ops show Target Body |
-| Conditional chrome | table dX·dY / Angle column / OK stay **hidden** until conditions met |
+| Conditional chrome | Position column / Apply / OK stay **hidden** until conditions met |
 | Icons | Stock Fusion PNGs in place (or labeled placeholders until extracted) |
-| OK / Cancel | Status only — **no model changes** |
+| **OK** | Mock execute commit + close (reset UI) — **no model changes** |
+| **Apply** | Mock execute commit + reset UI, keep palette open — **no model changes** |
+| Cancel | Discard / reset without commit |
 | Bridge | Optional JS↔Python echo; geometry/manipulators no-op |
 
 **Exit criteria for Phase 1:** UI matches `UI_SPEC.md` in light/dark/auto, table + batch + Add Point chrome feel stock, Ryan signs off before Phase 2.

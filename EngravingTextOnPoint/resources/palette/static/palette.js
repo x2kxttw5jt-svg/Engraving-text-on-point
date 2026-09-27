@@ -9,6 +9,12 @@
   const themeSelect = document.getElementById("theme");
   const batchEnabled = document.getElementById("batch-enabled");
   const batchGrid = document.getElementById("batch-grid");
+  const batchPrefix = document.getElementById("batch-prefix");
+  const batchSuffix = document.getElementById("batch-suffix");
+  const batchStart = document.getElementById("batch-start");
+  const batchDigits = document.getElementById("batch-digits");
+  const batchStep = document.getElementById("batch-step");
+  const batchExample = document.getElementById("batch-example");
   const solidPreview = document.getElementById("solid-preview");
   const statusEl = document.getElementById("status");
   const manipStatus = document.getElementById("manip-status");
@@ -20,6 +26,8 @@
   const pointsCount = document.getElementById("points-count");
   const targetRow = document.getElementById("target-row");
   const btnOk = document.getElementById("btn-ok");
+  const btnApply = document.getElementById("btn-apply");
+  const btnCancel = document.getElementById("btn-cancel");
   const thPlace = document.getElementById("th-place");
   const tbody = document.getElementById("text-tbody");
   const opDropdown = document.getElementById("op-dropdown");
@@ -56,7 +64,7 @@
     el.hidden = !!hidden;
   }
 
-  /** One Place cell: X/Y when Ref set; Angle when Orient set. Column shows if either applies. */
+  /** Position cell: Pos X/Y when Ref set; Angle when Orientation set. */
   function syncPlacementVisibility() {
     var showCol = mockRefDims || mockOrient;
     setHidden(thPlace, !showCol);
@@ -71,8 +79,42 @@
     });
   }
 
-  function syncOkVisibility() {
-    setHidden(btnOk, rows.length < 1);
+  function syncCommitVisibility() {
+    var ready = rows.length >= 1;
+    setHidden(btnOk, !ready);
+    setHidden(btnApply, !ready);
+  }
+
+  function batchTextAt(index) {
+    var prefix = (batchPrefix && batchPrefix.value) || "";
+    var suffix = (batchSuffix && batchSuffix.value) || "";
+    var start = parseInt(batchStart && batchStart.value, 10);
+    var digits = parseInt(batchDigits && batchDigits.value, 10);
+    var step = parseInt(batchStep && batchStep.value, 10);
+    if (isNaN(start)) start = 1;
+    if (isNaN(digits) || digits < 1) digits = 3;
+    if (isNaN(step)) step = 1;
+    var n = start + index * step;
+    var num = String(Math.abs(n));
+    while (num.length < digits) num = "0" + num;
+    if (n < 0) num = "-" + num;
+    return prefix + num + suffix;
+  }
+
+  function syncBatchExample() {
+    if (batchExample) batchExample.textContent = batchTextAt(0);
+  }
+
+  /** When Batch is on, rewrite non-overridden row texts from the formula. */
+  function applyBatchToRows(forceAll) {
+    if (!batchEnabled || !batchEnabled.checked) return;
+    rows.forEach(function (row, i) {
+      if (!forceAll && row.batchOverride) return;
+      row.text = batchTextAt(i);
+      if (forceAll) row.batchOverride = false;
+    });
+    syncBatchExample();
+    renderRows();
   }
 
   /** Selecting Ref auto-applies H/V dims to free (unconstrained) rows — no Apply button. */
@@ -290,8 +332,8 @@
   }
 
   /**
-   * Single Place cell (compact trial): X | Y on one row, Angle below.
-   * X/Y greyed when point already constrained; fields hide until Ref / Orient.
+   * Position cell: Pos X / Pos Y stacked, Angle below.
+   * Pos X/Y greyed when point already constrained; fields hide until Ref / Orientation.
    */
   function placeCellHtml(row) {
     var locked = !!row.xyConstrained;
@@ -335,7 +377,7 @@
       '><span class="place-key">Angle</span>' +
       '<input type="text" class="row-angle" value="' +
       escapeHtml(row.angle) +
-      '" title="Rotation vs Orient" /></label>' +
+      '" title="Rotation vs Orientation" /></label>' +
       "</div></td>"
     );
   }
@@ -399,7 +441,12 @@
         var row = rows.find(function (r) {
           return r.id === id;
         });
-        if (row) row.text = ta.value;
+        if (row) {
+          row.text = ta.value;
+          if (batchEnabled && batchEnabled.checked) {
+            row.batchOverride = true;
+          }
+        }
         autosizeTextarea(ta);
       });
     });
@@ -573,14 +620,19 @@
         bold: false,
         italic: false,
         font: "Arial",
+        batchOverride: false,
       },
       partial || {}
     );
     rows.push(row);
     activeRowId = row.id;
     if (mockRef) applyRefDimsToFreeRows();
+    if (batchEnabled && batchEnabled.checked) {
+      row.text = batchTextAt(rows.length - 1);
+      row.batchOverride = false;
+    }
     syncPointsCount();
-    syncOkVisibility();
+    syncCommitVisibility();
     renderRows();
   }
 
@@ -711,7 +763,7 @@
       }
       if (statusEl) {
         statusEl.textContent =
-          "Global Orient applies to every table row — Angle column shown — dummy UI";
+          "Global Orientation applies to every table row — Angle shown — dummy UI";
       }
     });
   }
@@ -780,15 +832,120 @@
     applyTheme(themeSelect.value);
   });
 
-  batchEnabled.addEventListener("change", function () {
-    batchGrid.hidden = !batchEnabled.checked;
-  });
+  function resetSessionUi(keepExtrudeSettings) {
+    rows = [];
+    activeRowId = null;
+    mockOrient = false;
+    mockRef = false;
+    mockRefDims = false;
+    if (orientLabel) orientLabel.textContent = "Applies to all rows";
+    if (refLabel) refLabel.textContent = "Auto-applies Pos X/Y to free pts";
+    if (pointsCount) pointsCount.textContent = "0 selected";
+    if (batchEnabled) {
+      batchEnabled.checked = false;
+      if (batchGrid) batchGrid.hidden = true;
+    }
+    if (!keepExtrudeSettings) {
+      setOperation("cut");
+      var depth = document.getElementById("depth");
+      var direction = document.getElementById("direction");
+      if (depth) depth.value = "1 mm";
+      if (direction) direction.value = "positive";
+    }
+    if (manipStatus) {
+      manipStatus.textContent =
+        "Angle dim (needs Orientation) · Move · Scale→Ht";
+    }
+    syncPlacementVisibility();
+    syncCommitVisibility();
+    syncTargetVisibility();
+    renderRows();
+  }
+
+  function mockExecuteCommit(mode) {
+    var n = rows.length;
+    if (n < 1) return;
+    if (mode === "ok") {
+      if (statusEl) {
+        statusEl.textContent =
+          "Would execute commit (" +
+          n +
+          " row" +
+          (n === 1 ? "" : "s") +
+          ") and close palette — dummy UI";
+      }
+      resetSessionUi(false);
+      return;
+    }
+    if (mode === "apply") {
+      if (statusEl) {
+        statusEl.textContent =
+          "Would execute commit (" +
+          n +
+          " row" +
+          (n === 1 ? "" : "s") +
+          "), keep palette open, reset for next — dummy UI";
+      }
+      resetSessionUi(true);
+    }
+  }
+
+  if (batchEnabled) {
+    batchEnabled.addEventListener("change", function () {
+      if (batchGrid) batchGrid.hidden = !batchEnabled.checked;
+      if (batchEnabled.checked) {
+        applyBatchToRows(true);
+        if (statusEl) {
+          statusEl.textContent =
+            "Batch on — Text = Prefix + number + Suffix (edit a cell to override that row) — dummy UI";
+        }
+      } else if (statusEl) {
+        statusEl.textContent = "Batch off — Text is per-row manual — dummy UI";
+      }
+      syncBatchExample();
+    });
+  }
+
+  ["batch-prefix", "batch-suffix", "batch-start", "batch-digits", "batch-step"].forEach(
+    function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", function () {
+        syncBatchExample();
+        if (batchEnabled && batchEnabled.checked) applyBatchToRows(false);
+      });
+      el.addEventListener("change", function () {
+        syncBatchExample();
+        if (batchEnabled && batchEnabled.checked) applyBatchToRows(false);
+      });
+    }
+  );
+
+  if (btnOk) {
+    btnOk.addEventListener("click", function () {
+      mockExecuteCommit("ok");
+    });
+  }
+  if (btnApply) {
+    btnApply.addEventListener("click", function () {
+      mockExecuteCommit("apply");
+    });
+  }
+  if (btnCancel) {
+    btnCancel.addEventListener("click", function () {
+      if (statusEl) {
+        statusEl.textContent =
+          "Would cancel — discard preview geometry, close without commit — dummy UI";
+      }
+      resetSessionUi(false);
+    });
+  }
 
   function syncPreviewStatus() {
     if (!statusEl || rows.length) return;
     statusEl.textContent = solidPreview && solidPreview.checked
       ? ""
-      : "Solid preview off — sketch still updates; OK will create solids";
+      : "Solid preview off — sketch still updates; OK/Apply will create solids";
   }
 
   if (solidPreview) {
@@ -799,7 +956,8 @@
   seedSampleRows();
   setOperation("cut");
   syncPlacementVisibility();
-  syncOkVisibility();
+  syncCommitVisibility();
+  syncBatchExample();
   if (statusEl) {
     statusEl.textContent =
       "Sample points loaded for UI review — dummy UI (not Fusion geometry)";
