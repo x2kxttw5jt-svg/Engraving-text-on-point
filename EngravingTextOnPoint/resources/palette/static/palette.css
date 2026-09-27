@@ -171,11 +171,18 @@ select:focus {
   padding: 16px 8px;
 }
 
+.table-block { overflow-x: auto; }
+
 .col-idx { width: 28px; }
-.col-ht { width: 56px; }
-.col-angle { width: 52px; }
-.col-flip { width: 48px; white-space: nowrap; }
-.col-font { width: 96px; }
+.col-ht { width: 52px; }
+.col-angle { width: 48px; }
+.col-flip,
+.col-justify,
+.col-align { white-space: nowrap; }
+.col-flip { width: 44px; }
+.col-justify,
+.col-align { width: 66px; }
+.col-font { width: 92px; }
 
 .icon-btn {
   width: 22px;
@@ -196,9 +203,15 @@ select:focus {
 
 .icon-btn:hover { border-color: var(--border); background: var(--bg-header); }
 
-.icon-btn[aria-pressed="true"] {
+.icon-btn[aria-pressed="true"],
+.icon-btn[aria-checked="true"] {
   border-color: var(--accent);
   background: var(--bg-row-hover);
+}
+
+.icon-group {
+  display: inline-flex;
+  gap: 1px;
 }
 
 .data-table input,

@@ -1,6 +1,6 @@
 # Engraving Text on Point
 
-Fusion 360 add-in: place centered sketch text on selected sketch points, then extrude as **Cut** or **New Body**, with **live preview** and per-row **angle**.
+Fusion 360 add-in: place centered sketch text on selected sketch points, then extrude as **Cut** or **New Body**, with **live preview**, per-row **angle**, **flip**, **justify**, and **align**.
 
 ## Status
 
@@ -9,12 +9,13 @@ Planning complete — see [docs/PLAN.md](docs/PLAN.md).
 ## Highlights
 
 - Table-style palette (stock Fusion look)
-- Columns: Text, Height, **Angle**, **Flip** (stock Fusion H/V icons), Font (text field renders in selected font)
+- Columns: Text, Height, **Angle**, **Flip**, **Justify** (L/C/R), **Align** (T/M/B), Font
+- Stock Fusion icons for flip / justify / align
+- Text field renders in the selected font
 - **Live preview** (on by default); Cancel/destroy leaves no geometry
 - Batch sequential text with prefix / suffix
 - Cut (optional target body) or New Body
 - Themes: **Light (default)**, Dark, Auto
-- Built-in Fusion icons when available; Photoshop fallbacks under `resources/icons/`
 
 ## Install (once implemented)
 

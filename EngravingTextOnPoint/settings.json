@@ -6,6 +6,8 @@
   "defaultAngle": "0 deg",
   "defaultFlipH": false,
   "defaultFlipV": false,
+  "defaultJustify": "center",
+  "defaultAlign": "middle",
   "defaultFont": "Arial",
   "batch": {
     "enabled": false,
