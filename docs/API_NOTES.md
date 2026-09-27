@@ -200,14 +200,38 @@ def apply_ref_dims(sketch, target_pt, ref_entity):
 # Call sites:
 # - Add Point commit with Ref selected → apply_ref_dims(sketch, new_pt, ref)
 # - Active existing unconstrained row + Ref → Apply Ref Dims → apply_ref_dims(...)
-# Move manipulator → update dim_h/dim_v.parameter (not free SketchPoint.move)
 ```
+
+### Translate performance — driven during drag, driving after stop
+
+```python
+# Drag start (InputChanged / manipulator begin):
+for dim in (dim_h, dim_v):
+    dim.isDriving = False          # driven: measures only, light solve
+
+# During drag:
+target_pt.move(delta)              # or distance manipulator → SketchPoint.move
+# driven dims update displayed values automatically
+
+# Drag end (mouseup / settle — debounce ~50–100ms after last move event):
+# capture measured offsets from driven dims (or from point geometry vs proj_ref)
+dim_h.parameter.value = measured_h
+dim_v.parameter.value = measured_v
+dim_h.isDriving = True
+dim_v.isDriving = True             # one final driving solve
+
+# On cancel/error: restore isDriving=True at last committed values when possible
+```
+
+- Verify `SketchDimension.isDriving` (or equivalent) on the target Fusion build; document the exact property name in code.
+- Only toggle dims owned by this row’s Ref pair (and only for translation gestures).
+- Throttle extrude `executePreview` during drag; full refresh on drag end.
+- Do **not** leave dimensions driven after the gesture completes.
 
 - Destroy CG on `preSelectEnd`, cancel, destroy, or after commit.
 - Do not leave custom graphics after placement mode ends.
 - Filter preselect: `args.isSelectable = False` when hit cannot project onto the target plane.
-- Hard-fail stages: `ref dims blocked`, `ref associative project failed`, `horizontal dimension failed`, `vertical dimension failed`.
-- With Ref dims present, edit dim parameters instead of free-moving the point.
+- Hard-fail stages: `ref dims blocked`, `ref associative project failed`, `horizontal dimension failed`, `vertical dimension failed`, `restore driving dims failed`.
 
 ## Stock transform manipulators
 

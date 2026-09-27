@@ -148,12 +148,25 @@ Use Fusion’s **native command-input manipulators** (not a custom triad):
 1. Manipulators appear at the **active row’s** sketch point. Angle manipulator plane/axes derived from the sketch plane + **orientation vector** (0° along the vector).
 2. **Angle manipulator** — enabled when a row is active **and** an orientation vector is set. Dragging updates the driving angular dimension → text rotates via constraints; Angle column syncs to the dimension parameter. **No full text recreate** for angle-only changes once constraints/dimension exist.
 3. **Move manipulator**
-   - **With optional Ref + H/V dims:** handles update those **driving distance dimension** parameters; dimension lines/values update as the point transforms; text follows center constraint.
+   - **With optional Ref + H/V dims:** translate the point; keep dimension **lines** visible/updating. Use the **driven-during-drag** cadence below so the solver stays light.
    - **Without Ref:** enabled only if the sketch point is freely **unconstrained**; otherwise status `Move locked — point is constrained (…reason…)`.
-   - Never break center constraint, Orient angular dim, or Ref H/V dims to force a move.
+   - Never permanently drop center constraint, Orient angular dim, or Ref H/V dims.
 4. Stock Fusion manipulator visuals only.
 5. Palette does not draw the triad; the **Command** owns manipulators. Active table row retargets `setManipulator` + which dimension is driven.
-6. Move failure → hard status with reason; never drop center or angular constraints.
+6. Move failure → hard status with reason; restore any temporarily driven dims to driving on abort when possible.
+
+#### Translate cadence (avoid lag) — driven ↔ driving
+
+Continuous driving-dimension solves on every manipulator tick are laggy. For **point translation**:
+
+| Phase | Action |
+|-------|--------|
+| **Drag start** | Convert **affected** dimensions to **driven** (`isDriving = False`) — at least Ref H/V distance dims on that point. Optionally leave Orient angular dim driving unless it fights the move. |
+| **During drag** | Move the sketch point (free / distance manipulators). Driven dims **measure** and update their displayed values/lines without steering the solve. Text follows via center constraint; defer heavy extrude preview if needed (throttle). |
+| **Drag end** (mouseup / manipulator settle) | Read final H/V offsets → set dimension parameter values to match → convert those dims back to **driving** (`isDriving = True`). Sync palette. One solve at the end. |
+| **Cancel / error mid-drag** | Best-effort restore dims to driving at last good values; hard-fail with reason if restore fails. |
+
+Do **not** leave dims driven after the gesture. Only the dimensions involved in the translation are toggled — not unrelated sketch dims.
 
 ### Table columns
 
