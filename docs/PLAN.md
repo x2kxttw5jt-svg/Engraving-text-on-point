@@ -162,12 +162,12 @@ Continuous driving-dimension solves on every manipulator tick are laggy. For **p
 
 | Phase | Action |
 |-------|--------|
-| **Drag start** | Convert **affected** dimensions to **driven** (`isDriving = False`) — at least Ref H/V distance dims on that point. Optionally leave Orient angular dim driving unless it fights the move. |
-| **During drag** | Move the sketch point (free / distance manipulators). Driven dims **measure** and update their displayed values/lines without steering the solve. Text follows via center constraint; defer heavy extrude preview if needed (throttle). |
-| **Drag end** (mouseup / manipulator settle) | Read final H/V offsets → set dimension parameter values to match → convert those dims back to **driving** (`isDriving = True`). Sync palette. One solve at the end. |
+| **Drag start** | Convert **affected** dimensions to **driven** (`isDriving = False`) — at least Ref H/V distance dims on that point. Optionally leave Orient angular dim driving unless it fights the move. **Keep Ref dims visible.** |
+| **During drag** | Move the sketch point (free / distance manipulators). Driven dims **measure** and keep **lines + values visible/updating** without steering the solve. Text follows via center constraint; defer heavy extrude preview if needed (throttle). |
+| **Drag end** (mouseup / manipulator settle) | Read final H/V offsets → set dimension parameter values to match → convert those dims back to **driving** (`isDriving = True`). Sync palette. One solve at the end. Ref dims remain visible. |
 | **Cancel / error mid-drag** | Best-effort restore dims to driving at last good values; hard-fail with reason if restore fails. |
 
-Do **not** leave dims driven after the gesture. Only the dimensions involved in the translation are toggled — not unrelated sketch dims.
+Do **not** leave dims driven after the gesture. Only the dimensions involved in the translation are toggled — not unrelated sketch dims. Switching driven/driving must **not** hide Ref dimension graphics.
 
 ### Table columns
 
@@ -226,6 +226,7 @@ Persist in `settings.json`. Default `"theme": "light"`.
 ### Requirements
 
 - As soon as ≥1 point is selected and row fields are valid, the viewport shows the engraving result for current options.
+- **Ref H/V dimensions (when applied) are visible for the whole live-preview session** — not only after OK. Same for drag (driven) and idle (driving).
 - Editing Text / Height / Font / Flip / Justify / Align / Distance / Direction / Operation / Target body updates the preview.
 - **Angle** / angle manipulator → update angular **dimension** (text follows constraints; prefer not recreating text).
 - **Move** manipulator → move point (text follows center constraint; extrude updates).
@@ -580,6 +581,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] Existing constrained point + Ref → hard-fail with reason (no dims)
 - [ ] Move with Ref: dims switch to driven during drag and back to driving on stop; final values match pose
 - [ ] Move with Ref stays responsive (no per-tick driving solve); dimension lines still update as driven measures
+- [ ] Ref H/V dims visible throughout live preview (idle, during drag, after drag); still visible after preview rebuilds
 - [ ] Cancel/error mid-drag restores driving dims when possible
 - [ ] Ref source move updates linked projection; offsets remain dimensional
 - [ ] Flip H / Flip V toggles use stock Fusion icons; preview and commit match
