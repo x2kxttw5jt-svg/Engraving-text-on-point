@@ -220,9 +220,9 @@ Driving frame dimensions **and text height** must be editable from **either** th
 
 | Dim | GUI control | Triad | Sketch |
 |-----|-------------|-------|--------|
-| **dX** (Ref horizontal) | Numeric input (active row / frame block); enabled when Ref dims exist | Translate X/Y handles | `dim_h.parameter` |
-| **dY** (Ref vertical) | Numeric input; enabled when Ref dims exist | Translate handles | `dim_v.parameter` |
-| **Angle** | Table Angle column + optional frame-block field; enabled when Orient dim exists | Rotate handle | angular `dimension.parameter` |
+| **dX** (Ref horizontal) | Numeric input; **shown** when Ref dims exist | Translate X/Y handles | `dim_h.parameter` |
+| **dY** (Ref vertical) | Numeric input; **shown** when Ref dims exist | Translate handles | `dim_v.parameter` |
+| **Angle** | Table Angle column + frame field; **shown** when Orient dim exists | Rotate handle | angular `dimension.parameter` |
 | **Height** | Table **Ht** column | **Unified scale** handle | `SketchText.heightParameter` |
 
 **Sync rules**
@@ -633,7 +633,7 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 
 - No points → OK **hidden**; preview empty.
 - Empty text / height ≤ 0 → block OK; clear that row’s preview.
-- No orientation vector → block angle manipulator + OK for that row; status asks for vector.
+- No orientation vector → hide angle manipulator UI + Angle fields; status asks for vector.
 - Invalid angle expression → status error; leave last good dimension value.
 - Angular dimension / vector projection failure → hard fail with reason.
 - **Center constraint failure → hard fail** (no unconstrained placement). Preview/OK show **why** (stage + API detail + row); OK aborts and rolls back the full transaction.
@@ -665,7 +665,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Open palette | Toolbar command shows docked palette only |
 | Point(s) / Sketch / Target Body | Buttons add/remove **fake rows** / fake sketch/body labels |
 | **+ Add Point** | Appends a fake row; status mentions preselect + CG projection preview |
-| **Ref Pt** / **Apply Ref Dims** | Fake select + apply on mock unconstrained row or next Add Point |
+| **Ref Pt** / **Apply Ref Dims** | Fake select; Apply Ref Dims **hidden** until Ref set; apply reveals dX/dY |
 | Orient | Fake “Select” sets mock vector label on rows |
 | Manipulator status | Click mocks debounce → auto-apply Ref dims to driving → preview; enables dX/dY/Angle |
 | Frame dims | dX/dY/Angle edit echoes GUI→driving; status mentions auto-apply window |
