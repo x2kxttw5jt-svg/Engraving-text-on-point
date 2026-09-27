@@ -109,7 +109,41 @@ Extent: `setDistanceExtent(isSymmetric, ValueInput)` or `setOneSideExtent` for d
 ## Selection filters
 
 - Points: `SketchPoint` (selection filter string / `SelectionEventHandler` accept).
+- Sketches: `Sketches` filter for optional Add Point target.
+- Planes/faces: construction plane / planar `BRepFace` when creating a sketch for Add Point.
 - Bodies: `BRepBody` for Cut participants.
+
+## Add Point
+
+```python
+# Existing sketch selected:
+sk_pt = sketch.modelToSketchSpace(click_in_model_space)
+sketch.sketchPoints.add(sk_pt)
+
+# No sketch: create then add
+sketch = rootComp.sketches.add(plane_or_xy)  # picked plane/face or xYConstructionPlane
+sk_pt = sketch.modelToSketchSpace(click_in_model_space)
+sketch.sketchPoints.add(sk_pt)
+```
+
+## Stock transform manipulators
+
+Host on the active Command (palette alone cannot draw them):
+
+```python
+angle_in = inputs.addAngleValueCommandInput(id_angle, "Angle", adsk.core.ValueInput.createByString("0 deg"))
+angle_in.setManipulator(origin, x_dir, y_dir)  # sketch plane at active point
+
+# Move: DistanceValueCommandInput per sketch axis (or documented transform inputs)
+dist_x = inputs.addDistanceValueCommandInput(...)
+dist_x.setManipulator(origin, sketch_x_dir)
+# enable move inputs only when point is unconstrained
+```
+
+- Sync `angle_in.value` ↔ palette Angle column / row model.
+- Unconstrained move: `SketchPoint.move(vec)` or `sketch.move(collection, matrix)` in sketch space; respects constraints (API fails if blocked — surface reason).
+- Constrained point: `isEnabled = False` on move inputs; keep angle enabled.
+- Reposition manipulators whenever the active row or point location changes.
 
 ## Palette
 

@@ -17,7 +17,14 @@
         <span class="icon-slot" title="Sketch point"></span>
         <label>Point(s)</label>
         <button type="button" class="btn" id="btn-points" disabled>Select</button>
+        <button type="button" class="btn" id="btn-add-point" title="Add point at click">+ Add Point</button>
         <span class="muted" id="points-count">0 selected</span>
+      </div>
+      <div class="field-row">
+        <span class="icon-slot" title="Sketch"></span>
+        <label>Sketch</label>
+        <button type="button" class="btn" id="btn-sketch" disabled>Select</button>
+        <span class="muted" id="sketch-label">Optional for Add Point</span>
       </div>
       <div class="field-row" id="target-row">
         <span class="icon-slot" title="Target body"></span>
@@ -25,6 +32,9 @@
         <button type="button" class="btn" id="btn-body" disabled>Select</button>
         <span class="muted" id="body-label">Cut only</span>
       </div>
+      <p class="muted" id="manip-status" role="status">
+        Manipulators: Angle ✓ · Move (active row)
+      </p>
     </section>
 
     <section class="block" aria-label="Extrude">

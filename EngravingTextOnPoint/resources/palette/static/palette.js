@@ -8,8 +8,32 @@
   const batchGrid = document.getElementById("batch-grid");
   const livePreview = document.getElementById("live-preview");
   const statusEl = document.getElementById("status");
+  const manipStatus = document.getElementById("manip-status");
+  const btnAddPoint = document.getElementById("btn-add-point");
+  const pointsCount = document.getElementById("points-count");
   const opRadios = document.querySelectorAll('input[name="op"]');
   const targetRow = document.getElementById("target-row");
+
+  let mockRowCount = 0;
+
+  // Dummy UI: Add Point appends a fake selection count only.
+  if (btnAddPoint) {
+    btnAddPoint.disabled = false;
+    btnAddPoint.addEventListener("click", function () {
+      mockRowCount += 1;
+      if (pointsCount) {
+        pointsCount.textContent = mockRowCount + " selected";
+      }
+      if (statusEl) {
+        statusEl.textContent =
+          "Would add point to selected sketch (or create sketch) — dummy UI";
+      }
+      if (manipStatus) {
+        manipStatus.textContent =
+          "Manipulators: Angle ✓ · Move ✓ (unconstrained mock point)";
+      }
+    });
+  }
 
   function applyTheme(mode) {
     let resolved = mode;
