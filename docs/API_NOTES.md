@@ -163,6 +163,35 @@ def on_mouse_drag_end(args):
 - Never call `doExecutePreview` from inside `executePreview`.
 - Do not rebuild on theme-only changes or Add Point hover (CG only).
 
+### Dimension parameters — Triad ↔ GUI two-way
+
+```python
+# GUI → dims → pose
+def on_gui_dim_changed(dx_expr, dy_expr, angle_expr):
+    if _syncing_ui: return
+    _syncing_ui = True
+    try:
+        if frame.dim_h: frame.dim_h.parameter.expression = dx_expr
+        if frame.dim_v: frame.dim_v.parameter.expression = dy_expr
+        if frame.dim_angle: frame.dim_angle.parameter.expression = angle_expr
+        frame.retarget_triad_from_dims(triad)   # triad.transform matches new pose
+        schedule_do_execute_preview()
+    finally:
+        _syncing_ui = False
+
+# Triad → GUI (on tick and/or settle)
+def push_dims_to_gui(frame):
+    if _syncing_ui: return
+    _syncing_ui = True
+    try:
+        send_to_palette(dX=frame.dim_h.parameter.expression, ...)
+    finally:
+        _syncing_ui = False
+```
+
+- Palette bridge actions: `setFrameDims`, `frameDimsChanged` with `{ dX, dY, angle }`.
+- Typed GUI values are authoritative (not force-snapped); triad ticks still use snap unless Alt.
+
 ## Extrude from text
 
 ```python

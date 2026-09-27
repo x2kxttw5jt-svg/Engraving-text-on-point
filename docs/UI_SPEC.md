@@ -81,6 +81,8 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 
 - **Live sketch preview** checkbox (default checked): sketch text + dims update live; **solid** preview runs after triad `mouseDragEnd` + debounce via `doExecutePreview`.
 - **Snap** dropdowns: linear + angular increments; label hint `Alt = free`.
+- **Frame dims** row (active selection): `dX`, `dY`, `Angle` text inputs — same driving dimensions as the triad. Disabled with `—` when Ref/Orient dims are absent.
+- Table **Angle** column is the same parameter as the frame Angle field (keep in sync).
 - When live sketch preview unchecked: still allow triad pose; skip settle `doExecutePreview` if desired; OK commits.
 
 ## Selection rows

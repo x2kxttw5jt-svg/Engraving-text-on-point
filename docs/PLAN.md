@@ -50,11 +50,13 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 ├──────────────────────────────────────────────────────────────────────┤
 │  Operation / Distance / Direction / Live sketch preview              │
 │  Snap        [ 1 mm ▼ ]  [ 5° ▼ ]   (Alt = free)                     │
+│  Frame dims  dX [ 12 mm ]  dY [ 5 mm ]  Angle [ 0 deg ]             │
+│              ↕ two-way with Triad + sketch dimensions                │
 ├──────────────────────────────────────────────────────────────────────┤
 │  ☐ Batch sequence …                                                  │
 ├──────────────────────────────────────────────────────────────────────┤
 │  # │ Text │ Ht │ Angle │ Orient │ Flip │ Justify │ Align │ Font     │
-│  … Angle = driving angular dimension value; Orient = vector ref …  │
+│  … Angle / dX / dY = same driving dims; edit here or via Triad …   │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Theme  [ Light ▼ ]                     [ Cancel ]  [ OK ]           │
 └──────────────────────────────────────────────────────────────────────┘

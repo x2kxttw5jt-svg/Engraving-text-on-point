@@ -13,6 +13,7 @@ Planning complete — see [docs/PLAN.md](docs/PLAN.md).
 - **`TriadCommandInput`**: lightweight `sketch.move` on `inputChanged`
 - **`mouseDragEnd` + debounce → `doExecutePreview`**: solid engraving preview after drag
 - **Snap** dropdowns (linear + angular) with **Alt bypass**; re-entrancy guards
+- Frame **dX / dY / Angle** set via **triad or GUI** (two-way sync to sketch dims)
 - Reusable **`sketch_transform_frame`**: Ref H/V + Orient angle dims
 - Add Point with preselect + custom-graphics ghost
 - Themes: **Light (default)** / Dark / Auto

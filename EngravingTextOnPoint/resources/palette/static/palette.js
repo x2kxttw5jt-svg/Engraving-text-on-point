@@ -47,8 +47,41 @@
           ? "Would apply associative H/V dims to active unconstrained point — dummy UI"
           : "Select a Ref point first — dummy UI";
       }
+      var dx = document.getElementById("dim-dx");
+      var dy = document.getElementById("dim-dy");
+      if (mockRef && dx && dy) {
+        dx.disabled = false;
+        dy.disabled = false;
+        dx.value = "10 mm";
+        dy.value = "5 mm";
+      }
     });
   }
+
+  if (btnOrient) {
+    btnOrient.addEventListener("click", function () {
+      var ang = document.getElementById("dim-angle");
+      if (ang && mockOrient) {
+        ang.disabled = false;
+        ang.value = "0 deg";
+      }
+    });
+  }
+
+  ["dim-dx", "dim-dy", "dim-angle"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("change", function () {
+      if (statusEl) {
+        statusEl.textContent =
+          "Would set frame dim from GUI and sync triad — dummy UI (" +
+          id +
+          "=" +
+          el.value +
+          ")";
+      }
+    });
+  });
 
   if (btnOrient) {
     btnOrient.addEventListener("click", function () {

@@ -229,6 +229,18 @@ select:focus {
 
 .actions { display: flex; gap: 6px; }
 
+.dim-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  min-width: 0 !important;
+}
+
+.dim-field input {
+  width: 64px;
+}
+
 .status {
   margin: 0;
   min-height: 1.2em;
