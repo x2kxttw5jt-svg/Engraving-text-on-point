@@ -228,6 +228,20 @@ dim_v.isDriving = True             # one final driving solve
 - Throttle extrude `executePreview` during drag; full refresh on drag end.
 - Do **not** leave dimensions driven after the gesture completes.
 
+**Ref dimension visibility during preview (required):**
+
+```python
+sketch.areDimensionsShown = True  # or ensure sketch UI shows dimensions
+for dim in (dim_h, dim_v):
+    # keep visible while preview is active — including isDriving True/False
+    if hasattr(dim, "isVisible"):
+        dim.isVisible = True
+# After any executePreview rebuild / re-fetch of dim handles, re-apply visibility
+```
+
+- Ref H/V dims must remain on-screen for the live-preview session (not deferred until OK).
+- Driven-during-drag must not hide them; they should continue to show updating measured values.
+
 - Destroy CG on `preSelectEnd`, cancel, destroy, or after commit.
 - Do not leave custom graphics after placement mode ends.
 - Filter preselect: `args.isSelectable = False` when hit cannot project onto the target plane.

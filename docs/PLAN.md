@@ -90,10 +90,11 @@ Same geometry pipeline either way:
 4. Create **driving** H + V dimensions between **projected Ref** and the **target point**:
    - `addDistanceDimension(projRef, targetPt, HorizontalDimensionOrientation, …, True)`
    - `addDistanceDimension(projRef, targetPt, VerticalDimensionOrientation, …, True)`
-5. On transform: move manipulator edits **H/V dimension parameters**; dimension lines/values update live; text follows center constraint; extrude follows the sketch. If Ref source moves, linked projection updates.
-6. After Ref dims are applied, the point is no longer freely unconstrained — move drives dim values (no free-`move` that fights dims). Existing unconstrained points **without** Ref still free-move.
-7. Eligibility for existing points: must be unconstrained enough to accept H/V dims (hard-fail with reason if already locked / dims cannot be added). Re-applying Ref replaces or repairs prior Ref dims for that row (define clearly in impl: one Ref-dim pair per row).
-8. Hard-fail with reason if Ref cannot be associatively projected or H/V dimensions cannot be created. No unlinked projection fallback.
+5. **Visibility (required during preview):** Ref H/V dimension lines and values must stay **visible** whenever live preview is active for that row — including while dims are temporarily **driven** during translate. Ensure the parent sketch shows dimensions (`areDimensionsShown = True` or equivalent), keep each Ref dim visible, and re-assert visibility after preview rebuilds. Do not hide Ref dims for a “clean” preview.
+6. On transform: use driven-during-drag cadence; dimension **graphics stay on-screen** and update as measures; text follows center constraint; extrude follows the sketch. If Ref source moves, linked projection updates.
+7. After Ref dims are applied, the point is no longer freely unconstrained — move uses the translate cadence (not free-`move` that fights dims). Existing unconstrained points **without** Ref still free-move.
+8. Eligibility for existing points: must be unconstrained enough to accept H/V dims (hard-fail with reason if already locked / dims cannot be added). Re-applying Ref replaces or repairs prior Ref dims for that row (one Ref-dim pair per row).
+9. Hard-fail with reason if Ref cannot be associatively projected or H/V dimensions cannot be created. No unlinked projection fallback.
 
 During Add Point ghosting, optionally CG-preview H/V offsets from projected Ref to the ghost (cosmetic until commit).
 
