@@ -73,30 +73,67 @@ Icon groups use **stock Fusion glyphs** from the Sketch Text dialog family (Flip
 
 Dummy UI: **+ Add Point** / **Ref Point** / **Apply Ref Dims** are mock controls only.
 
-#### Optional reference point + live XY dimensions
+#### Standalone reusable module: sketch transform frame (`sketch_transform_frame`)
+
+Ref point + live dimensions + manipulators (including **angle**) are **not** engraving-specific. Build them as a **standalone reusable package** other Fusion add-ins can copy/import.
+
+**Package layout** (ship beside the add-in; no engraving imports inside):
+
+```
+sketch_transform_frame/           # reusable — no dependency on EngravingTextOnPoint
+  __init__.py                     # public API re-exports
+  project.py                      # associative project2 helpers
+  apply_frame.py                  # apply Ref H/V + Orient angular dims to a target point
+  drag_cadence.py                 # driven-during-drag / restore-driving
+  manipulators.py                 # wire AngleValue + DistanceValue command inputs
+  visibility.py                   # keep dims visible (preview + drag)
+  errors.py                       # staged hard-fail errors with reasons
+  README.md                       # how to reuse in another add-in
+```
+
+**Public API (conceptual):**
+
+```python
+frame = TransformFrame.apply(
+    sketch,
+    target_point,              # new or existing unconstrained SketchPoint
+    ref_point_entity=None,     # optional → associative project + H/V dims
+    orient_vector_entity=None, # optional/required by caller → associative project + angular dim
+    angle_entity=None,         # optional SketchLine/text edge to dimension against Orient
+    angle_value="0 deg",
+)
+frame.ensure_visible(sketch)
+frame.begin_translate_drag()   # H/V (+ angle if included in translate set) → driven
+frame.end_translate_drag()     # write values → driving
+frame.begin_rotate_drag()      # angular dim → driven during rotate (same lag avoidance)
+frame.end_rotate_drag()
+frame.bind_manipulators(angle_input, dist_x_input, dist_y_input)
+```
+
+This engraving add-in **calls** the module; it does not reimplement projection/dim/drag logic inline.
+
+#### Optional Ref + Orient dimensions (via the module)
 
 Works for **both**:
 
 | Target | When |
 |--------|------|
-| **New point** (Add Point) | If Ref is selected at commit, auto-apply Ref dims to the new point |
-| **Existing unconstrained point** | Active row / selected sketch point that is still free (no locking constraints). User selects Ref → **Apply Ref Dims** (or auto-apply when Ref is picked with an eligible active point) |
+| **New point** (Add Point) | If Ref and/or Orient set at commit → `TransformFrame.apply(...)` |
+| **Existing unconstrained point** | Active free point → Apply Ref Dims / Orient → same `TransformFrame.apply` |
 
-Same geometry pipeline either way:
+Pipeline (inside `apply_frame.py`):
 
-1. **Select Ref** (optional): sketch point, BRep vertex, construction point, or similar.
-2. Target point = newly created point **or** existing unconstrained sketch point on the row.
-3. **Associatively project** Ref onto that point’s sketch (`project2(..., isLinked=True)`) → projected `SketchPoint` in sketch XY.
-4. Create **driving** H + V dimensions between **projected Ref** and the **target point**:
-   - `addDistanceDimension(projRef, targetPt, HorizontalDimensionOrientation, …, True)`
-   - `addDistanceDimension(projRef, targetPt, VerticalDimensionOrientation, …, True)`
-5. **Visibility (required during preview):** Ref H/V dimension lines and values must stay **visible** whenever live preview is active for that row — including while dims are temporarily **driven** during translate. Ensure the parent sketch shows dimensions (`areDimensionsShown = True` or equivalent), keep each Ref dim visible, and re-assert visibility after preview rebuilds. Do not hide Ref dims for a “clean” preview.
-6. On transform: use driven-during-drag cadence; dimension **graphics stay on-screen** and update as measures; text follows center constraint; extrude follows the sketch. If Ref source moves, linked projection updates.
-7. After Ref dims are applied, the point is no longer freely unconstrained — move uses the translate cadence (not free-`move` that fights dims). Existing unconstrained points **without** Ref still free-move.
-8. Eligibility for existing points: must be unconstrained enough to accept H/V dims (hard-fail with reason if already locked / dims cannot be added). Re-applying Ref replaces or repairs prior Ref dims for that row (one Ref-dim pair per row).
-9. Hard-fail with reason if Ref cannot be associatively projected or H/V dimensions cannot be created. No unlinked projection fallback.
+1. **Ref** (optional): associatively project onto sketch → driving **H + V** `addDistanceDimension(projRef, targetPt, …)`.
+2. **Orient** (when provided): associatively project vector → driving **angular** `addAngularDimension(angleEntity, projOrientLine, …)`.  
+   - For engraving, `angleEntity` = text `rectangleLines` baseline edge.  
+   - For reuse, caller passes any sketch line/edge that should be angled to the projected vector.
+3. **Visibility (required during preview):** all frame dims (H, V, **and angle**) stay **visible** for the live-preview session — including while temporarily driven during drag. `areDimensionsShown`; re-assert after rebuilds.
+4. **Transform:** driven-during-drag for translate (H/V) and rotate (angle); restore driving on stop; graphics stay on-screen.
+5. Without Ref, free move when unconstrained still applies. Without Orient, angle manipulator stays disabled.
+6. Hard-fail with reason on project/dim failure; no unlinked projection fallback.
+7. One frame instance per target point/row (replace/repair on re-apply).
 
-During Add Point ghosting, optionally CG-preview H/V offsets from projected Ref to the ghost (cosmetic until commit).
+During Add Point ghosting, optional CG preview of H/V offsets from projected Ref (cosmetic until commit).
 
 #### Placement preview (custom graphics + preselect)
 
@@ -117,23 +154,23 @@ While in Add Point mode, **do not** create the sketch point until click-commit. 
 
 Preselect filtering: allow hits useful for placement (faces, construction planes, sketch curves/points, edges/vertices as project sources). Reject invalid hits (`isSelectable = False`) when they cannot define a projection onto the target plane.
 
-### Orientation vector + angle dimension (no SketchText angle API)
+### Orientation / angle (part of `sketch_transform_frame`)
 
-**Fusion has no usable text-placement angle.** `SketchText.angle` / `SketchTextInput.angle` are retired; `setAsMultiLine`’s last argument is character spacing, not rotation. Orientation is done only by constraining the text box (`rectangleLines`).
+**Fusion has no usable text-placement angle.** `SketchText.angle` / `SketchTextInput.angle` are retired; `setAsMultiLine`’s last argument is character spacing, not rotation.
 
-Our rotation model: a **driving sketch angular dimension** between a text frame edge and an **associatively projected** copy of the user-selected orientation vector. The palette “Angle” column is that dimension’s value — not a text property.
+Angle is handled **inside the reusable transform-frame module** the same way as Ref H/V dims:
 
 | Item | Behavior |
 |------|----------|
 | **Orient select** | User picks a direction reference: sketch line, construction axis/line, or linear edge |
-| **Associative project** | **Always** project that vector onto the text’s sketch with a **linked/associative** projection (`project2(..., isLinked=True)` or equivalent). The projected line updates if the source vector moves |
-| Per-row Orient | Table column / picker; optional “use global Orient for all rows” |
-| Missing vector | Angle manipulator + OK blocked for that row; status: `Select orientation vector` |
-| Geometry | Driving `addAngularDimension` between a text `rectangleLines` edge and the **projected** orientation line — never dimension directly to the off-sketch source |
-| Angle column | Edits that dimension’s parameter; text rotates via the dimension |
+| **Associative project** | Module always `project2(..., linked=True)` onto the target sketch |
+| **Angular dimension** | Module creates driving `addAngularDimension` between caller-supplied angle entity (engraving: text `rectangleLines` edge) and the **projected** orient line |
+| Angle column / manipulator | Read/write that dimension parameter via `TransformFrame` — not a SketchText property |
+| Visibility | Angle dim visible during preview + rotate drag (driven/driving), same rules as Ref H/V |
+| Drag cadence | Rotate gesture: angular dim → driven during drag → driving on stop (lag avoidance) |
 | Default | `0 deg` (= parallel to projected vector) |
 
-**Hard-fail with reason** if associative projection cannot be created, the projected entity is not a usable line, or the angular dimension cannot be added. Do not fall back to an unlinked/fixed copy or a numeric-only angle.
+Missing Orient → angle manipulator + OK blocked for engraving rows that require it. Hard-fail with reason on project/dim failure.
 
 ### Built-in Fusion transform manipulators
 
@@ -156,18 +193,23 @@ Use Fusion’s **native command-input manipulators** (not a custom triad):
 5. Palette does not draw the triad; the **Command** owns manipulators. Active table row retargets `setManipulator` + which dimension is driven.
 6. Move failure → hard status with reason; restore any temporarily driven dims to driving on abort when possible.
 
-#### Translate cadence (avoid lag) — driven ↔ driving
+#### Drag cadence (avoid lag) — driven ↔ driving (`drag_cadence.py`)
 
-Continuous driving-dimension solves on every manipulator tick are laggy. For **point translation**:
+Implemented once in the reusable module; engraving only calls it.
+
+| Gesture | Dims toggled to driven during drag | On stop |
+|---------|--------------------------------------|---------|
+| **Translate** | Ref **H + V** (angle stays driving unless it blocks the move) | Write H/V values → driving; keep **all frame dims visible** |
+| **Rotate** | **Angular** dim (H/V stay driving unless they block) | Write angle value → driving; keep visible |
 
 | Phase | Action |
 |-------|--------|
-| **Drag start** | Convert **affected** dimensions to **driven** (`isDriving = False`) — at least Ref H/V distance dims on that point. Optionally leave Orient angular dim driving unless it fights the move. **Keep Ref dims visible.** |
-| **During drag** | Move the sketch point (free / distance manipulators). Driven dims **measure** and keep **lines + values visible/updating** without steering the solve. Text follows via center constraint; defer heavy extrude preview if needed (throttle). |
-| **Drag end** (mouseup / manipulator settle) | Read final H/V offsets → set dimension parameter values to match → convert those dims back to **driving** (`isDriving = True`). Sync palette. One solve at the end. Ref dims remain visible. |
-| **Cancel / error mid-drag** | Best-effort restore dims to driving at last good values; hard-fail with reason if restore fails. |
+| **Drag start** | `isDriving = False` on the affected frame dims; visibility stays on |
+| **During drag** | Move/rotate via manipulators; driven dims measure with visible lines/values; throttle heavy extrude preview |
+| **Drag end** | Set parameters from measured pose → `isDriving = True`; one final solve; sync UI |
+| **Cancel / error** | Best-effort restore driving at last good values; hard-fail with reason if restore fails |
 
-Do **not** leave dims driven after the gesture. Only the dimensions involved in the translation are toggled — not unrelated sketch dims. Switching driven/driving must **not** hide Ref dimension graphics.
+Do **not** leave frame dims driven after the gesture. Do not toggle unrelated sketch dims. Driven/driving swaps must **not** hide dimension graphics.
 
 ### Table columns
 
@@ -226,7 +268,7 @@ Persist in `settings.json`. Default `"theme": "light"`.
 ### Requirements
 
 - As soon as ≥1 point is selected and row fields are valid, the viewport shows the engraving result for current options.
-- **Ref H/V dimensions (when applied) are visible for the whole live-preview session** — not only after OK. Same for drag (driven) and idle (driving).
+- **Transform-frame dimensions (Ref H/V and Orient angle, when applied) are visible for the whole live-preview session** — not only after OK. Same for drag (driven) and idle (driving).
 - Editing Text / Height / Font / Flip / Justify / Align / Distance / Direction / Operation / Target body updates the preview.
 - **Angle** / angle manipulator → update angular **dimension** (text follows constraints; prefer not recreating text).
 - **Move** manipulator → move point (text follows center constraint; extrude updates).
@@ -318,12 +360,11 @@ Ship under `resources/icons/flipH|flipV|justifyLeft|justifyCenter|justifyRight|a
   6. Push new point into rows; focus manipulators.
   7. Teardown CG on cancel / destroy / leaving placement mode.
 
-- **`apply_ref_dims(target_pt)`** (shared by Add Point and existing unconstrained points):
-  1. Require Ref selection + target sketch point.
-  2. For existing points: verify unconstrained / can accept dims; else hard-fail with reason.
-  3. `project2(ref, linked=True)` into `target_pt.parentSketch`.
-  4. Driving H + V `addDistanceDimension(projRef, target_pt, …)`.
-  5. Store dim tokens on the row; retarget move manipulator to edit those parameters.
+- **Transform frame** (via `sketch_transform_frame.TransformFrame.apply`):
+  1. Target = new Add Point result or existing unconstrained sketch point.
+  2. Optional Ref → associative project + driving H/V dims.
+  3. Optional Orient + angle entity (text edge) → associative project + driving angular dim.
+  4. `ensure_visible`; bind manipulators; store `TransformFrame` on the row.
 
 ### 2. Centered, angled sketch text
 
@@ -346,16 +387,14 @@ sk_text = sketch.sketchTexts.add(tin)
 # then: center constraint to point + angular dimension to orientation vector
 ```
 
-**Orientation + angular dimension (required)**
+**Orientation + angular dimension (via reusable frame)**
 
-1. User selects orientation vector (line / axis / edge).
-2. **Associatively project** it onto the text sketch: `sketch.project2(vectorEntity, True)` (`isLinked=True`). Keep a reference to the **projected** `SketchLine` (or curve used as the dimension side).
-3. From `MultiLineTextDefinition.rectangleLines`, pick the text baseline / orientation edge.
-4. `sketch.sketchDimensions.addAngularDimension(textEdge, projectedOrientLine, dimTextPoint, True)` — **driving**.
-5. Set initial dimension value to the row Angle (default `0`).
-6. Angle column / manipulator write `dimension.parameter` only — text rotates via constraints/dimension.
-7. **Never** call retired `SketchText.angle` / `SketchTextInput.angle`, and do not pretend `setAsMultiLine` accepts a placement angle.
-8. Hard-fail stages: `orient vector missing`, `associative project failed`, `projected line unavailable`, `angular dimension failed`.
+1. User selects orientation vector; create sketch text + center constraints first.
+2. Pick text baseline edge from `rectangleLines`.
+3. Call `TransformFrame.apply(..., orient_vector_entity=orient, angle_entity=textEdge, angle_value=…)`.
+4. Angle column / manipulator go through the frame (dimension parameter only).
+5. **Never** call retired `SketchText.angle` / `SketchTextInput.angle`.
+6. Hard-fail stages come from the frame: `orient vector missing`, `associative project failed`, `projected line unavailable`, `angular dimension failed`.
 
 **Justify + Align columns**
 
@@ -456,18 +495,22 @@ EngravingTextOnPoint/
     engraving_text_command.py      # created / preview / execute / destroy
     selection_handlers.py
   lib/
-    text_on_point.py               # create text + angle + center constraints
+    text_on_point.py               # create text + center constraints; calls transform frame for Orient angle
     extrude_text.py
-    preview_session.py             # preview cadence, teardown, debounce keys
+    preview_session.py
     batch_sequence.py
     fonts.py
     settings.py
     fusion_util.py
+  sketch_transform_frame/          # STANDALONE reusable package (see section above)
+    … project, apply_frame, drag_cadence, manipulators, visibility, errors, README
   resources/palette/…  resources/icons/…
   settings.json
 docs/
   PLAN.md | UI_SPEC.md | API_NOTES.md
 ```
+
+Engraving code may depend on `sketch_transform_frame`. The frame package must **not** import engraving modules.
 
 ### Palette ↔ Python bridge
 
@@ -543,11 +586,11 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 
 **Exit criteria for Phase 1:** UI matches `UI_SPEC.md` in light/dark/auto, table + batch + Add Point chrome feel stock, Ryan signs off before Phase 2.
 
-### Phase 2 — Selection + Add Point + Orient + manipulators (no extrude yet)
-- Real `SketchPoint` / sketch / orient vector / body selection.
-- **Add Point** with preselect + custom-graphics ghost.
-- Place text + **center constraint** + **angular dimension to Orient vector**.
-- Angle manipulator edits the dimension; Move only if unconstrained.
+### Phase 2 — `sketch_transform_frame` + selection + Add Point (no extrude yet)
+- Implement standalone **`sketch_transform_frame`** (Ref H/V + Orient angle + visibility + drag cadence + manipulators) with its own README.
+- Wire engraving to the frame; no duplicated project/dim logic in engraving modules.
+- Real selection + Add Point CG ghost; text + center constraint; frame applies Orient angle (+ optional Ref).
+- Manipulators via `frame.bind_manipulators`.
 
 ### Phase 3 — Live preview extrude (New Body)
 - Extrude New Body on top of constrained/dimensioned text; cancel teardown; hard-fail with reason.
@@ -581,9 +624,10 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] Existing constrained point + Ref → hard-fail with reason (no dims)
 - [ ] Move with Ref: dims switch to driven during drag and back to driving on stop; final values match pose
 - [ ] Move with Ref stays responsive (no per-tick driving solve); dimension lines still update as driven measures
-- [ ] Ref H/V dims visible throughout live preview (idle, during drag, after drag); still visible after preview rebuilds
+- [ ] Ref H/V **and angle** dims visible throughout live preview (idle, drag, after rebuilds)
 - [ ] Cancel/error mid-drag restores driving dims when possible
-- [ ] Ref source move updates linked projection; offsets remain dimensional
+- [ ] Ref/Orient source moves update linked projections; dimensional relationships hold
+- [ ] `sketch_transform_frame` has no imports from engraving modules; README documents reuse
 - [ ] Flip H / Flip V toggles use stock Fusion icons; preview and commit match
 - [ ] Justify L/C/R and Align T/M/B use stock Fusion icons; preview and commit match
 - [ ] Non-center justify/align still keeps rectangle center constrained to the point
@@ -610,8 +654,8 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | **Rotation** | **Orient vector → associative project → driving angular dim to `rectangleLines`; manipulator edits the dim** |
 | **Orientation** | **Required vector select → associative project onto text sketch → angular dim to projected line** |
 | **Position** | **Stock Fusion move manipulators; only if sketch point is unconstrained** |
-| **Ref XY dims** | **Optional; Add Point or existing free points; associative project + driving H/V dims; translate uses driven-during-drag** |
-| **Add Point** | **Preselect + CG ghost; optional Ref auto-applies dims on commit** |
+| **Transform frame** | **Standalone reusable `sketch_transform_frame`: Ref H/V + Orient angle + manipulators + driven-during-drag + preview visibility** |
+| **Add Point** | **Preselect + CG ghost; optional Ref/Orient applied via TransformFrame on commit** |
 | **Text flip** | **Per-row H + V toggles; stock Fusion flip icons; default off** |
 | **Justify / Align** | **Per-row H (L/C/R) + V (T/M/B); stock Fusion align icons; default Center / Middle** |
 | Sketch creation | Use existing sketch of selected/Add Point target; create only when Add Point has no sketch |
@@ -633,8 +677,8 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 3. Extrude Cut or New Body with optional target body for Cut.
 4. Batch sequential text with prefix/suffix.
 5. Font-aware text field + font dropdown + **angle dim**, **orient vector**, **flip**, **justify**, **align**.
-6. **Stock Fusion manipulators**: angle → angular dim; move → free point or Ref H/V dims.
-7. **Add Point** with preselect CG ghost; optional Ref dims on new **or existing unconstrained** points.
+6. **Reusable `sketch_transform_frame`** owns Ref H/V + angle dims, visibility, manipulators, drag cadence.
+7. **Add Point** with preselect CG ghost; frame applies to new **or existing unconstrained** points.
 8. **Live preview** with clean cancel/destroy teardown.
 9. Light / Dark / Auto themes; **Light default**.
 

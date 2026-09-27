@@ -9,9 +9,9 @@ Match Fusion’s native docked palettes (Parameters-adjacent density, Extrude-di
 ## Selection / Add Point row
 
 - `Point(s)` Select + **`+ Add Point`** button (stock-style + or point icon).
-- Optional **`Ref Pt` Select** + **`Apply Ref Dims`** — associative project + driving H/V dims for **Add Point** commits **or** the active **existing unconstrained** sketch point. Those dimension lines/values stay **visible in the viewport during live preview** (including while temporarily driven during translate).
+- Optional **`Ref Pt` Select** + **`Apply Ref Dims`** — via reusable `sketch_transform_frame` (H/V + angle when Orient set) for Add Point or existing unconstrained points. Frame dims stay **visible during live preview** (including driven-during-drag).
 - Optional `Sketch` Select (muted helper text: used by Add Point).
-- **`Orient` Select** — required direction vector for text angle (sketch line / axis / edge).
+- **`Orient` Select** — required orientation vector; angular dim is part of the same transform frame as Ref H/V.
 - Status strip: `Angle dim ✓` (or `Select orientation vector`) and `Move ✓` / `Move locked — point is constrained`.
 - During Add Point mode, status: `Click to place point — ghost shows projected location`.
 

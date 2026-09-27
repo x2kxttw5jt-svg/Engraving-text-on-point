@@ -1,1 +1,4 @@
-# Package library modules (text_on_point, extrude_text, batch_sequence, fonts, settings).
+# Engraving-specific helpers.
+
+Reusable Ref / Orient / manipulator / drag-cadence logic lives in
+`../sketch_transform_frame/` — do not reimplement it here.

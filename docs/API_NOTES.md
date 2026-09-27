@@ -173,74 +173,39 @@ cg.deleteMe()  # or clear group
 # - Fallback: rootComp.xYConstructionPlane
 ```
 
-### Optional Ref point → associative project + H/V dimensions
+### Standalone `sketch_transform_frame` (reusable)
 
-Shared helper for **new Add Point targets** and **existing unconstrained sketch points**:
-
-```python
-def apply_ref_dims(sketch, target_pt, ref_entity):
-    # Existing points: require unconstrained / able to accept dims
-    if not can_accept_xy_dims(target_pt):
-        raise TextConstraintError("ref dims blocked", "point is constrained", row_id)
-
-    proj = sketch.project2(ref_entity, True)  # linked / associative
-    proj_ref_pt = as_sketch_point(proj)
-
-    dims = sketch.sketchDimensions
-    dim_h = dims.addDistanceDimension(
-        proj_ref_pt, target_pt,
-        adsk.fusion.DimensionOrientations.HorizontalDimensionOrientation,
-        text_pt_h, True)  # driving
-    dim_v = dims.addDistanceDimension(
-        proj_ref_pt, target_pt,
-        adsk.fusion.DimensionOrientations.VerticalDimensionOrientation,
-        text_pt_v, True)  # driving
-    return dim_h, dim_v
-
-# Call sites:
-# - Add Point commit with Ref selected → apply_ref_dims(sketch, new_pt, ref)
-# - Active existing unconstrained row + Ref → Apply Ref Dims → apply_ref_dims(...)
-```
-
-### Translate performance — driven during drag, driving after stop
+Lives at `EngravingTextOnPoint/sketch_transform_frame/`. **No imports from engraving modules.** Hosts Ref H/V, Orient **angle**, manipulators, drag cadence, visibility. See package `README.md`.
 
 ```python
-# Drag start (InputChanged / manipulator begin):
-for dim in (dim_h, dim_v):
-    dim.isDriving = False          # driven: measures only, light solve
+from sketch_transform_frame import TransformFrame
 
-# During drag:
-target_pt.move(delta)              # or distance manipulator → SketchPoint.move
-# driven dims update displayed values automatically
+frame = TransformFrame.apply(
+    sketch,
+    target_pt,                       # new or existing unconstrained point
+    ref_point_entity=ref,            # optional → H/V dims
+    orient_vector_entity=orient,     # optional → angular dim
+    angle_entity=text_baseline,      # line/edge to dimension to projected orient
+    angle_value="0 deg",
+)
+frame.ensure_visible(sketch)
+frame.bind_manipulators(angle_in, dist_x, dist_y)
 
-# Drag end (mouseup / settle — debounce ~50–100ms after last move event):
-# capture measured offsets from driven dims (or from point geometry vs proj_ref)
-dim_h.parameter.value = measured_h
-dim_v.parameter.value = measured_v
-dim_h.isDriving = True
-dim_v.isDriving = True             # one final driving solve
+# Translate
+frame.begin_translate_drag()   # H/V → driven; stay visible
+# move point…
+frame.end_translate_drag()     # write H/V → driving
 
-# On cancel/error: restore isDriving=True at last committed values when possible
+# Rotate (angle included in the same frame)
+frame.begin_rotate_drag()      # angular dim → driven; stay visible
+# angle manipulator…
+frame.end_rotate_drag()        # write angle → driving
 ```
 
-- Verify `SketchDimension.isDriving` (or equivalent) on the target Fusion build; document the exact property name in code.
-- Only toggle dims owned by this row’s Ref pair (and only for translation gestures).
-- Throttle extrude `executePreview` during drag; full refresh on drag end.
-- Do **not** leave dimensions driven after the gesture completes.
-
-**Ref dimension visibility during preview (required):**
-
-```python
-sketch.areDimensionsShown = True  # or ensure sketch UI shows dimensions
-for dim in (dim_h, dim_v):
-    # keep visible while preview is active — including isDriving True/False
-    if hasattr(dim, "isVisible"):
-        dim.isVisible = True
-# After any executePreview rebuild / re-fetch of dim handles, re-apply visibility
-```
-
-- Ref H/V dims must remain on-screen for the live-preview session (not deferred until OK).
-- Driven-during-drag must not hide them; they should continue to show updating measured values.
+- Verify `SketchDimension.isDriving` / `project2` link flag on target Fusion build.
+- Throttle extrude preview during drag; full refresh on drag end.
+- Do **not** leave frame dims driven after a gesture.
+- **Visibility:** H, V, and **angle** dims visible for the whole live-preview session (idle + drag + after rebuilds).
 
 - Destroy CG on `preSelectEnd`, cancel, destroy, or after commit.
 - Do not leave custom graphics after placement mode ends.

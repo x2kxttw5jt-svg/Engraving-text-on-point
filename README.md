@@ -12,8 +12,8 @@ Planning complete — see [docs/PLAN.md](docs/PLAN.md).
 
 - Table-style palette (stock Fusion look)
 - Columns: Text, Height, **Angle** (dim), **Orient**, **Flip**, **Justify**, **Align**, Font
-- **Orientation vector** required; angle is a **driving angular dimension** (manipulator edits the dim)
-- **Move** manipulator when the sketch point is unconstrained
+- Reusable **`sketch_transform_frame`**: Ref H/V + Orient **angle** dims, manipulators, driven-during-drag, preview visibility
+- **Orientation vector** required for engraving; angle is a driving angular dimension in that frame
 - **Add Point** at click with preselect + custom-graphics projection ghost
 - Stock Fusion icons for flip / justify / align
 - **Live preview** (on by default); Cancel/destroy leaves no preview geometry
