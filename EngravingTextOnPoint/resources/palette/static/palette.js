@@ -284,7 +284,7 @@
     if (!tbody) return;
     if (!rows.length) {
       tbody.innerHTML =
-        '<tr class="empty"><td colspan="7">Select sketch points to add rows</td></tr>';
+        '<tr class="empty"><td colspan="6">Select sketch points to add rows</td></tr>';
       return;
     }
     tbody.innerHTML = rows
@@ -315,9 +315,6 @@
           '><input type="text" class="row-angle" value="' +
           row.angle +
           '" /></td>' +
-          '<td class="col-orient"><span class="muted">' +
-          row.orient +
-          "</span></td>" +
           '<td class="col-format">' +
           formatCellHtml(row) +
           "</td>" +
@@ -409,7 +406,6 @@
         text: "PN-001",
         height: "3 mm",
         angle: "0 deg",
-        orient: mockOrient ? "XY edge" : "—",
         flipH: false,
         flipV: false,
         justify: "center",
@@ -446,7 +442,6 @@
       text: "PN-001",
       height: "3 mm",
       angle: "0 deg",
-      orient: "XY edge",
       justify: "center",
       align: "middle",
       bold: false,
@@ -457,7 +452,6 @@
       text: "PN-002",
       height: "4 mm",
       angle: "15 deg",
-      orient: "XY edge",
       flipH: true,
       justify: "left",
       align: "middle",
@@ -469,7 +463,6 @@
       text: "REV A",
       height: "2.5 mm",
       angle: "-5 deg",
-      orient: "XY edge",
       flipV: true,
       justify: "center",
       align: "top",
@@ -572,12 +565,9 @@
   if (btnOrient) {
     btnOrient.addEventListener("click", function () {
       mockOrient = true;
-      if (orientLabel) orientLabel.textContent = "Mock vector";
+      if (orientLabel) orientLabel.textContent = "Mock vector (all rows)";
       var ang = document.getElementById("dim-angle");
       if (ang) ang.value = "0 deg";
-      rows.forEach(function (r) {
-        if (r.orient === "—") r.orient = "Mock vector";
-      });
       syncFrameDimsVisibility();
       renderRows();
       if (manipStatus) {
@@ -586,7 +576,7 @@
       }
       if (statusEl) {
         statusEl.textContent =
-          "Angle field shown — via GUI/triad rotate; Ht via GUI/triad unified scale — dummy UI";
+          "Global Orient applies to every table row — Angle shown — dummy UI";
       }
     });
   }
@@ -613,7 +603,6 @@
       var n = rows.length + 1;
       addRow({
         text: "PN-" + String(n).padStart(3, "0"),
-        orient: mockOrient ? "XY edge" : "—",
       });
       if (statusEl) {
         statusEl.textContent =
@@ -632,7 +621,6 @@
       var n = rows.length + 1;
       addRow({
         text: "PT-" + String(n).padStart(3, "0"),
-        orient: mockOrient ? "XY edge" : "—",
       });
       if (statusEl) {
         statusEl.textContent = "Mock point selection — dummy UI";

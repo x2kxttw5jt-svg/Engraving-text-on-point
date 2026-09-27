@@ -11,7 +11,7 @@ Match Fusion’s native docked palettes (Parameters-adjacent density, Extrude-di
 - `Point(s)` Select + **`+ Add Point`** button (stock-style + or point icon).
 - Optional **`Ref Pt` Select** + **`Apply Ref Dims`** (initial attach) — via reusable `sketch_transform_frame` (H/V + angle when Orient set) for Add Point or existing unconstrained points. After triad drag: Ref dims stay driven through debounce, then **auto-apply** (convert to driving) before solid preview. Frame dims stay **visible during live preview** (including driven-during-drag).
 - Optional `Sketch` Select (muted helper text: used by Add Point).
-- **`Orient` Select** — required orientation vector; angular dim is part of the same transform frame as Ref H/V.
+- **`Orient` Select** — **global** orientation vector for **every** table row (not per-row). Required for Angle; angular dims use the same projected reference on each row’s frame.
 - Status strip: `Angle dim ✓` (or `Select orientation vector`), `Move ✓` / `Move locked — point is constrained`, and `Scale→Ht ✓` (triad unified scale drives text height).
 - During Add Point mode, status: `Click to place point — ghost shows projected location`.
 
@@ -65,7 +65,7 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 ## Table
 
 - Sticky header row; table may scroll horizontally in a narrow dock.
-- Columns: `#` | Text | Ht | **Angle** | **Orient** | **Format** | Font.
+- Columns: `#` | Text | Ht | **Angle** | **Format** | Font. (no Orient column — Orient is global above the table)
 - **Format** (one column), stacked like Fusion Sketch Text:
   1. Flip H | Flip V (mirrored-triangle icons)
   2. Justify L | C | R (text-line icons)
@@ -74,8 +74,7 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - Dummy uses SVG stand-ins under `resources/palette/static/icons/`; prefer stock Fusion PNGs when packaging.
 - **Ht** is two-way with triad **unified scale** (same `heightParameter`); typed Ht resets triad scale factor to 1.0.
 - Text `<input>`: `style.fontFamily = selectedFont`.
-- Angle `<input>`: angular dimension value; **hidden** until Orient is set.
-- Orient: short label of selected vector (or “global”).
+- Angle `<input>`: per-row angular dimension value vs the **global** Orient; **hidden** until Orient is set.
 - **Font** cell: **Bold (B)** + **Italic (I)** toggles grouped with the font `<select>` (Fusion Sketch Text Style + Font feel). Active B/I use accent blue border.
 - Font `<select>` + B/I: the row **Text** field updates live the same way — `font-family`, bold weight, and italic style.
 - No card wrappers; hairline row borders only.

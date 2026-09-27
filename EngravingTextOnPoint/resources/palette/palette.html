@@ -37,7 +37,7 @@
         <span class="icon-slot" title="Orientation vector"></span>
         <label>Orient</label>
         <button type="button" class="btn" id="btn-orient">Select</button>
-        <span class="muted" id="orient-label">Required for angle</span>
+        <span class="muted" id="orient-label">Applies to all rows</span>
       </div>
       <div class="field-row" id="target-row" hidden>
         <span class="icon-slot" title="Target body"></span>
@@ -138,14 +138,13 @@
             <th class="col-text">Text</th>
             <th class="col-ht">Ht</th>
             <th class="col-angle" id="th-angle" hidden>Angle</th>
-            <th class="col-orient">Orient</th>
             <th class="col-format" title="Flip · Justify · Align">Format</th>
             <th class="col-font" title="Font + Bold / Italic">Font</th>
           </tr>
         </thead>
         <tbody id="text-tbody">
           <tr class="empty">
-            <td colspan="7">Select sketch points to add rows</td>
+            <td colspan="6">Select sketch points to add rows</td>
           </tr>
           <!--
             Format column (Fusion Sketch Text feel), stacked:

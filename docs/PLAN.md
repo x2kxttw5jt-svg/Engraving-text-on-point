@@ -15,7 +15,7 @@ Select existing sketch points  —or—  [Add Point] at a click location
   ↓
 Add Point: use selected sketch if any; else create sketch (on picked plane/face or XY) + point
   ↓
-Rows appear; pick **orientation vector** per row (or shared); live preview places text
+Rows appear; pick **one global orientation vector** (applies to all rows); live preview places text
   ↓
 Active row: Fusion manipulators — angle edits the **angular dimension**; move if point unconstrained
   ↓
@@ -44,7 +44,7 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 │  ⊙ Point(s)  [ Select ]  [ + Add Point ]   3 selected                │
 │  ✛ Ref Pt    [ Select ]  [ Apply Ref Dims ]  (new or existing free pts) │
 │  ▭ Sketch    [ Select ]  (optional — used by Add Point)              │
-│  ↗ Orient    [ Select ]  (vector for text angle — required)          │
+│  ↗ Orient    [ Select ]  (global — applies to all rows; required)    │
 │  ⬚ Target Body  [ Select ]     (Join / Cut / Intersect)              │
 │  Active row: Angle dim ✓  Move ✓/✗  Scale→Ht ✓                      │
 ├──────────────────────────────────────────────────────────────────────┤
@@ -57,8 +57,8 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 ├──────────────────────────────────────────────────────────────────────┤
 │  ☐ Batch sequence …                                                  │
 ├──────────────────────────────────────────────────────────────────────┤
-│  # │ Text │ Ht │ Angle │ Orient │ Format │ Font                      │
-│  … Format = Flip H/V + Justify L/C/R + Align T/M/B (active=dark) … │
+│  # │ Text │ Ht │ Angle │ Format │ Font                               │
+│  … Angle vs global Orient; Format = Flip + Justify + Align …       │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Theme  [ Light ▼ ]                     [ Cancel ]  [ OK ]           │
 └──────────────────────────────────────────────────────────────────────┘
@@ -168,7 +168,7 @@ Angle is handled **inside the reusable transform-frame module** the same way as 
 
 | Item | Behavior |
 |------|----------|
-| **Orient select** | User picks a direction reference: sketch line, construction axis/line, or linear edge |
+| **Orient select** | **Global** direction reference for the whole session (sketch line, construction axis/line, or linear edge) — applies to every table row |
 | **Associative project** | Module always `project2(..., linked=True)` onto the target sketch |
 | **Angular dimension** | Module creates driving `addAngularDimension` between caller-supplied angle entity (engraving: text `rectangleLines` edge) and the **projected** orient line |
 | Angle column / manipulator | Read/write that dimension parameter via `TransformFrame` — not a SketchText property |
@@ -277,7 +277,7 @@ Do **not** leave frame dims driven into solid preview. Do not toggle unrelated s
 | Text | `<input type="text">` | Batch-driven or override; `font-family` = selected font |
 | Height | Length input | Default `3 mm` |
 | **Angle** | Dimension value (degrees) | Same driving angular dim as triad rotate + frame Angle field; default `0` |
-| **Orient** | Vector picker / label | Selected orientation vector for that row (or “global”) |
+| ~~Orient~~ | — | **Removed** — use header **Orient** Select (global for all rows) |
 | **Format** | Stacked cell: Flip → Justify (3) → Align (3) | Fusion-style icons; active = **accent border**; defaults Center / Middle / flip off |
 | **Font** | **B** + **I** toggles + `<select>` | Style via `textStyle` (bold/italic); font name drives face; Text preview follows |
 
