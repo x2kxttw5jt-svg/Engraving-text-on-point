@@ -15,11 +15,11 @@ Select existing sketch points  —or—  [Add Point] at a click location
   ↓
 Add Point: use selected sketch if any; else create sketch (on picked plane/face or XY) + point
   ↓
-Rows appear; live preview places text; active row shows Fusion transform manipulators
+Rows appear; pick **orientation vector** per row (or shared); live preview places text
   ↓
-Manipulator: set angle (always); move point if unconstrained
+Active row: Fusion manipulators — angle edits the **angular dimension**; move if point unconstrained
   ↓
-Edit Text / Ht / Font / Flip / Justify / Align / Angle field (or Batch) → preview updates
+Edit Text / Ht / Font / Flip / Justify / Align / Angle dim (or Batch) → preview updates
   ↓
 Choose Extrude: Cut | New Body → preview extrude updates
   ↓
@@ -43,18 +43,16 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 ├──────────────────────────────────────────────────────────────────────┤
 │  ⊙ Point(s)  [ Select ]  [ + Add Point ]   3 selected                │
 │  ▭ Sketch    [ Select ]  (optional — used by Add Point)              │
+│  ↗ Orient    [ Select ]  (vector for text angle — required)          │
 │  ⬚ Target Body  [ Select ]     (Cut only)                            │
-│  Active row manipulators: Angle ✓  Move ✓/✗ (see status)             │
+│  Active row: Angle dim ✓  Move ✓/✗                                   │
 ├──────────────────────────────────────────────────────────────────────┤
-│  Operation   (•) Cut  ( ) New Body                                   │
-│  Distance    [ 1.0 mm ▼ ]                                            │
-│  Direction   (•) Positive  ( ) Negative                              │
-│  ☑ Live preview                                                      │
+│  Operation / Distance / Direction / Live preview                     │
 ├──────────────────────────────────────────────────────────────────────┤
 │  ☐ Batch sequence …                                                  │
 ├──────────────────────────────────────────────────────────────────────┤
-│  # │ Text │ Ht │ Angle │ Flip │ Justify │ Align │ Font              │
-│  … table …                                                           │
+│  # │ Text │ Ht │ Angle │ Orient │ Flip │ Justify │ Align │ Font     │
+│  … Angle = driving angular dimension value; Orient = vector ref …  │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Theme  [ Light ▼ ]                     [ Cancel ]  [ OK ]           │
 └──────────────────────────────────────────────────────────────────────┘
@@ -92,26 +90,40 @@ While in Add Point mode, **do not** create the sketch point until click-commit. 
 
 Preselect filtering: allow hits useful for placement (faces, construction planes, sketch curves/points, edges/vertices as project sources). Reject invalid hits (`isSelectable = False`) when they cannot define a projection onto the target plane.
 
+### Orientation vector (required for angle)
+
+Text rotation is **not** a free-floating angle property. It is a **driving sketch angular dimension** between the text frame and a user-selected **orientation vector**.
+
+| Item | Behavior |
+|------|----------|
+| **Orient select** | User picks a direction reference: sketch line, construction axis/line, or linear edge (projected into the text sketch if needed) |
+| Per-row Orient | Table column / picker; optional “use global Orient for all rows” |
+| Missing vector | Angle manipulator + OK blocked for that row; status: `Select orientation vector` |
+| Geometry | One side of `rectangleLines` (text baseline / box edge) is related to the orientation line by `SketchDimensions.addAngularDimension(...)` (**driving**) |
+| Angle column | Displays/edits that dimension’s parameter value (degrees); changing it updates the **dimension**, which rotates the constrained text |
+| Default | `0 deg` relative to the selected vector (text aligned to vector) |
+
+If the vector is not already in the text’s sketch, **project** it into that sketch (`project2`) and dimension against the projected line. Hard-fail with reason if projection/dimension cannot be created.
+
 ### Built-in Fusion transform manipulators
 
 Use Fusion’s **native command-input manipulators** (not a custom triad):
 
 | Handle | Command input | Role |
 |--------|---------------|------|
-| **Rotation** | `AngleValueCommandInput` + `setManipulator(origin, xDir, yDir)` | Sets the active row’s **text angle**; syncs the Angle column |
-| **Translation** | `DistanceValueCommandInput` manipulators in sketch X/Y (or equivalent stock move handles) | Moves the **sketch point** when allowed |
+| **Rotation** | `AngleValueCommandInput` + `setManipulator` aligned to the **orientation vector** | Edits the active row’s **angular dimension** value (not a one-shot text rebuild angle) |
+| **Translation** | `DistanceValueCommandInput` manipulators in sketch X/Y | Moves the **sketch point** when unconstrained |
 
 **Rules**
 
-1. Manipulators appear at the **active row’s** sketch point (row click / last selected). Origin = point in root/component space; plane = sketch X/Y.
-2. **Angle manipulator** — always enabled when a row is active. Dragging updates `angle` → rebuilds preview text; Angle column stays in sync (two-way with the numeric field).
-3. **Move manipulator** — enabled only if the sketch point is **unconstrained** (can be moved without violating constraints / fixed-projected geometry).
-   - Detect via point constraint state / attempted `SketchPoint.move` / `Sketch.move` probe; if blocked → disable move handles and status:  
-     `Move locked — point is constrained (…reason…)`.
-   - When unconstrained: dragging moves the point; text follows because it is center-constrained to the point.
-4. Prefer stock Fusion manipulator visuals from these command inputs — same look as native Move/Rotate tools.
-5. Palette HTML does not draw the triad; the active **Command** owns the manipulators. Selecting a table row tells Python which point gets `setManipulator`.
-6. If move fails mid-drag → hard status with reason; do not leave text unconstrained.
+1. Manipulators appear at the **active row’s** sketch point. Angle manipulator plane/axes derived from the sketch plane + **orientation vector** (0° along the vector).
+2. **Angle manipulator** — enabled when a row is active **and** an orientation vector is set. Dragging updates the driving angular dimension → text rotates via constraints; Angle column syncs to the dimension parameter. **No full text recreate** for angle-only changes once constraints/dimension exist.
+3. **Move manipulator** — enabled only if the sketch point is **unconstrained**.
+   - If blocked → disable move handles; status: `Move locked — point is constrained (…reason…)`.
+   - When unconstrained: move the point; text follows via center constraint; extrude updates with the sketch.
+4. Stock Fusion manipulator visuals only.
+5. Palette does not draw the triad; the **Command** owns manipulators. Active table row retargets `setManipulator` + which dimension is driven.
+6. Move failure → hard status with reason; never drop center or angular constraints.
 
 ### Table columns
 
@@ -120,7 +132,8 @@ Use Fusion’s **native command-input manipulators** (not a custom triad):
 | `#` | Read-only index | Selection order |
 | Text | `<input type="text">` | Batch-driven or override; `font-family` = selected font |
 | Height | Length input | Default `3 mm` |
-| **Angle** | Angle input (degrees) | Default `0`; per-row |
+| **Angle** | Dimension value (degrees) | Edits driving **angular dimension** vs Orient vector; default `0` |
+| **Orient** | Vector picker / label | Selected orientation vector for that row (or “global”) |
 | **Flip** | Two icon toggles | H + V → `isHorizontalFlip` / `isVerticalFlip`; default off |
 | **Justify** | 3-way icon radio | Left / Center / Right → `HorizontalAlignments`; default **Center** |
 | **Align** | 3-way icon radio | Top / Middle / Bottom → `VerticalAlignments`; default **Middle** |
@@ -169,8 +182,11 @@ Persist in `settings.json`. Default `"theme": "light"`.
 ### Requirements
 
 - As soon as ≥1 point is selected and row fields are valid, the viewport shows the engraving result for current options.
-- Editing Text / Height / Font / Angle / Flip / Justify / Align / Distance / Direction / Operation / Target body updates the preview.
-- Manipulator angle/move and **Add Point** also refresh preview (move is immediate).
+- Editing Text / Height / Font / Flip / Justify / Align / Distance / Direction / Operation / Target body updates the preview.
+- **Angle** / angle manipulator → update angular **dimension** (text follows constraints; prefer not recreating text).
+- **Move** manipulator → move point (text follows center constraint; extrude updates).
+- Orient vector change → recreate/repair angular dimension (hard-fail with reason if impossible).
+- **Add Point** refreshes preview after commit.
 - **Cancel**, palette close, command destroy, or un-selecting a point **deletes** that row’s preview entities. Nothing left in the timeline or sketches from cancelled sessions.
 - OK commits a clean final result (see Commit strategy).
 
@@ -198,9 +214,10 @@ Palette change / selection change
 |-------|----------------|
 | Command created / palette shown | Warm font list, unit prefs, empty preview |
 | Point added / removed / Add Point | Rebuild preview for affected rows (full set OK for modest N) |
-| Text / height / font / angle edit | Debounced rebuild |
-| Angle manipulator drag | Rebuild on input changed (Fusion cadence) |
-| Move manipulator (unconstrained point) | Move point; text follows constraints; light preview refresh |
+| Text / height / font edit | Debounced rebuild (text entity) |
+| Angle field / angle manipulator | Update angular **dimension** parameter; no text recreate |
+| Orient vector change | Repair dimension to new vector; hard-fail with reason if needed |
+| Move manipulator (unconstrained point) | Move point; text follows center constraint; extrude updates |
 | Flip H / V toggle | Immediate rebuild (cheap boolean) |
 | Justify / Align change | Immediate rebuild |
 | Distance / direction / operation / target | Rebuild extrude portion (full rebuild OK v1) |
@@ -260,21 +277,29 @@ Ship under `resources/icons/flipH|flipV|justifyLeft|justifyCenter|justifyRight|a
 tin = sketch.sketchTexts.createInput2(text, height_cm)
 cx, cy = point.geometry.x, point.geometry.y
 half_w, half_h = estimate_half_extents(text, height_cm, font)
-h_align = horizontal_alignments[justify]   # left|center|right
-v_align = vertical_alignments[align]       # top|middle|bottom
-# 5th arg is characterSpacing on current API; set angle via supported angle property/path (see API_NOTES)
+h_align = horizontal_alignments[justify]
+v_align = vertical_alignments[align]
 tin.setAsMultiLine(
     adsk.core.Point3D.create(cx - half_w, cy - half_h, 0),
     adsk.core.Point3D.create(cx + half_w, cy + half_h, 0),
     h_align,
     v_align,
-    0.0)  # characterSpacing %
+    0.0)  # characterSpacing % — orientation comes from constraints/dimension, not retired angle
 tin.fontName = font_name
 tin.isHorizontalFlip = flip_h
 tin.isVerticalFlip = flip_v
-# apply angle_deg via the current Fusion angle API for multiline text
 sk_text = sketch.sketchTexts.add(tin)
+# then: center constraint to point + angular dimension to orientation vector
 ```
+
+**Orientation + angular dimension (required)**
+
+1. Resolve orientation vector into the text sketch (use as-is or `project2`).
+2. From `MultiLineTextDefinition.rectangleLines`, pick the edge that defines text baseline/orientation.
+3. `sketch.sketchDimensions.addAngularDimension(textEdge, orientLine, dimTextPoint, True)` — **driving**.
+4. Set initial dimension value to the row Angle (default `0`).
+5. Angle column / angle manipulator write `dimension.parameter.expression` (or value) — text rotates because the dimension drives the frame; **do not** call retired `SketchText.angle`.
+6. Hard-fail with reason if vector missing, projection fails, or dimension cannot be added.
 
 **Justify + Align columns**
 
@@ -295,17 +320,17 @@ sk_text = sketch.sketchTexts.add(tin)
 
 **Angle column + angle manipulator**
 
-- Store degrees in the palette; convert to radians for API.
-- Accept expressions when possible (`"45 deg"`, `"0.785 rad"`) via `unitsManager`.
-- Default `0`. Range unrestricted in v1 (normalize display to −180…180 optional).
-- Changing angle (field **or** `AngleValueCommandInput` manipulator) updates text rotation on rebuild; constraints keep center on the point (rotate about center).
-- Field ↔ manipulator stay synchronized.
+- Bound to the driving **angular dimension** vs the Orient vector (not a detached angle property).
+- Accept expressions (`"45 deg"`) via the dimension parameter.
+- Default `0` (= parallel to orientation vector).
+- Field ↔ manipulator ↔ `SketchAngularDimension` parameter stay synchronized.
+- After the dimension exists, angle edits should **not** recreate sketch text — only update the dimension (extrude/model updates with the sketch).
 
 **Move manipulator (unconstrained points only)**
 
-- When `isUnconstrained`: show stock distance/move manipulators; apply `SketchPoint.move` / `sketch.move` in sketch space.
-- When constrained: hide/disable move manipulators; angle still works; status explains why move is locked.
-- Never break the text↔point center constraint to “force” a move.
+- When `isUnconstrained`: show stock move manipulators; apply `SketchPoint.move` / `sketch.move`.
+- When constrained: disable move; angle dimension still editable; status explains move lock.
+- Never break center or angular constraints to “force” a move.
 
 **Center constraint (required — hard fail)**
 
@@ -392,10 +417,11 @@ docs/
 | Direction | Action | Payload |
 |-----------|--------|---------|
 | JS → Python | `rowUpdated` | `{ id, text, height, angle, font, flipH, flipV, justify, align }` |
+| JS → Python | `orientChanged` | `{ id\|global, entityToken }` |
 | JS → Python | `batchChanged` | `{ enabled, prefix, suffix, start, digits, step }` |
 | JS → Python | `optionsChanged` | `{ operation, distance, direction, theme, livePreview }` |
 | JS → Python | `execute` / `cancel` | — |
-| Python → JS | `setRows` | `[{ id, text, height, angle, font, flipH, flipV, justify, align, pointLabel }]` |
+| Python → JS | `setRows` | `[{ id, text, height, angle, orientLabel, font, flipH, flipV, justify, align, pointLabel }]` |
 | Python → JS | `setFonts` / `setTheme` / `setStatus` / `setTargetEnabled` | … |
 
 Any geometry-affecting message schedules a preview refresh (if live preview on).
@@ -403,9 +429,9 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 ### Command pattern
 
 1. Toolbar → start command + show palette + arm selection.
-2. Command hosts **hidden/auxiliary** `AngleValueCommandInput` + move `DistanceValueCommandInput`(s) so Fusion draws stock manipulators in the viewport.
-3. Active table row → `setManipulator` at that point; enable move only if unconstrained.
-4. Selection / palette / manipulator changes → `executePreview` rebuild (or point move + light refresh).
+2. Command hosts **hidden/auxiliary** `AngleValueCommandInput` (drives angular dim) + move `DistanceValueCommandInput`(s).
+3. Active table row → `setManipulator` at that point using Orient vector axes; enable move only if unconstrained; enable angle only if Orient is set.
+4. Angle/move manipulator changes update dimension / point — avoid full text recreate when only those change. Text/font/etc. still go through preview rebuild.
 5. OK → `execute` commit + timeline group + hide palette.
 6. Cancel / destroy → teardown preview entities; zero leftover **preview** geometry.
 
@@ -415,7 +441,9 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 
 - No points → OK disabled; preview empty.
 - Empty text / height ≤ 0 → block OK; clear that row’s preview.
-- Invalid angle expression → status error; keep last good preview.
+- No orientation vector → block angle manipulator + OK for that row; status asks for vector.
+- Invalid angle expression → status error; leave last good dimension value.
+- Angular dimension / vector projection failure → hard fail with reason.
 - **Center constraint failure → hard fail** (no unconstrained placement). Preview/OK show **why** (stage + API detail + row); OK aborts and rolls back the full transaction.
 - Cut with no intersection → text-only preview + warning; OK still attempts and rolls back on hard failure.
 - Mixed components → features in each point’s component.
@@ -445,8 +473,9 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Open palette | Toolbar command shows docked palette only |
 | Point(s) / Sketch / Target Body | Buttons add/remove **fake rows** / fake sketch/body labels |
 | **+ Add Point** | Appends a fake row; status mentions preselect + custom-graphics projection preview (no CG in dummy) |
-| Manipulator status | Mock line: `Angle ✓  Move ✓` / toggle a demo “constrained” row that shows Move locked |
-| Table | Working Text / Ht / Angle / Flip / Justify / Align / Font controls |
+| Orient | Fake “Select” sets mock vector label on rows |
+| Manipulator status | `Angle dim ✓ (needs Orient)` / `Move ✓` / constrained Move locked |
+| Table | Working Text / Ht / Angle / Orient / Flip / Justify / Align / Font |
 | Font dropdown | Seeded list; text input `font-family` follows selection |
 | Batch | Prefix/suffix/start/digits/step rewrite mock row texts |
 | Operation / Distance / Live preview / Theme | Fully interactive; Cut enables Target Body row visually |
@@ -456,15 +485,14 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 
 **Exit criteria for Phase 1:** UI matches `UI_SPEC.md` in light/dark/auto, table + batch + Add Point chrome feel stock, Ryan signs off before Phase 2.
 
-### Phase 2 — Selection + Add Point + manipulators (no extrude yet)
-- Real `SketchPoint` / sketch / body selection.
-- **Add Point** with **preselect projection** + **custom-graphics ghost**; commit point on click; create sketch if needed.
-- Wire stock **Angle** + **Move** manipulators; move only if unconstrained; sync Angle column.
-- Optional: show preview text without extrude for placement feedback.
+### Phase 2 — Selection + Add Point + Orient + manipulators (no extrude yet)
+- Real `SketchPoint` / sketch / orient vector / body selection.
+- **Add Point** with preselect + custom-graphics ghost.
+- Place text + **center constraint** + **angular dimension to Orient vector**.
+- Angle manipulator edits the dimension; Move only if unconstrained.
 
-### Phase 3 — Geometry + live preview (New Body)
-- Full builder: text + angle + flip + justify + align + center constraints + extrude New Body.
-- `PreviewSession` + `executePreview`; cancel teardown; hard-fail constraints with reason.
+### Phase 3 — Live preview extrude (New Body)
+- Extrude New Body on top of constrained/dimensioned text; cancel teardown; hard-fail with reason.
 
 ### Phase 4 — Cut + target body
 - `participantBodies`, distance/direction in preview and commit.
@@ -478,8 +506,10 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 
 - [ ] Light theme default on first launch
 - [ ] Dark and Auto follow / override correctly
-- [ ] Angle column and **angle manipulator** stay in sync; rotate about point center
-- [ ] Move manipulator enabled only when point unconstrained; moves point; text follows
+- [ ] User must select orientation vector before angle is available
+- [ ] Angle column + manipulator update the **angular dimension**; text rotates without recreate
+- [ ] Orient vector from another sketch/edge is projected; dimension failure hard-fails with reason
+- [ ] Move manipulator enabled only when point unconstrained; text follows center constraint
 - [ ] Move manipulator disabled + reason when point constrained
 - [ ] Add Point: custom-graphics ghost follows preselect projected location on sketch plane
 - [ ] Add Point: projection guide when cursor hit is off-plane
@@ -508,7 +538,8 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Topic | Decision |
 |-------|----------|
 | Join operation | Defer; Cut + New Body only |
-| **Text angle** | **Angle column + stock Fusion angle manipulator; default 0** |
+| **Text angle** | **Driving angular dimension vs user-selected orientation vector; manipulator edits the dim** |
+| **Orientation** | **Required vector select (sketch line / axis / edge→project)** |
 | **Position** | **Stock Fusion move manipulators; only if sketch point is unconstrained** |
 | **Add Point** | **Preselect + custom-graphics projected ghost; click commits in selected sketch or new sketch** |
 | **Text flip** | **Per-row H + V toggles; stock Fusion flip icons; default off** |
@@ -528,11 +559,11 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 ## Success criteria
 
 1. Stock-like table palette with Fusion icons where possible.
-2. Text centered and **associatively constrained** to each selected sketch point, at the row’s angle; constraint failure is a **hard fail** that **reports why** (no unconstrained fallback).
+2. Text centered and **associatively constrained** to each sketch point; orientation from a **driving angular dimension** to a selected vector; failures **hard-fail with reason**.
 3. Extrude Cut or New Body with optional target body for Cut.
 4. Batch sequential text with prefix/suffix.
-5. Font-aware text field + font dropdown + **angle**, **flip**, **justify**, and **align** (stock Fusion icons).
-6. **Stock Fusion transform manipulators** for angle + unconstrained point move.
+5. Font-aware text field + font dropdown + **angle dim**, **orient vector**, **flip**, **justify**, **align**.
+6. **Stock Fusion manipulators**: angle → dimension; move → unconstrained point.
 7. **Add Point** with preselect projection preview (custom graphics) into selected or new sketch.
 8. **Live preview** with clean cancel/destroy teardown.
 9. Light / Dark / Auto themes; **Light default**.
