@@ -752,7 +752,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] Flip + angle + align together; center constraint still holds (point drag moves text)
 - [ ] Moving the sketch point after OK moves the text (constraints hold)
 - [ ] Simulated / real constraint failure → hard fail, no leftover unconstrained text, status/message includes failure reason (stage + detail)
-- [ ] Live preview updates on text/height/font/angle/distance edits (debounced)
+- [ ] Live preview updates on text/height/font/angle/depth/direction edits (debounced)
 - [ ] Cancel / close leaves no sketch text or extrudes
 - [ ] Live preview off → no geometry until OK
 - [ ] Operation dropdown shows Join / Cut / Intersect / New Body with icons; **no New Component**
