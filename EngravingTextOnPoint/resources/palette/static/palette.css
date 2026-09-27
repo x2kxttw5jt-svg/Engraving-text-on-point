@@ -274,16 +274,19 @@ select:focus {
 .col-ht { width: 52px; }
 .col-angle { width: 48px; }
 .col-format { width: 84px; vertical-align: middle; }
-.col-font { width: 148px; vertical-align: middle; }
+.col-font { width: 132px; vertical-align: middle; }
 
 .font-cell {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 4px;
+  padding: 4px 0;
 }
 
 .font-cell .icon-group-style {
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   gap: 2px;
   flex: 0 0 auto;
 }

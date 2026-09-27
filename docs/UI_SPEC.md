@@ -75,7 +75,7 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - **Ht** is two-way with triad **unified scale** (same `heightParameter`); typed Ht resets triad scale factor to 1.0.
 - Text `<input>`: `style.fontFamily = selectedFont`.
 - Angle `<input>`: per-row angular dimension value vs the **global** Orient; **hidden** until Orient is set.
-- **Font** cell: **Bold (B)** + **Italic (I)** toggles grouped with the font `<select>` (Fusion Sketch Text Style + Font feel). Active B/I use accent blue border.
+- **Font** cell: **Bold (B)** + **Italic (I)** stacked vertically, grouped with the font `<select>`. Active B/I use accent blue border.
 - Font `<select>` + B/I: the row **Text** field updates live the same way — `font-family`, bold weight, and italic style.
 - No card wrappers; hairline row borders only.
 - Selection highlight uses `--bg-row-hover` / accent left bar (2px) optional.
