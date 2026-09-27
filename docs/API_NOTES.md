@@ -113,18 +113,34 @@ Extent: `setDistanceExtent(isSymmetric, ValueInput)` or `setOneSideExtent` for d
 - Planes/faces: construction plane / planar `BRepFace` when creating a sketch for Add Point.
 - Bodies: `BRepBody` for Cut participants.
 
-## Add Point
+## Add Point — preselect + custom graphics preview
 
 ```python
-# Existing sketch selected:
-sk_pt = sketch.modelToSketchSpace(click_in_model_space)
+# Placement mode (before commit):
+# 1) cmd.preSelect / preSelectMouseMove → SelectionEventArgs.selection
+#    hit_entity = selection.entity
+#    hit_point  = selection.point          # model-space point on entity
+# 2) Project hit onto target sketch plane:
+sk_pt = sketch.modelToSketchSpace(hit_point)
+sk_pt.z = 0  # ensure on sketch XY if needed
+ghost_model = sketch.sketchToModelSpace(sk_pt)
+# 3) Custom graphics ghost (replace each move — one group):
+cg = rootComp.customGraphicsGroups.add()
+# billboard point / small circle / coordinates at ghost_model
+# optional: CustomGraphicsLines from hit_point → ghost_model (projection guide)
+# 4) On click commit:
 sketch.sketchPoints.add(sk_pt)
+cg.deleteMe()  # or clear group
 
-# No sketch: create then add
-sketch = rootComp.sketches.add(plane_or_xy)  # picked plane/face or xYConstructionPlane
-sk_pt = sketch.modelToSketchSpace(click_in_model_space)
-sketch.sketchPoints.add(sk_pt)
+# No sketch selected:
+# - From preselect, resolve ConstructionPlane / planar BRepFace
+# - sketches.add(plane); then same project + CG + commit
+# - Fallback: rootComp.xYConstructionPlane
 ```
+
+- Destroy CG on `preSelectEnd` (hide ghost when leaving valid hit), cancel, destroy, or after commit.
+- Do not leave custom graphics after placement mode ends.
+- Filter preselect: set `args.isSelectable = False` when hit cannot project onto the target plane.
 
 ## Stock transform manipulators
 

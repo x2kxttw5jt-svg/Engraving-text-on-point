@@ -67,11 +67,30 @@ Icon groups use **stock Fusion glyphs** from the Sketch Text dialog family (Flip
 | Step | Behavior |
 |------|----------|
 | Click **+ Add Point** | Enter point-placement mode (click in viewport) |
-| Sketch already selected | Add `SketchPoint` at the clicked location in that sketch (`modelToSketchSpace` → `sketchPoints.add`) |
-| No sketch selected | Prompt/accept a planar face or construction plane click; **create a new sketch** on it (default: root `xYConstructionPlane` if only empty space / no plane pick). Then add the point at the click |
-| After create | New point is selected, a table row is added, live preview + manipulators focus that row |
+| Sketch already selected | Add `SketchPoint` at the **projected** click location in that sketch |
+| No sketch selected | Resolve planar face / construction plane from preselect/click; **create a new sketch** on it (fallback: root `xYConstructionPlane`). Then add the projected point |
+| After create | Clear placement custom graphics; new point selected; table row added; live preview + manipulators focus that row |
 
-Dummy UI: **+ Add Point** appends a fake row / fake sketch label only.
+Dummy UI: **+ Add Point** appends a fake row / fake sketch label only; status mentions projection preview.
+
+#### Placement preview (custom graphics + preselect)
+
+While in Add Point mode, **do not** create the sketch point until click-commit. Instead:
+
+1. **Preselect** (`Command.preSelect` / `preSelectMouseMove`) tracks the entity under the cursor and the hit point on that entity.
+2. **Project** that hit into the target sketch plane (selected sketch, or the plane that would be used if creating a sketch):
+   - Prefer projecting onto the sketch X–Y plane (`modelToSketchSpace` + lift back with `sketchToModelSpace`, or plane intersection / `project`-style math).
+   - If hovering geometry that can project onto the sketch (edges, vertices, other sketch entities), use that projected location so the ghost snaps to the true placement.
+3. **Custom graphics** draw a clear ghost at the projected position:
+   - Point marker (billboard circle / crosshair) on the sketch plane
+   - Optional short projection guide (line from hit → projected point) when the cursor is off-plane
+   - Optional faint sketch-plane hint when creating a new sketch
+4. Update graphics every preselect mouse move; **single-flight** replace prior CG group (no leaks).
+5. On **click**: create the real `SketchPoint` at the last projected sketch-space coordinate; destroy CG.
+6. On **Cancel / Esc / leaving Add Point mode**: destroy all placement CG; no point created.
+7. Style: Fusion-like accent (`#0696D7`) or theme-aware custom-graphics color; keep it sparse (marker + optional guide only).
+
+Preselect filtering: allow hits useful for placement (faces, construction planes, sketch curves/points, edges/vertices as project sources). Reject invalid hits (`isSelectable = False`) when they cannot define a projection onto the target plane.
 
 ### Built-in Fusion transform manipulators
 
@@ -229,9 +248,11 @@ Ship under `resources/icons/flipH|flipV|justifyLeft|justifyCenter|justifyRight|a
 - Allow multi-sketch; process per parent sketch under one timeline group on commit.
 - **Add Point** flow:
   1. Optional sketch selection input (`Sketches` filter).
-  2. Click placement: if sketch selected → `pt = sketch.modelToSketchSpace(clickModelPt)` → `sketch.sketchPoints.add(pt)`.
-  3. Else → resolve planar entity from click (face / construction plane); `sketches.add(plane)`; then add point. Fallback plane: `rootComp.xYConstructionPlane`.
-  4. Push new point into selection/rows; focus manipulators on it.
+  2. Enter placement mode: arm preselect + allocate a `CustomGraphicsGroup` for the ghost point.
+  3. On `preSelectMouseMove`: read hit point/entity → project onto target sketch plane → update custom-graphics marker (and projection guide if needed).
+  4. On click commit: if sketch selected → `sketch.sketchPoints.add(projectedSketchPt)`. Else → `sketches.add(plane)` (from preselect plane/face or XY) → add projected point. Clear CG.
+  5. Push new point into selection/rows; focus manipulators on it.
+  6. Teardown CG on cancel / command destroy / leaving placement mode.
 
 ### 2. Centered, angled sketch text
 
@@ -423,7 +444,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 |------|----------------|
 | Open palette | Toolbar command shows docked palette only |
 | Point(s) / Sketch / Target Body | Buttons add/remove **fake rows** / fake sketch/body labels |
-| **+ Add Point** | Appends a fake row; status `Would add point to sketch…` |
+| **+ Add Point** | Appends a fake row; status mentions preselect + custom-graphics projection preview (no CG in dummy) |
 | Manipulator status | Mock line: `Angle ✓  Move ✓` / toggle a demo “constrained” row that shows Move locked |
 | Table | Working Text / Ht / Angle / Flip / Justify / Align / Font controls |
 | Font dropdown | Seeded list; text input `font-family` follows selection |
@@ -437,7 +458,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 
 ### Phase 2 — Selection + Add Point + manipulators (no extrude yet)
 - Real `SketchPoint` / sketch / body selection.
-- **Add Point** creates sketch if needed + point at click.
+- **Add Point** with **preselect projection** + **custom-graphics ghost**; commit point on click; create sketch if needed.
 - Wire stock **Angle** + **Move** manipulators; move only if unconstrained; sync Angle column.
 - Optional: show preview text without extrude for placement feedback.
 
@@ -460,7 +481,10 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] Angle column and **angle manipulator** stay in sync; rotate about point center
 - [ ] Move manipulator enabled only when point unconstrained; moves point; text follows
 - [ ] Move manipulator disabled + reason when point constrained
-- [ ] Add Point into selected sketch at click location
+- [ ] Add Point: custom-graphics ghost follows preselect projected location on sketch plane
+- [ ] Add Point: projection guide when cursor hit is off-plane
+- [ ] Add Point: click commits point at ghost; Esc/cancel clears CG with no point
+- [ ] Add Point into selected sketch at projected location
 - [ ] Add Point with no sketch selected creates sketch (plane/XY) then point
 - [ ] Flip H / Flip V toggles use stock Fusion icons; preview and commit match
 - [ ] Justify L/C/R and Align T/M/B use stock Fusion icons; preview and commit match
@@ -486,7 +510,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Join operation | Defer; Cut + New Body only |
 | **Text angle** | **Angle column + stock Fusion angle manipulator; default 0** |
 | **Position** | **Stock Fusion move manipulators; only if sketch point is unconstrained** |
-| **Add Point** | **Button: point at click in selected sketch; else create sketch then point** |
+| **Add Point** | **Preselect + custom-graphics projected ghost; click commits in selected sketch or new sketch** |
 | **Text flip** | **Per-row H + V toggles; stock Fusion flip icons; default off** |
 | **Justify / Align** | **Per-row H (L/C/R) + V (T/M/B); stock Fusion align icons; default Center / Middle** |
 | Sketch creation | Use existing sketch of selected/Add Point target; create only when Add Point has no sketch |
@@ -509,7 +533,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 4. Batch sequential text with prefix/suffix.
 5. Font-aware text field + font dropdown + **angle**, **flip**, **justify**, and **align** (stock Fusion icons).
 6. **Stock Fusion transform manipulators** for angle + unconstrained point move.
-7. **Add Point** into selected sketch or newly created sketch.
+7. **Add Point** with preselect projection preview (custom graphics) into selected or new sketch.
 8. **Live preview** with clean cancel/destroy teardown.
 9. Light / Dark / Auto themes; **Light default**.
 

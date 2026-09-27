@@ -26,7 +26,7 @@
       }
       if (statusEl) {
         statusEl.textContent =
-          "Would add point to selected sketch (or create sketch) — dummy UI";
+          "Would place point via preselect + custom-graphics projection ghost — dummy UI";
       }
       if (manipStatus) {
         manipStatus.textContent =
