@@ -27,11 +27,15 @@
   const dimDyWrap = document.getElementById("dim-dy-wrap");
   const dimAngleWrap = document.getElementById("dim-angle-wrap");
   const thAngle = document.getElementById("th-angle");
+  const tbody = document.getElementById("text-tbody");
 
-  let mockRowCount = 0;
+  const FONTS = ["Arial", "Artifakt Element", "Courier New", "Times New Roman"];
+
   let mockOrient = false;
   let mockRef = false;
   let mockRefDims = false;
+  let activeRowId = null;
+  let rows = [];
 
   function setHidden(el, hidden) {
     if (!el) return;
@@ -44,6 +48,9 @@
     setHidden(dimAngleWrap, !mockOrient);
     setHidden(frameDimsRow, !(mockRefDims || mockOrient));
     setHidden(thAngle, !mockOrient);
+    document.querySelectorAll(".cell-angle").forEach(function (td) {
+      setHidden(td, !mockOrient);
+    });
   }
 
   function syncApplyRefVisibility() {
@@ -51,13 +58,234 @@
   }
 
   function syncOkVisibility() {
-    setHidden(btnOk, mockRowCount < 1);
+    setHidden(btnOk, rows.length < 1);
   }
 
   function syncTargetVisibility() {
     const op = document.querySelector('input[name="op"]:checked');
     const cut = op && op.value === "cut";
     setHidden(targetRow, !cut);
+  }
+
+  function syncPointsCount() {
+    if (pointsCount) {
+      pointsCount.textContent = rows.length + " selected";
+    }
+  }
+
+  function iconToggle(label, pressed, title) {
+    return (
+      '<button type="button" class="icon-btn" aria-pressed="' +
+      (pressed ? "true" : "false") +
+      '" title="' +
+      title +
+      '">' +
+      label +
+      "</button>"
+    );
+  }
+
+  function iconRadio(label, checked, title) {
+    return (
+      '<button type="button" class="icon-btn" aria-checked="' +
+      (checked ? "true" : "false") +
+      '" role="radio" title="' +
+      title +
+      '">' +
+      label +
+      "</button>"
+    );
+  }
+
+  function fontOptions(selected) {
+    return FONTS.map(function (f) {
+      return (
+        '<option value="' +
+        f +
+        '" style="font-family:' +
+        f +
+        '"' +
+        (f === selected ? " selected" : "") +
+        ">" +
+        f +
+        "</option>"
+      );
+    }).join("");
+  }
+
+  function renderRows() {
+    if (!tbody) return;
+    if (!rows.length) {
+      tbody.innerHTML =
+        '<tr class="empty"><td colspan="9">Select sketch points to add rows</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows
+      .map(function (row, i) {
+        var active = row.id === activeRowId ? " is-active" : "";
+        return (
+          '<tr class="data-row' +
+          active +
+          '" data-id="' +
+          row.id +
+          '">' +
+          '<td class="col-idx">' +
+          (i + 1) +
+          "</td>" +
+          '<td class="col-text"><input type="text" class="row-text" value="' +
+          row.text +
+          '" style="font-family:' +
+          row.font +
+          '" /></td>' +
+          '<td class="col-ht"><input type="text" class="row-ht" value="' +
+          row.height +
+          '" /></td>' +
+          '<td class="col-angle cell-angle"' +
+          (mockOrient ? "" : " hidden") +
+          '><input type="text" class="row-angle" value="' +
+          row.angle +
+          '" /></td>' +
+          '<td class="col-orient"><span class="muted">' +
+          row.orient +
+          "</span></td>" +
+          '<td class="col-flip"><span class="icon-group">' +
+          iconToggle("H", row.flipH, "Flip horizontal") +
+          iconToggle("V", row.flipV, "Flip vertical") +
+          "</span></td>" +
+          '<td class="col-justify"><span class="icon-group" role="radiogroup">' +
+          iconRadio("L", row.justify === "left", "Justify left") +
+          iconRadio("C", row.justify === "center", "Justify center") +
+          iconRadio("R", row.justify === "right", "Justify right") +
+          "</span></td>" +
+          '<td class="col-align"><span class="icon-group" role="radiogroup">' +
+          iconRadio("T", row.align === "top", "Align top") +
+          iconRadio("M", row.align === "middle", "Align middle") +
+          iconRadio("B", row.align === "bottom", "Align bottom") +
+          "</span></td>" +
+          '<td class="col-font"><select class="row-font">' +
+          fontOptions(row.font) +
+          "</select></td>" +
+          "</tr>"
+        );
+      })
+      .join("");
+
+    tbody.querySelectorAll(".data-row").forEach(function (tr) {
+      tr.addEventListener("click", function (e) {
+        if (e.target.closest("button, input, select")) return;
+        activeRowId = tr.getAttribute("data-id");
+        renderRows();
+      });
+    });
+
+    tbody.querySelectorAll(".icon-btn").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var pressed = btn.getAttribute("aria-pressed");
+        if (pressed !== null) {
+          btn.setAttribute(
+            "aria-pressed",
+            pressed === "true" ? "false" : "true"
+          );
+          return;
+        }
+        var group = btn.parentElement;
+        if (!group) return;
+        group.querySelectorAll(".icon-btn").forEach(function (b) {
+          b.setAttribute("aria-checked", "false");
+        });
+        btn.setAttribute("aria-checked", "true");
+      });
+    });
+
+    tbody.querySelectorAll(".row-font").forEach(function (sel) {
+      sel.addEventListener("change", function () {
+        var tr = sel.closest("tr");
+        var textInput = tr && tr.querySelector(".row-text");
+        if (textInput) textInput.style.fontFamily = sel.value;
+      });
+    });
+  }
+
+  function addRow(partial) {
+    var id = "r" + (rows.length + 1) + "-" + Date.now().toString(36);
+    var row = Object.assign(
+      {
+        id: id,
+        text: "PN-001",
+        height: "3 mm",
+        angle: "0 deg",
+        orient: mockOrient ? "XY edge" : "—",
+        flipH: false,
+        flipV: false,
+        justify: "center",
+        align: "middle",
+        font: "Arial",
+      },
+      partial || {}
+    );
+    rows.push(row);
+    activeRowId = row.id;
+    syncPointsCount();
+    syncOkVisibility();
+    renderRows();
+  }
+
+  function seedSampleRows() {
+    mockOrient = true;
+    mockRef = true;
+    mockRefDims = true;
+
+    if (orientLabel) orientLabel.textContent = "XY construction";
+    if (refLabel) refLabel.textContent = "Origin (sample)";
+    var dx = document.getElementById("dim-dx");
+    var dy = document.getElementById("dim-dy");
+    var ang = document.getElementById("dim-angle");
+    if (dx) dx.value = "12 mm";
+    if (dy) dy.value = "5 mm";
+    if (ang) ang.value = "0 deg";
+
+    rows = [];
+    addRow({
+      text: "PN-001",
+      height: "3 mm",
+      angle: "0 deg",
+      orient: "XY edge",
+      justify: "center",
+      align: "middle",
+      font: "Arial",
+    });
+    addRow({
+      text: "PN-002",
+      height: "4 mm",
+      angle: "15 deg",
+      orient: "XY edge",
+      flipH: true,
+      justify: "left",
+      align: "middle",
+      font: "Artifakt Element",
+    });
+    addRow({
+      text: "REV A",
+      height: "2.5 mm",
+      angle: "-5 deg",
+      orient: "XY edge",
+      flipV: true,
+      justify: "center",
+      align: "top",
+      font: "Courier New",
+    });
+    activeRowId = rows[0].id;
+    renderRows();
+
+    if (manipStatus) {
+      manipStatus.textContent =
+        "Manipulators: Angle dim ✓ · Move ✓ · Scale→Ht ✓ (sample row 1)";
+    }
+    if (statusEl) {
+      statusEl.textContent =
+        "Sample points loaded for UI review — dummy UI (not Fusion geometry)";
+    }
   }
 
   if (btnRef) {
@@ -114,7 +342,6 @@
     });
   });
 
-  // Dummy: after debounce, auto-apply driven → driving, then solid preview.
   function mockTriadSettled(dx, dy, angle) {
     var dxEl = document.getElementById("dim-dx");
     var dyEl = document.getElementById("dim-dy");
@@ -146,7 +373,11 @@
       if (orientLabel) orientLabel.textContent = "Mock vector";
       var ang = document.getElementById("dim-angle");
       if (ang) ang.value = "0 deg";
+      rows.forEach(function (r) {
+        if (r.orient === "—") r.orient = "Mock vector";
+      });
       syncFrameDimsVisibility();
+      renderRows();
       if (manipStatus) {
         manipStatus.textContent =
           "Manipulators: Angle dim ✓ · Move ✓ · Scale→Ht ✓";
@@ -158,7 +389,6 @@
     });
   }
 
-  // Dummy triad gesture: click manip status → settle (auto-apply + optional scale→Ht).
   if (manipStatus) {
     manipStatus.style.cursor = "pointer";
     manipStatus.title =
@@ -176,14 +406,13 @@
     });
   }
 
-  // Dummy UI: Add Point appends a fake selection count only.
   if (btnAddPoint) {
     btnAddPoint.addEventListener("click", function () {
-      mockRowCount += 1;
-      if (pointsCount) {
-        pointsCount.textContent = mockRowCount + " selected";
-      }
-      syncOkVisibility();
+      var n = rows.length + 1;
+      addRow({
+        text: "PN-" + String(n).padStart(3, "0"),
+        orient: mockOrient ? "XY edge" : "—",
+      });
       if (statusEl) {
         statusEl.textContent =
           "Would place point via preselect + custom-graphics projection ghost — dummy UI";
@@ -198,11 +427,11 @@
   var btnPoints = document.getElementById("btn-points");
   if (btnPoints) {
     btnPoints.addEventListener("click", function () {
-      mockRowCount += 1;
-      if (pointsCount) {
-        pointsCount.textContent = mockRowCount + " selected";
-      }
-      syncOkVisibility();
+      var n = rows.length + 1;
+      addRow({
+        text: "PT-" + String(n).padStart(3, "0"),
+        orient: mockOrient ? "XY edge" : "—",
+      });
       if (statusEl) {
         statusEl.textContent = "Mock point selection — dummy UI";
       }
@@ -220,7 +449,6 @@
     document.documentElement.setAttribute("data-theme", resolved);
   }
 
-  // Default: light
   applyTheme(themeSelect.value || "light");
 
   themeSelect.addEventListener("change", function () {
@@ -236,7 +464,7 @@
   });
 
   function syncPreviewStatus() {
-    if (!statusEl) return;
+    if (!statusEl || rows.length) return;
     statusEl.textContent = livePreview.checked
       ? ""
       : "Preview off — OK will create features";
@@ -244,12 +472,12 @@
 
   livePreview.addEventListener("change", syncPreviewStatus);
 
-  // Initial visibility from conditions (hide, don't grey).
+  // Seed sample points so the table/chrome are reviewable on open.
+  seedSampleRows();
   syncTargetVisibility();
   syncApplyRefVisibility();
   syncFrameDimsVisibility();
   syncOkVisibility();
-  syncPreviewStatus();
 
   window.fusionJavaScriptHandler = {
     handle: function (action, data) {
