@@ -1,1 +1,2 @@
-# Angle + distance command-input binding — Phase 2.
+# TriadCommandInput binding + delta-matrix sketch.move — Phase 2.
+# See package README: fast path on inputChanged; no executePreview; no solids.

@@ -85,7 +85,7 @@ sketch_transform_frame/           # reusable — no dependency on EngravingTextO
   project.py                      # associative project2 helpers
   apply_frame.py                  # apply Ref H/V + Orient angular dims to a target point
   drag_cadence.py                 # driven-during-drag / restore-driving
-  manipulators.py                 # wire AngleValue + DistanceValue command inputs
+  manipulators.py                 # TriadCommandInput; delta matrix from transform/lastTransform
   visibility.py                   # keep dims visible (preview + drag)
   errors.py                       # staged hard-fail errors with reasons
   README.md                       # how to reuse in another add-in
@@ -103,11 +103,11 @@ frame = TransformFrame.apply(
     angle_value="0 deg",
 )
 frame.ensure_visible(sketch)
-frame.begin_translate_drag()   # H/V (+ angle if included in translate set) → driven
-frame.end_translate_drag()     # write values → driving
-frame.begin_rotate_drag()      # angular dim → driven during rotate (same lag avoidance)
-frame.end_rotate_drag()
-frame.bind_manipulators(angle_input, dist_x_input, dist_y_input)
+frame.bind_triad(triad_input)  # TriadCommandInput — translate + rotate, no scale
+# On triad inputChanged (host command):
+frame.on_triad_changed(triad)  # dims driven once/gesture; sketch.move(text, delta_matrix)
+# On drag end:
+frame.on_triad_settled()       # restore driving dims from pose; no solid regen
 ```
 
 This engraving add-in **calls** the module; it does not reimplement projection/dim/drag logic inline.
@@ -172,26 +172,24 @@ Angle is handled **inside the reusable transform-frame module** the same way as 
 
 Missing Orient → angle manipulator + OK blocked for engraving rows that require it. Hard-fail with reason on project/dim failure.
 
-### Built-in Fusion transform manipulators
+### Transform manipulators — `TriadCommandInput`
 
-Use Fusion’s **native command-input manipulators** (not a custom triad):
+Use Fusion’s stock **`TriadCommandInput`** for translation + rotation (hide scaling). Owned by the session **Command**; palette does not draw the triad.
 
-| Handle | Command input | Role |
-|--------|---------------|------|
-| **Rotation** | `AngleValueCommandInput` + `setManipulator` aligned to the **orientation vector** | Edits the active row’s **angular dimension** value (not a one-shot text rebuild angle) |
-| **Translation** | `DistanceValueCommandInput` manipulators in sketch X/Y | Edits **H/V dims to Ref** when present; else free-moves the point when unconstrained |
+| Control | Triad usage | Fast path (`inputChanged`) |
+|---------|-------------|----------------------------|
+| **Translate** | X/Y (sketch plane); hide Z or lock to plane as needed | `sketch.move` text box (+ point) by delta matrix — **no rebuild** |
+| **Rotate** | Rotation about sketch normal (typically Z of triad aligned to sketch) | `sketch.move` text `rectangleLines` / point set by rotation matrix about point — **no rebuild** |
+| **Scale** | **Hidden** (`hideAllScaling`) | — |
 
 **Rules**
 
-1. Manipulators appear at the **active row’s** sketch point. Angle manipulator plane/axes derived from the sketch plane + **orientation vector** (0° along the vector).
-2. **Angle manipulator** — enabled when a row is active **and** an orientation vector is set. Dragging updates the driving angular dimension → text rotates via constraints; Angle column syncs to the dimension parameter. **No full text recreate** for angle-only changes once constraints/dimension exist.
-3. **Move manipulator**
-   - **With optional Ref + H/V dims:** translate the point; keep dimension **lines** visible/updating. Use the **driven-during-drag** cadence below so the solver stays light.
-   - **Without Ref:** enabled only if the sketch point is freely **unconstrained**; otherwise status `Move locked — point is constrained (…reason…)`.
-   - Never permanently drop center constraint, Orient angular dim, or Ref H/V dims.
-4. Stock Fusion manipulator visuals only.
-5. Palette does not draw the triad; the **Command** owns manipulators. Active table row retargets `setManipulator` + which dimension is driven.
-6. Move failure → hard status with reason; restore any temporarily driven dims to driving on abort when possible.
+1. Place triad at active row’s sketch point; orient axes from sketch plane (+ Orient vector when set).
+2. On **`inputChanged`** for the triad: compute `delta = currentTransform * inverse(lastTransform)` (use `transform` / `lastTransform` / `lastChangeMade`) → apply to **existing** sketch entities via matrix move. Immediate viewport feedback; **do not** call `executePreview` here.
+3. During triad drag: frame dims → **driven** (lag avoidance); stay **visible**; do not recreate text or extrude.
+4. On drag settle: restore driving dims from measured pose; sync Angle / H / V UI; mark `needsSolidRegen` if solids exist — still **no** solid regen until execute (or explicit deferred preview — see architecture).
+5. Without Ref / when point locked: disable translate handles or hard status with reason; rotate still available when Orient angle dim exists.
+6. Never permanently drop center constraint or frame dims.
 
 #### Drag cadence (avoid lag) — driven ↔ driving (`drag_cadence.py`)
 
@@ -263,66 +261,71 @@ Persist in `settings.json`. Default `"theme": "light"`.
 
 ---
 
-## Live preview
+## Low-latency interaction architecture
+
+Split **fast visual positioning** from **heavy solid regen** so triad drags never jitter from extrude/cut rebuilds.
+
+### Two paths
+
+| Path | When | What runs | Must not do |
+|------|------|-----------|-------------|
+| **A — Fast pose** | `Command.inputChanged` on `TriadCommandInput` (every drag tick) | Frame dims → driven; `sketch.move(..., matrix)` on **existing** sketch text box (+ point as needed); update triad; keep dims visible | `executePreview`, create/delete text, create/delete extrude/cut, `computeAll` |
+| **B — Solid regen** | `Command.execute` (OK) only for solids | Build/rebuild **extrude or cut** from current sketch text pose; timeline group | Per-tick solid work |
+
+`executePreview` is **deferred / unused for triad motion**. Use it only when a definition change truly needs a Fusion preview tick (optional): e.g. first placement of sketch text after point select, or text/font/height/flip/justify changes — **never** for triad translate/rotate.
+
+```
+Triad drag tick (inputChanged)
+  → begin_translate/rotate_drag (dims driven, once per gesture)
+  → delta matrix from triad.transform vs lastTransform
+  → sketch.move(existing text entities, delta)     # immediate feedback
+  → (no executePreview)
+
+Triad drag end
+  → end_*_drag: write H/V/angle dim values → driving again
+  → sync palette Angle / offsets
+  → flag needsSolidRegen = true                  # solids still stale OK
+
+Definition change (text/font/height/flip/justify/orient/ref apply)
+  → debounced: ensure sketch text + frame dims exist / update in place
+  → still no extrude/cut until execute
+
+OK (execute)
+  → ensure sketch pose + driving dims committed
+  → create/update Extrude Cut | New Body once
+  → timeline group
+
+Cancel / destroy
+  → teardown preview sketch text / temp solids if any; keep user Add Point + applied Ref dims per earlier decision
+```
 
 ### Requirements
 
-- As soon as ≥1 point is selected and row fields are valid, the viewport shows the engraving result for current options.
-- **Transform-frame dimensions (Ref H/V and Orient angle, when applied) are visible for the whole live-preview session** — not only after OK. Same for drag (driven) and idle (driving).
-- Editing Text / Height / Font / Flip / Justify / Align / Distance / Direction / Operation / Target body updates the preview.
-- **Angle** / angle manipulator → update angular **dimension** (text follows constraints; prefer not recreating text).
-- **Move** manipulator → move point (text follows center constraint; extrude updates).
-- Orient vector change → recreate/repair angular dimension (hard-fail with reason if impossible).
-- **Add Point** refreshes preview after commit.
-- **Cancel**, palette close, command destroy, or un-selecting a point **deletes** that row’s preview entities. Nothing left in the timeline or sketches from cancelled sessions.
-- OK commits a clean final result (see Commit strategy).
+- Triad gives immediate sketch-text motion; **extrusion/cut appears/updates only on OK (`execute`)**.
+- Optional “soft” live solid preview may be added later behind an explicit setting — **default off** for low latency. Checkbox **Live preview** means live **sketch text + visible frame dims**, not live solid regen.
+- Transform-frame dims (H/V + angle) visible for the whole session (idle + driven drag).
+- Orient / Ref apply goes through `sketch_transform_frame`; hard-fail with reason on failure.
+- No hover-path geometry work during Add Point preselect (CG only).
 
-### Architecture
+### Cadence table
 
-Host a Fusion **Command** for the session (palette is the UI). Preview runs through the command’s **`executePreview`** path so Fusion handles rollback of preview features between ticks.
+| Event | Path | Action |
+|-------|------|--------|
+| Triad translate/rotate tick | **A** | Matrix-move existing sketch text; dims driven; no preview/execute solids |
+| Triad drag end | **A→settle** | Restore driving dims; sync UI; mark solids stale |
+| Point select / Add Point commit | Setup | Create sketch text + center constraint + `TransformFrame.apply` once |
+| Text / height / font / flip / justify | Setup (debounced) | Update/recreate **sketch text only** as needed; no solid |
+| Orient / Ref apply | Setup | Frame project + dims; no solid |
+| Distance / direction / operation / target | UI state only until OK | Stored for execute |
+| Theme | None | No geometry |
+| OK | **B** | Extrude/cut once from current sketch |
+| Cancel | Teardown | Remove session sketch text / uncommitted solids |
 
-```
-Palette change / selection change
-  → debounce (~120–200 ms for text typing; immediate for point add/remove)
-  → mark command inputs dirty / fire preview
-  → executePreview:
-        destroy prior preview set for this command tick (Fusion rolls back)
-        for each row: create sketch text (centered, angled) + constraints
-        for each row: extrude Cut | New Body (participantBodies if Cut)
-  → execute (OK):
-        same builder with commit=True (or accept last preview — prefer explicit rebuild)
-  → destroy / cancel:
-        no commit; all preview geometry gone
-```
+### Preview vs final (solids)
 
-### Cadence / performance rules
-
-| Event | Preview action |
-|-------|----------------|
-| Command created / palette shown | Warm font list, unit prefs, empty preview |
-| Point added / removed / Add Point | Rebuild preview for affected rows (full set OK for modest N) |
-| Text / height / font edit | Debounced rebuild (text entity) |
-| Angle field / angle manipulator | Update angular **dimension** parameter; no text recreate |
-| Orient vector change | Repair dimension to new vector; hard-fail with reason if needed |
-| Move manipulator (no Ref dims) | Move point; text follows center constraint; throttle extrude refresh |
-| Move manipulator (with Ref H/V dims) | Dims → driven on drag start; move point; dims → driving on drag end |
-| Flip H / V toggle | Immediate rebuild (cheap boolean) |
-| Justify / Align change | Immediate rebuild |
-| Distance / direction / operation / target | Rebuild extrude portion (full rebuild OK v1) |
-| Theme-only change | **No** geometry rebuild |
-| Mouse move during point pick (hover) | **No** rebuild — only on selection accept |
-
-Do **not** call heavy ensure/compute paths from hover handlers. Keep a single `PreviewSession` object holding row → entity tokens; clear on cancel/destroy.
-
-### Preview vs final
-
-- Preview and final use the **same builder** (`lib/text_on_point.py` + `lib/extrude_text.py`) with a `preview: bool` flag only for naming (`_Preview` suffix on features/sketches if needed) and for skipping timeline group until commit.
-- Prefer creating text in the **existing sketch** of each point for both preview and final so constraints stay associative.
-- Cut preview may be expensive; if Cut preview fails (no intersection yet), show sketch text only + status “Cut preview pending — adjust distance/target”.
-
-### Live preview toggle
-
-Checkbox **Live preview** (default **on**). When off: no geometry until OK (still validates inputs). Persist in `settings.json` as `"livePreview": true`.
+- Sketch text + constraints + frame dims are authored during the command (fast path + setup).
+- **Solids only in `execute`** — same builder `lib/extrude_text.py`, commit path only.
+- Prefer text in the point’s existing sketch so constraints stay associative.
 
 ---
 
@@ -529,11 +532,11 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 ### Command pattern
 
 1. Toolbar → start command + show palette + arm selection.
-2. Command hosts **hidden/auxiliary** `AngleValueCommandInput` (drives angular dim) + move `DistanceValueCommandInput`(s).
-3. Active table row → `setManipulator` at that point using Orient vector axes; enable move only if unconstrained; enable angle only if Orient is set.
-4. Angle/move manipulator changes update dimension / point — avoid full text recreate when only those change. Text/font/etc. still go through preview rebuild.
-5. OK → `execute` commit + timeline group + hide palette.
-6. Cancel / destroy → teardown preview entities; zero leftover **preview** geometry.
+2. Command hosts **`TriadCommandInput`** (translate + rotate; scaling hidden).
+3. Active row → triad at point; `inputChanged` → matrix-move existing sketch text (path A); **no** `executePreview` on triad ticks.
+4. Definition changes (text/font/…) update sketch text only; solids wait for OK.
+5. OK → `execute` extrude/cut once (path B) + timeline group.
+6. Cancel / destroy → teardown session sketch text / uncommitted solids per policy.
 
 ---
 
@@ -586,14 +589,14 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 
 **Exit criteria for Phase 1:** UI matches `UI_SPEC.md` in light/dark/auto, table + batch + Add Point chrome feel stock, Ryan signs off before Phase 2.
 
-### Phase 2 — `sketch_transform_frame` + selection + Add Point (no extrude yet)
-- Implement standalone **`sketch_transform_frame`** (Ref H/V + Orient angle + visibility + drag cadence + manipulators) with its own README.
-- Wire engraving to the frame; no duplicated project/dim logic in engraving modules.
-- Real selection + Add Point CG ghost; text + center constraint; frame applies Orient angle (+ optional Ref).
-- Manipulators via `frame.bind_manipulators`.
+### Phase 2 — `sketch_transform_frame` + Triad fast path (no solids)
+- Implement **`sketch_transform_frame`** with `TriadCommandInput`, matrix `sketch.move` on `inputChanged`, driven-during-drag, visibility.
+- Selection + Add Point CG; sketch text + center constraint; frame Ref/Orient dims.
+- **No extrude/cut** in this phase — prove jitter-free triad motion.
 
-### Phase 3 — Live preview extrude (New Body)
-- Extrude New Body on top of constrained/dimensioned text; cancel teardown; hard-fail with reason.
+### Phase 3 — Solids on `execute` only
+- Extrude Cut / New Body in **`execute`** from current sketch pose; never on triad ticks.
+- Optional deferred soft solid preview remains off by default.
 
 ### Phase 4 — Cut + target body
 - `participantBodies`, distance/direction in preview and commit.
@@ -608,12 +611,12 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] Light theme default on first launch
 - [ ] Dark and Auto follow / override correctly
 - [ ] User must select orientation vector before angle is available
-- [ ] Angle column + manipulator update the **angular dimension**; text rotates without recreate
-- [ ] Orient vector is **associatively projected** onto the text sketch; dimension is to the **projected** line
-- [ ] Moving/changing the source orientation vector updates the projected line (linked); text orientation relationship holds
-- [ ] Unlinked projection or dimension-to-source (not projected) is not allowed; failures hard-fail with reason
-- [ ] Move manipulator enabled only when point unconstrained; text follows center constraint
-- [ ] Move manipulator disabled + reason when point constrained
+- [ ] `TriadCommandInput` translate/rotate moves **existing** sketch text via matrix on `inputChanged` (no rebuild)
+- [ ] Triad ticks do **not** call `executePreview` or create/delete extrude/cut
+- [ ] Extrude/cut runs only in `execute` (OK)
+- [ ] Angle column + triad rotate settle update angular dim; no SketchText.angle API
+- [ ] Orient associatively projected; dim to projected line; hard-fail if not
+- [ ] Translate with Ref: driven-during-drag → driving on settle; dims visible; no jitter/flicker
 - [ ] Add Point: custom-graphics ghost follows preselect projected location on sketch plane
 - [ ] Add Point: projection guide when cursor hit is off-plane
 - [ ] Add Point: click commits point at ghost; Esc/cancel clears CG with no point

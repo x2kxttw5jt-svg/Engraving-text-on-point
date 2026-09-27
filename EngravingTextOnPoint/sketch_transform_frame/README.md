@@ -4,11 +4,12 @@ Standalone Fusion 360 helper for **associative reference frames** on a sketch po
 
 - Optional **Ref point** → linked project + driving **H/V** distance dimensions  
 - Optional **Orient vector** → linked project + driving **angular** dimension to a caller-supplied edge/line  
-- Stock **manipulators** (angle + translate)  
+- Stock **`TriadCommandInput`** for translate + rotate (no scale)  
+- **Fast path:** matrix `sketch.move` of existing entities on `inputChanged` (no rebuild)  
 - **Driven-during-drag / driving-on-stop** to avoid solver lag  
-- Dimension **visibility** during live preview  
+- Dimension **visibility** during interaction  
 
-This package must **not** import application-specific add-in code (e.g. EngravingTextOnPoint). Copy the whole folder into another add-in to reuse.
+This package must **not** import application-specific add-in code. Copy the folder to reuse.
 
 ## Public API (planned)
 
@@ -18,42 +19,48 @@ from sketch_transform_frame import TransformFrame
 frame = TransformFrame.apply(
     sketch,
     target_point,
-    ref_point_entity=ref,          # optional
-    orient_vector_entity=orient,   # optional
-    angle_entity=text_edge,        # required if orient set — line to angle against projected orient
+    ref_point_entity=ref,
+    orient_vector_entity=orient,
+    angle_entity=text_edge,
     angle_value="0 deg",
 )
 frame.ensure_visible(sketch)
-frame.bind_manipulators(angle_input, dist_x_input, dist_y_input)
+frame.bind_triad(triad_input)  # hide scaling; sketch-plane translate + normal rotate
 
-# translate gesture
-frame.begin_translate_drag()
-# ... move point ...
-frame.end_translate_drag()
+# Host command inputChanged when triad changes:
+frame.on_triad_changed(triad)
+#  - first tick of gesture: dims → driven
+#  - delta = transform * inv(lastTransform)
+#  - sketch.move(tracked_entities, delta)   # existing text/point — immediate
+#  - never calls executePreview / extrude
 
-# rotate gesture
-frame.begin_rotate_drag()
-# ... rotate via angle manipulator ...
-frame.end_rotate_drag()
+# Host detects drag settle (mouseup / idle):
+frame.on_triad_settled()
+#  - write H/V/angle from pose → dims → driving again
 ```
+
+## Low-latency contract
+
+| Allowed on triad tick | Forbidden on triad tick |
+|----------------------|-------------------------|
+| `sketch.move` existing entities | `executePreview` |
+| Toggle owned dims driven | Create/delete SketchText |
+| Update triad pose | Create/delete Extrude/Cut |
+| Keep dims visible | `computeAll` / full feature rebuild |
+
+Host add-ins regenerate solids only in **`Command.execute`**.
 
 ## Modules
 
 | File | Role |
 |------|------|
-| `project.py` | Associative `project2` helpers; hard-fail reasons |
+| `project.py` | Associative `project2` helpers |
 | `apply_frame.py` | Create H/V + angular dims; return `TransformFrame` |
-| `drag_cadence.py` | Toggle `isDriving` for translate/rotate gestures |
-| `manipulators.py` | Sync command inputs ↔ dimension parameters |
-| `visibility.py` | Keep frame dims visible during preview/drag |
-| `errors.py` | Staged errors with reason strings |
+| `drag_cadence.py` | Driven/driving toggle for translate & rotate gestures |
+| `manipulators.py` | Triad bind + delta-matrix application |
+| `visibility.py` | Keep frame dims visible |
+| `errors.py` | Staged hard-fail errors |
 
 ## Hard-fail stages (examples)
 
-`ref dims blocked`, `ref associative project failed`, `horizontal dimension failed`, `vertical dimension failed`, `orient vector missing`, `associative project failed`, `projected line unavailable`, `angular dimension failed`, `restore driving dims failed`.
-
-## Notes
-
-- There is **no** SketchText placement angle API — angle is always a sketch angular dimension.  
-- Do not leave dimensions driven after a gesture ends.  
-- Fusion API property names (`isDriving`, `project2` link flag) must be verified on the target build.
+`ref dims blocked`, `ref associative project failed`, `horizontal dimension failed`, `vertical dimension failed`, `orient vector missing`, `associative project failed`, `projected line unavailable`, `angular dimension failed`, `restore driving dims failed`, `sketch move failed`.
