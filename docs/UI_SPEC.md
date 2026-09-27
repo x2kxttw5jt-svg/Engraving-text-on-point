@@ -68,8 +68,8 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - **Skinny dock scaling:** when the palette gets narrow (~400px / 320px / 260px), scale UI font and control heights down (container queries) so chrome doesn’t crush — prefer readable smaller type over squished 12px.
 - **Ht column floor:** Ht keeps a hard ~56px width in portrait/narrow; the table scrolls horizontally instead of letting Ht collapse into Text.
 - **Rows are resizable** — drag the right-edge handle (or the Text field’s vertical resize) to grow/shrink row height; Text textarea autosizes with content.
-- Columns: `#` | Text | Ht | **Position** | **Format** | Font. (no Orient column — Orient is global above the table)
-- **Position** (one column), compact trial: **Pos X** / **Pos Y** (from Ref) stacked, **Angle** (vs Orient) below — same rhythm as the Format stack. Column shows when Ref and/or Orient apply; Pos X/Y or Angle hide until their source is set.
+- Columns: `#` | Text | Ht | **Position** | **Format** | Font. (no Orientation column — Orientation is global above the table)
+- **Position** (one column): **Pos X** / **Pos Y** (from Ref) stacked, **Angle** (vs Orientation) below — labels tight to inputs. Column shows when Ref and/or Orientation apply; Pos X/Y or Angle hide until their source is set.
 - **Format** (one column), stacked like Fusion SketchText:
   1. Flip H | Flip V (mirrored-triangle icons)
   2. Justify L | C | R (text-line icons)
@@ -78,8 +78,8 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - Dummy uses SVG stand-ins under `resources/palette/static/icons/`; prefer stock Fusion PNGs when packaging.
 - **Ht** is two-way with triad **unified scale** (same `heightParameter`); typed Ht resets triad scale factor to 1.0.
 - Text `<input>`: `style.fontFamily = selectedFont`.
-- **Position** column (one cell): stacked `Pos X` / `Pos Y` (offsets from Ref) and `Angle` (vs global Orient) — same driving sketch dimensions as the triad.
-- Position column: **hidden** until Ref and/or Orient is set. Pos X/Y rows appear when Ref is selected (dims auto-apply); Angle when Orient is set.
+- **Position** column (one cell): stacked `Pos X` / `Pos Y` (offsets from Ref) and `Angle` (vs global Orientation) — same driving sketch dimensions as the triad.
+- Position column: **hidden** until Ref and/or Orientation is set. Pos X/Y rows appear when Ref is selected (dims auto-apply); Angle when Orientation is set.
 - If a sketch point is **already constrained** (XY locked): keep Pos X/Y inputs visible but **greyed out / disabled** — not editable via GUI or triad translate. Free points stay editable.
 - **Font** cell: **Bold (B)** + **Italic (I)** stacked vertically, grouped with the font `<select>`. Active B/I use accent blue border.
 - Font `<select>` + B/I: the row **Text** field updates live the same way — `font-family`, bold weight, and italic style.
@@ -93,7 +93,8 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - **Direction** — `Positive` / `Negative` / `Symmetric` along sketch normal (supports positive Join / Intersect / New Body).
 - **Live solid preview** (default checked): Fusion bool row — label left, checkbox right. Controls **extrude/cut solid preview** after triad settle → auto-apply → `doExecutePreview`. Details in tooltip only (no parenthetical chrome). Sketch / triad still update live regardless.
 - **Snap** dropdowns: linear + angular increments; label hint `Alt = free`.
-- When solid preview unchecked: triad / sketch still update; skip settle `doExecutePreview`; OK commits solids.
+- When solid preview unchecked: triad / sketch still update; skip settle `doExecutePreview`; OK/Apply commit solids.
+- **Batch sequence** (bool row): when on, shows Prefix / Suffix / Start / Digits / Step and a live example. Rewrites each row’s Text as `Prefix + padded number + Suffix` in table order. Manual Text edits override that row until Batch is toggled off→on.
 
 ## Selection rows
 
@@ -105,12 +106,15 @@ Icon button (16×16) + label + count badge (plain text, not pill chrome).
 |---------|------------|
 | **Target Body** | Operation = Join, Cut, or Intersect |
 | Table **Position** column (Pos X / Pos Y) | Ref point selected (auto-applied; inputs greyed if that point is already constrained) |
-| Table **Position** column (Angle) | Orient set |
-| **OK** | ≥1 point / table row |
+| Table **Position** column (Angle) | Orientation set |
+| **Apply** / **OK** | ≥1 point / table row |
 
 ## Buttons
 
-Primary OK = accent fill, white text (hidden until a point exists). Cancel = flat border. Height 28px. Right-aligned footer.
+- **OK** (primary) — commit engraving and close (hidden until a point exists).
+- **Apply** — commit engraving, keep palette open, reset UI for the next set (hidden until a point exists).
+- **Cancel** — discard preview / close without commit.
+Flat border secondary; primary OK = accent fill, white text. Right-aligned footer.
 
 ## Motion (minimal, stock-like)
 
