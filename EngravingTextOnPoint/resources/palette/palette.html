@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Engraving Text on Point</title>
+  <link rel="stylesheet" href="static/palette.css" />
+</head>
+<body>
+  <!--
+    Wireframe shell for the stock-like Fusion palette.
+    Behavior and Fusion bridge land in Phase 1 (see docs/PLAN.md).
+  -->
+  <div class="palette">
+    <section class="block" aria-label="Selection">
+      <div class="field-row">
+        <span class="icon-slot" title="Sketch point"></span>
+        <label>Point(s)</label>
+        <button type="button" class="btn" id="btn-points" disabled>Select</button>
+        <span class="muted" id="points-count">0 selected</span>
+      </div>
+      <div class="field-row" id="target-row">
+        <span class="icon-slot" title="Target body"></span>
+        <label>Target Body</label>
+        <button type="button" class="btn" id="btn-body" disabled>Select</button>
+        <span class="muted" id="body-label">Cut only</span>
+      </div>
+    </section>
+
+    <section class="block" aria-label="Extrude">
+      <div class="field-row">
+        <label>Operation</label>
+        <label class="radio"><input type="radio" name="op" value="cut" checked /> Cut</label>
+        <label class="radio"><input type="radio" name="op" value="newBody" /> New Body</label>
+      </div>
+      <div class="field-row">
+        <label for="distance">Distance</label>
+        <input id="distance" type="text" value="1 mm" />
+      </div>
+    </section>
+
+    <section class="block" aria-label="Batch">
+      <label class="check"><input type="checkbox" id="batch-enabled" /> Batch sequence</label>
+      <div class="batch-grid" id="batch-grid" hidden>
+        <label>Prefix <input id="batch-prefix" type="text" value="" /></label>
+        <label>Suffix <input id="batch-suffix" type="text" value="" /></label>
+        <label>Start <input id="batch-start" type="number" value="1" /></label>
+        <label>Digits <input id="batch-digits" type="number" value="3" min="1" /></label>
+        <label>Step <input id="batch-step" type="number" value="1" /></label>
+      </div>
+    </section>
+
+    <section class="block table-block" aria-label="Text table">
+      <table class="data-table" id="text-table">
+        <thead>
+          <tr>
+            <th class="col-idx">#</th>
+            <th class="col-text">Text</th>
+            <th class="col-ht">Ht</th>
+            <th class="col-font">Font</th>
+          </tr>
+        </thead>
+        <tbody id="text-tbody">
+          <tr class="empty">
+            <td colspan="4">Select sketch points to add rows</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="block footer">
+      <div class="field-row">
+        <label for="theme">Theme</label>
+        <select id="theme">
+          <option value="light" selected>Light</option>
+          <option value="dark">Dark</option>
+          <option value="auto">Auto</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn" id="btn-cancel">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btn-ok" disabled>OK</button>
+      </div>
+    </section>
+
+    <p class="status muted" id="status" role="status"></p>
+  </div>
+  <script src="static/palette.js"></script>
+</body>
+</html>

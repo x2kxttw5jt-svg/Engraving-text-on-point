@@ -1,0 +1,14 @@
+{
+  "theme": "light",
+  "defaultHeight": "3 mm",
+  "defaultDistance": "1 mm",
+  "defaultFont": "Arial",
+  "batch": {
+    "enabled": false,
+    "prefix": "",
+    "suffix": "",
+    "start": 1,
+    "digits": 3,
+    "step": 1
+  }
+}

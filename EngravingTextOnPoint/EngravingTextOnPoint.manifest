@@ -1,0 +1,13 @@
+{
+  "autodeskProduct": "Fusion360",
+  "type": "addin",
+  "id": "EngravingTextOnPoint",
+  "author": "",
+  "description": {
+    "": "Place centered sketch text on selected points and extrude as Cut or New Body."
+  },
+  "version": "0.1.0",
+  "runOnStartup": false,
+  "supportedOS": "windows|mac",
+  "editEnabled": true
+}
