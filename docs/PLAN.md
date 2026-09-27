@@ -135,15 +135,16 @@ Use Fusion’s **native command-input manipulators** (not a custom triad):
 | Handle | Command input | Role |
 |--------|---------------|------|
 | **Rotation** | `AngleValueCommandInput` + `setManipulator` aligned to the **orientation vector** | Edits the active row’s **angular dimension** value (not a one-shot text rebuild angle) |
-| **Translation** | `DistanceValueCommandInput` manipulators in sketch X/Y | Moves the **sketch point** when unconstrained |
+| **Translation** | `DistanceValueCommandInput` manipulators in sketch X/Y | Edits **H/V dims to Ref** when present; else free-moves the point when unconstrained |
 
 **Rules**
 
 1. Manipulators appear at the **active row’s** sketch point. Angle manipulator plane/axes derived from the sketch plane + **orientation vector** (0° along the vector).
 2. **Angle manipulator** — enabled when a row is active **and** an orientation vector is set. Dragging updates the driving angular dimension → text rotates via constraints; Angle column syncs to the dimension parameter. **No full text recreate** for angle-only changes once constraints/dimension exist.
-3. **Move manipulator** — enabled only if the sketch point is **unconstrained**.
-   - If blocked → disable move handles; status: `Move locked — point is constrained (…reason…)`.
-   - When unconstrained: move the point; text follows via center constraint; extrude updates with the sketch.
+3. **Move manipulator**
+   - **With optional Ref + H/V dims:** handles update those **driving distance dimension** parameters; dimension lines/values update as the point transforms; text follows center constraint.
+   - **Without Ref:** enabled only if the sketch point is freely **unconstrained**; otherwise status `Move locked — point is constrained (…reason…)`.
+   - Never break center constraint, Orient angular dim, or Ref H/V dims to force a move.
 4. Stock Fusion manipulator visuals only.
 5. Palette does not draw the triad; the **Command** owns manipulators. Active table row retargets `setManipulator` + which dimension is driven.
 6. Move failure → hard status with reason; never drop center or angular constraints.
@@ -287,12 +288,13 @@ Ship under `resources/icons/flipH|flipV|justifyLeft|justifyCenter|justifyRight|a
 - Multi-select `SketchPoint`; each → row + tokens `{ sketchEntityToken, pointEntityToken, component, isUnconstrained }`.
 - Allow multi-sketch; process per parent sketch under one timeline group on commit.
 - **Add Point** flow:
-  1. Optional sketch selection input (`Sketches` filter).
-  2. Enter placement mode: arm preselect + allocate a `CustomGraphicsGroup` for the ghost point.
-  3. On `preSelectMouseMove`: read hit point/entity → project onto target sketch plane → update custom-graphics marker (and projection guide if needed).
-  4. On click commit: if sketch selected → `sketch.sketchPoints.add(projectedSketchPt)`. Else → `sketches.add(plane)` (from preselect plane/face or XY) → add projected point. Clear CG.
-  5. Push new point into selection/rows; focus manipulators on it.
-  6. Teardown CG on cancel / command destroy / leaving placement mode.
+  1. Optional sketch selection; optional **Ref point** selection.
+  2. Enter placement mode: arm preselect + allocate a `CustomGraphicsGroup` for the ghost point (and optional Ref offset guides).
+  3. On `preSelectMouseMove`: hit → project onto target sketch plane → update CG ghost (+ preview offsets from projected Ref if set).
+  4. On click commit: create sketch if needed → `sketch.sketchPoints.add(projectedSketchPt)`. Clear CG.
+  5. If Ref set: `project2(ref, linked=True)` → driving H + V `addDistanceDimension(projRef, newPt, …)` in sketch XY. Hard-fail with reason on failure.
+  6. Push new point into selection/rows; focus manipulators (move drives H/V dims when Ref exists).
+  7. Teardown CG on cancel / command destroy / leaving placement mode.
 
 ### 2. Centered, angled sketch text
 
@@ -497,7 +499,8 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 |------|----------------|
 | Open palette | Toolbar command shows docked palette only |
 | Point(s) / Sketch / Target Body | Buttons add/remove **fake rows** / fake sketch/body labels |
-| **+ Add Point** | Appends a fake row; status mentions preselect + custom-graphics projection preview (no CG in dummy) |
+| **+ Add Point** | Appends a fake row; status mentions preselect + CG projection preview |
+| **Ref Pt** | Fake select toggles “XY dims from ref” status on next Add Point |
 | Orient | Fake “Select” sets mock vector label on rows |
 | Manipulator status | `Angle dim ✓ (needs Orient)` / `Move ✓` / constrained Move locked |
 | Table | Working Text / Ht / Angle / Orient / Flip / Justify / Align / Font |
@@ -543,6 +546,9 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] Add Point: click commits point at ghost; Esc/cancel clears CG with no point
 - [ ] Add Point into selected sketch at projected location
 - [ ] Add Point with no sketch selected creates sketch (plane/XY) then point
+- [ ] Optional Ref: associative project + driving H/V dims between projected Ref and new point
+- [ ] Move manipulator with Ref updates H/V dim values; dimension lines stay live; text follows point
+- [ ] Ref source move updates linked projection; offsets remain dimensional
 - [ ] Flip H / Flip V toggles use stock Fusion icons; preview and commit match
 - [ ] Justify L/C/R and Align T/M/B use stock Fusion icons; preview and commit match
 - [ ] Non-center justify/align still keeps rectangle center constrained to the point
@@ -569,7 +575,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | **Rotation** | **Orient vector → associative project → driving angular dim to `rectangleLines`; manipulator edits the dim** |
 | **Orientation** | **Required vector select → associative project onto text sketch → angular dim to projected line** |
 | **Position** | **Stock Fusion move manipulators; only if sketch point is unconstrained** |
-| **Add Point** | **Preselect + custom-graphics projected ghost; click commits in selected sketch or new sketch** |
+| **Add Point** | **Preselect + CG ghost; optional Ref → associative project + driving H/V dims that update with transform** |
 | **Text flip** | **Per-row H + V toggles; stock Fusion flip icons; default off** |
 | **Justify / Align** | **Per-row H (L/C/R) + V (T/M/B); stock Fusion align icons; default Center / Middle** |
 | Sketch creation | Use existing sketch of selected/Add Point target; create only when Add Point has no sketch |
