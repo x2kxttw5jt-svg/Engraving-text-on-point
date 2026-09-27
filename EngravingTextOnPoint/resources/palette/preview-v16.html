@@ -381,7 +381,7 @@ textarea:focus {
 .data-table {
   /* Prefer horizontal scroll over crushing Ht into Text when dock is skinny */
   width: 100%;
-  min-width: 520px;
+  min-width: 400px;
   border-collapse: collapse;
   background: transparent;
   table-layout: fixed;
@@ -652,10 +652,11 @@ input.row-dy.is-xy-locked {
     --label-w: 100px;
     --row-height: 24px;
   }
-  .data-table { min-width: 540px; }
+  .data-table { min-width: 420px; }
   .col-format { width: 72px; min-width: 72px; }
   .col-font { width: 80px; min-width: 72px; }
   .col-ht { width: 56px; min-width: 56px; }
+  .col-place { width: 80px; min-width: 76px; }
 }
 
 @container palette (max-width: 320px) {
@@ -666,10 +667,11 @@ input.row-dy.is-xy-locked {
     --row-height: 22px;
     padding: 6px 6px 8px;
   }
-  .data-table { min-width: 560px; }
+  .data-table { min-width: 400px; }
   .col-format { width: 68px; min-width: 68px; }
   .col-font { width: 72px; min-width: 68px; }
   .col-ht { width: 56px; min-width: 56px; }
+  .col-place { width: 76px; min-width: 72px; }
   .info-line { padding-left: 0; }
 }
 
@@ -680,7 +682,7 @@ input.row-dy.is-xy-locked {
     --label-w: 72px;
     --row-height: 20px;
   }
-  .data-table { min-width: 580px; }
+  .data-table { min-width: 380px; }
   .icon-btn {
     width: 20px;
     height: 20px;
@@ -693,12 +695,13 @@ input.row-dy.is-xy-locked {
 
 /* Portrait / narrow viewport: same Ht floor + horizontal scroll */
 @media (orientation: portrait), (max-width: 420px) {
-  .data-table { min-width: 540px; }
+  .data-table { min-width: 400px; }
   .col-ht {
     width: 56px !important;
     min-width: 56px !important;
     max-width: 64px;
   }
+  .col-place { width: 80px; min-width: 76px; }
   .col-text { min-width: 80px; }
 }
 

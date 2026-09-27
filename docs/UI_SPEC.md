@@ -78,10 +78,9 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - Dummy uses SVG stand-ins under `resources/palette/static/icons/`; prefer stock Fusion PNGs when packaging.
 - **Ht** is two-way with triad **unified scale** (same `heightParameter`); typed Ht resets triad scale factor to 1.0.
 - Text `<input>`: `style.fontFamily = selectedFont`.
-- **Placement in the table** (not a header row): per-row `dX` / `dY` (offsets from Ref) and `Angle` (vs global Orient) — same driving sketch dimensions as the triad.
-- `dX` / `dY` columns: **hidden** until a Ref point is selected (dims auto-apply on select).
-- If a sketch point is **already constrained** (XY locked): keep dX/dY cells visible but **greyed out / disabled** — not editable via GUI or triad translate. Free (unconstrained) points stay editable.
-- Angle `<input>`: per-row angular dimension value vs the **global** Orient; **hidden** until Orient is set.
+- **Placement in the table** (one **Place** cell): stacked `X` / `Y` (offsets from Ref) and `∠` (vs global Orient) — same driving sketch dimensions as the triad.
+- Place column: **hidden** until Ref and/or Orient is set. X/Y rows appear when Ref is selected (dims auto-apply); Angle row when Orient is set.
+- If a sketch point is **already constrained** (XY locked): keep X/Y inputs visible but **greyed out / disabled** — not editable via GUI or triad translate. Free points stay editable.
 - **Font** cell: **Bold (B)** + **Italic (I)** stacked vertically, grouped with the font `<select>`. Active B/I use accent blue border.
 - Font `<select>` + B/I: the row **Text** field updates live the same way — `font-family`, bold weight, and italic style.
 - No card wrappers; hairline row borders only.
@@ -105,8 +104,8 @@ Icon button (16×16) + label + count badge (plain text, not pill chrome).
 | Control | Shown when |
 |---------|------------|
 | **Target Body** | Operation = Join, Cut, or Intersect |
-| Table **dX** / **dY** columns | Ref point selected (auto-applied; cells greyed if that point is already constrained) |
-| Table **Angle** column | Orient set |
+| Table **Place** column (X/Y rows) | Ref point selected (auto-applied; inputs greyed if that point is already constrained) |
+| Table **Place** column (∠ row) | Orient set |
 | **OK** | ≥1 point / table row |
 
 ## Buttons
