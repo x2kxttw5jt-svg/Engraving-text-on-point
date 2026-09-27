@@ -670,7 +670,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Manipulator status | Click mocks debounce → auto-apply Ref dims to driving → preview; enables dX/dY/Angle |
 | Frame dims | dX/dY/Angle edit echoes GUI→driving; status mentions auto-apply window |
 | Ht / scale | Ht edit echoes “would set heightParameter”; status notes triad unified scale ↔ Ht |
-| Table | Working Text / Ht / Angle / Orient / Flip / Justify / Align / Font |
+| Table | Seeded with **3 sample point rows** on open for visual review; Add Point appends more |
 | Font dropdown | Seeded list; text input `font-family` follows selection |
 | Batch | Prefix/suffix/start/digits/step rewrite mock row texts |
 | Operation / Distance / Live preview / Theme | Fully interactive; Cut **shows** Target Body (hidden otherwise — never greyed) |
