@@ -621,7 +621,7 @@ Engraving code may depend on `sketch_transform_frame`. The frame package must **
 | Python → JS | `setRows` | `[{ id, text, height, angle, font, bold, italic, flipH, flipV, justify, align, pointLabel }]` |
 | Python → JS | `setOrient` / `setFonts` / `setTheme` / `setStatus` / `setTargetEnabled` | `setOrient` → header label; no per-row Orient column |
 
-Any geometry-affecting message schedules a preview refresh (if live preview on).
+Any geometry-affecting message schedules a **solid** preview refresh (if **Live solid preview** is on). Sketch pose updates regardless.
 
 ### Command pattern
 
@@ -645,7 +645,7 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 - **Center constraint failure → hard fail** (no unconstrained placement). Preview/OK show **why** (stage + API detail + row); OK aborts and rolls back the full transaction.
 - Cut with no intersection → text-only preview + warning; OK still attempts and rolls back on hard failure.
 - Mixed components → features in each point’s component.
-- Live preview off → OK builds everything in `execute` only.
+- Solid preview off → sketch still updates live; OK builds solids in `execute` only.
 - Debounce: rapid typing must not stack overlapping builds (single-flight flag in `PreviewSession`).
 
 ---
@@ -745,9 +745,9 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] Flip + angle + align together; center constraint still holds (point drag moves text)
 - [ ] Moving the sketch point after OK moves the text (constraints hold)
 - [ ] Simulated / real constraint failure → hard fail, no leftover unconstrained text, status/message includes failure reason (stage + detail)
-- [ ] Live preview updates on text/height/font/angle/depth/direction edits (debounced)
+- [ ] Solid preview updates on text/height/font/angle/depth/direction edits (debounced)
 - [ ] Cancel / close leaves no sketch text or extrudes
-- [ ] Live preview off → no geometry until OK
+- [ ] Solid preview off → no solids until OK; sketch/triad still update
 - [ ] Operation dropdown shows Join / Cut / Intersect / New Body with icons; **no New Component**
 - [ ] Depth + Direction (positive / negative / symmetric) drive extrude extent
 - [ ] Positive Join / Intersect / New Body extrusions preview and commit
