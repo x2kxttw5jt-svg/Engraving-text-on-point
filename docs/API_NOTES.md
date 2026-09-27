@@ -174,64 +174,38 @@ cg.deleteMe()  # or clear group
 # - Fallback: rootComp.xYConstructionPlane
 ```
 
-### Standalone `sketch_transform_frame` (reusable)
+### Standalone `sketch_transform_frame` + `TriadCommandInput`
 
-Lives at `EngravingTextOnPoint/sketch_transform_frame/`. **No imports from engraving modules.** Hosts Ref H/V, Orient **angle**, manipulators, drag cadence, visibility. See package `README.md`.
+Lives at `EngravingTextOnPoint/sketch_transform_frame/`. **No engraving imports.**
 
 ```python
-from sketch_transform_frame import TransformFrame
+triad = inputs.addTriadCommandInput("triad", mat)
+triad.hideAllScaling()
 
 frame = TransformFrame.apply(
-    sketch,
-    target_pt,                       # new or existing unconstrained point
-    ref_point_entity=ref,            # optional → H/V dims
-    orient_vector_entity=orient,     # optional → angular dim
-    angle_entity=text_baseline,      # line/edge to dimension to projected orient
+    sketch, target_pt,
+    ref_point_entity=ref,
+    orient_vector_entity=orient,
+    angle_entity=text_baseline,
     angle_value="0 deg",
 )
 frame.ensure_visible(sketch)
-frame.bind_manipulators(angle_in, dist_x, dist_y)
+frame.bind_triad(triad)
 
-# Translate
-frame.begin_translate_drag()   # H/V → driven; stay visible
-# move point…
-frame.end_translate_drag()     # write H/V → driving
+# inputChanged (triad) — FAST PATH: sketch.move existing text; no executePreview; no solids
+frame.on_triad_changed(triad)
 
-# Rotate (angle included in the same frame)
-frame.begin_rotate_drag()      # angular dim → driven; stay visible
-# angle manipulator…
-frame.end_rotate_drag()        # write angle → driving
+# drag settle — restore driving dims from pose
+frame.on_triad_settled()
+
+# execute — SOLID PATH ONLY
+extrude_or_cut_from_current_sketch_text(...)
 ```
 
-- Verify `SketchDimension.isDriving` / `project2` link flag on target Fusion build.
-- Throttle extrude preview during drag; full refresh on drag end.
-- Do **not** leave frame dims driven after a gesture.
-- **Visibility:** H, V, and **angle** dims visible for the whole live-preview session (idle + drag + after rebuilds).
-
+- Triad ticks: matrix-move existing sketch text only; dims driven during gesture, visible always.
+- Extrude/cut **only** in `execute`.
 - Destroy CG on `preSelectEnd`, cancel, destroy, or after commit.
-- Do not leave custom graphics after placement mode ends.
-- Filter preselect: `args.isSelectable = False` when hit cannot project onto the target plane.
-- Hard-fail stages: `ref dims blocked`, `ref associative project failed`, `horizontal dimension failed`, `vertical dimension failed`, `restore driving dims failed`.
-
-## Stock transform manipulators
-
-Host on the active Command (palette alone cannot draw them):
-
-```python
-angle_in = inputs.addAngleValueCommandInput(id_angle, "Angle", adsk.core.ValueInput.createByString("0 deg"))
-# x_dir = orientation vector in sketch plane (0°); y_dir = rotated 90° in plane
-angle_in.setManipulator(origin, x_dir, y_dir)
-# on change: active_row.angular_dimension.parameter.value = angle_in.value
-
-dist_x = inputs.addDistanceValueCommandInput(...)
-dist_x.setManipulator(origin, sketch_x_dir)
-# enable move only when point unconstrained; enable angle only when Orient is set
-```
-
-- Sync `angle_in` ↔ Angle column ↔ **angular dimension parameter**.
-- Angle-only edits should not delete/recreate `SketchText`.
-- Unconstrained move: `SketchPoint.move` / `sketch.move`; surface reason if blocked.
-- Retarget manipulators when active row or Orient vector changes.
+- Hard-fail stages include `sketch move failed`, `restore driving dims failed`, plus project/dim stages.
 
 ## Palette
 
