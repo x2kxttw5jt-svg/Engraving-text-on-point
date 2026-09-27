@@ -290,7 +290,7 @@ Optional header “apply to all” for angle / flip / justify / align.
 
 - Toggle **Batch sequence** on → each row’s **Text** is auto-filled from:
   - `Prefix + str(Start + i×Step).zfill(Digits) + Suffix`
-  - Example: Prefix `PN-`, Start `1`, Digits `3`, Step `1` → `PN-001`, `PN-002`, `PN-003`, …
+  - Example: Prefix `PN-`, Start `1`, # of Digits `3`, Step `1` → `PN-001`, `PN-002`, `PN-003`, …
 - Fields update the table **live** as you type.
 - While Batch is on, **Text column has no input** (display-only driven text). Turn Batch off to edit Text per row.
 - Batch does **not** drive Position, Ht, Format, or Font.
