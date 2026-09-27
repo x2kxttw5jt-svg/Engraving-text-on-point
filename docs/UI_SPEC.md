@@ -88,7 +88,7 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - **Direction** — `Positive` / `Negative` / `Symmetric` along sketch normal (supports positive Join / Intersect / New Body).
 - **Live solid preview** checkbox (default checked): controls **extrude/cut solid preview** after triad `mouseDragEnd` + debounce → auto-apply driving dims → `doExecutePreview`. Sketch text / dims / triad pose still update live regardless.
 - **Snap** dropdowns: linear + angular increments; label hint `Alt = free`.
-- **Frame dims** row (active selection): `dX`, `dY`, `Angle` text inputs — same driving dimensions as the triad. **Hidden** until the matching dim exists (dX/dY after Ref dims applied; Angle after Orient set). Whole Frame row hidden when none apply.
+- **Placement** row (active selection): `dX` / `dY` = offsets from the **Ref** point; `Angle` = rotation vs the **Orient** vector — same driving sketch dimensions as the triad. **Hidden** until the matching dim exists. Whole row hidden when none apply. (Formerly labeled “Frame”.)
 - Table **Angle** column is the same parameter as the frame Angle field (keep in sync); **hidden** until Orient is set.
 - When solid preview unchecked: triad / sketch still update; skip settle `doExecutePreview`; OK commits solids.
 

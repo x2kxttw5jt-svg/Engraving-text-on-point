@@ -51,8 +51,8 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 │  Operation   [✂ Cut ▼]  (Join · Cut · Intersect · New Body)          │
 │  Depth       [ 1 mm ]   Direction [ Positive ▼ ]                     │
 │  Live solid preview · Snap [ 1 mm ▼ ] [ 5° ▼ ]  (Alt = free)        │
-│  Frame dims  dX [ 12 mm ]  dY [ 5 mm ]  Angle [ 0 deg ]             │
-│              ↕ two-way with Triad + sketch dimensions                │
+│  Placement   dX [ 12 mm ]  dY [ 5 mm ]  Angle [ 0 deg ]             │
+│              (offsets from Ref + rotation vs Orient; ↔ triad)        │
 │              Ht also via triad unified scale                         │
 ├──────────────────────────────────────────────────────────────────────┤
 │  ☐ Batch sequence …                                                  │
