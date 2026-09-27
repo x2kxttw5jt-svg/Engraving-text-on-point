@@ -82,19 +82,27 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 
 - **Live sketch preview** checkbox (default checked): sketch text + dims update live; **solid** preview runs after triad `mouseDragEnd` + debounce → auto-apply driving dims → `doExecutePreview`.
 - **Snap** dropdowns: linear + angular increments; label hint `Alt = free`.
-- **Frame dims** row (active selection): `dX`, `dY`, `Angle` text inputs — same driving dimensions as the triad. Disabled with `—` when Ref/Orient dims are absent.
-- Table **Angle** column is the same parameter as the frame Angle field (keep in sync).
+- **Frame dims** row (active selection): `dX`, `dY`, `Angle` text inputs — same driving dimensions as the triad. **Hidden** until the matching dim exists (dX/dY after Ref dims applied; Angle after Orient set). Whole Frame row hidden when none apply.
+- Table **Angle** column is the same parameter as the frame Angle field (keep in sync); **hidden** until Orient is set.
 - When live sketch preview unchecked: still allow triad pose; skip settle `doExecutePreview` if desired; OK commits.
 
 ## Selection rows
 
 Icon button (16×16) + label + count badge (plain text, not pill chrome).
 
-Disabled Target Body row when operation ≠ Cut (opacity 0.45, pointer-events none).
+**Hide, don’t grey:** unavailable controls stay `hidden` until their use condition is met — never opacity-disabled placeholders.
+
+| Control | Shown when |
+|---------|------------|
+| **Apply Ref Dims** | Ref point selected |
+| **Target Body** | Operation = Cut |
+| Frame **dX** / **dY** | Ref H/V dims applied |
+| Frame **Angle** + table Angle column | Orient set |
+| **OK** | ≥1 point / table row |
 
 ## Buttons
 
-Primary OK = accent fill, white text. Cancel = flat border. Height 28px. Right-aligned footer.
+Primary OK = accent fill, white text (hidden until a point exists). Cancel = flat border. Height 28px. Right-aligned footer.
 
 ## Motion (minimal, stock-like)
 

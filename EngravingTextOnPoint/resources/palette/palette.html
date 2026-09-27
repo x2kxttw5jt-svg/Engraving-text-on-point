@@ -16,7 +16,7 @@
       <div class="field-row">
         <span class="icon-slot" title="Sketch point"></span>
         <label>Point(s)</label>
-        <button type="button" class="btn" id="btn-points" disabled>Select</button>
+        <button type="button" class="btn" id="btn-points">Select</button>
         <button type="button" class="btn" id="btn-add-point" title="Add point at click">+ Add Point</button>
         <span class="muted" id="points-count">0 selected</span>
       </div>
@@ -24,13 +24,13 @@
         <span class="icon-slot" title="Reference point"></span>
         <label>Ref Pt</label>
         <button type="button" class="btn" id="btn-ref">Select</button>
-        <button type="button" class="btn" id="btn-apply-ref" title="Apply to active unconstrained point">Apply Ref Dims</button>
+        <button type="button" class="btn" id="btn-apply-ref" title="Apply to active unconstrained point" hidden>Apply Ref Dims</button>
         <span class="muted" id="ref-label">New or existing free pts</span>
       </div>
       <div class="field-row">
         <span class="icon-slot" title="Sketch"></span>
         <label>Sketch</label>
-        <button type="button" class="btn" id="btn-sketch" disabled>Select</button>
+        <button type="button" class="btn" id="btn-sketch">Select</button>
         <span class="muted" id="sketch-label">Optional for Add Point</span>
       </div>
       <div class="field-row">
@@ -39,11 +39,11 @@
         <button type="button" class="btn" id="btn-orient">Select</button>
         <span class="muted" id="orient-label">Required for angle</span>
       </div>
-      <div class="field-row" id="target-row">
+      <div class="field-row" id="target-row" hidden>
         <span class="icon-slot" title="Target body"></span>
         <label>Target Body</label>
-        <button type="button" class="btn" id="btn-body" disabled>Select</button>
-        <span class="muted" id="body-label">Cut only</span>
+        <button type="button" class="btn" id="btn-body">Select</button>
+        <span class="muted" id="body-label">Optional</span>
       </div>
       <p class="muted" id="manip-status" role="status">
         Manipulators: Angle dim (needs Orient) · Move · Scale→Ht
@@ -84,11 +84,11 @@
         </select>
         <span class="muted">Alt = free</span>
       </div>
-      <div class="field-row" aria-label="Frame dimensions">
+      <div class="field-row" id="frame-dims-row" aria-label="Frame dimensions" hidden>
         <label>Frame</label>
-        <label class="dim-field">dX <input id="dim-dx" type="text" value="—" disabled title="Ref horizontal dim; syncs with triad" /></label>
-        <label class="dim-field">dY <input id="dim-dy" type="text" value="—" disabled title="Ref vertical dim; syncs with triad" /></label>
-        <label class="dim-field">Angle <input id="dim-angle" type="text" value="—" disabled title="Orient angular dim; syncs with triad" /></label>
+        <label class="dim-field" id="dim-dx-wrap" hidden>dX <input id="dim-dx" type="text" value="10 mm" title="Ref horizontal dim; syncs with triad" /></label>
+        <label class="dim-field" id="dim-dy-wrap" hidden>dY <input id="dim-dy" type="text" value="5 mm" title="Ref vertical dim; syncs with triad" /></label>
+        <label class="dim-field" id="dim-angle-wrap" hidden>Angle <input id="dim-angle" type="text" value="0 deg" title="Orient angular dim; syncs with triad" /></label>
       </div>
     </section>
 
@@ -110,7 +110,7 @@
             <th class="col-idx">#</th>
             <th class="col-text">Text</th>
             <th class="col-ht">Ht</th>
-            <th class="col-angle">Angle</th>
+            <th class="col-angle" id="th-angle" hidden>Angle</th>
             <th class="col-orient">Orient</th>
             <th class="col-flip">Flip</th>
             <th class="col-justify">Justify</th>
@@ -143,7 +143,7 @@
       </div>
       <div class="actions">
         <button type="button" class="btn" id="btn-cancel">Cancel</button>
-        <button type="button" class="btn btn-primary" id="btn-ok" disabled>OK</button>
+        <button type="button" class="btn btn-primary" id="btn-ok" hidden>OK</button>
       </div>
     </section>
 

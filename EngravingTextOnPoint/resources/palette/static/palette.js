@@ -1,6 +1,9 @@
 /**
  * Palette shell — theme + batch UI only.
  * Fusion bridge (adsk.fusionSendData) is wired in Phase 1.
+ *
+ * Rule: unavailable controls stay hidden (not greyed/disabled)
+ * until their use conditions are met.
  */
 (function () {
   const themeSelect = document.getElementById("theme");
@@ -17,24 +20,62 @@
   const pointsCount = document.getElementById("points-count");
   const opRadios = document.querySelectorAll('input[name="op"]');
   const targetRow = document.getElementById("target-row");
+  const btnApplyRef = document.getElementById("btn-apply-ref");
+  const btnOk = document.getElementById("btn-ok");
+  const frameDimsRow = document.getElementById("frame-dims-row");
+  const dimDxWrap = document.getElementById("dim-dx-wrap");
+  const dimDyWrap = document.getElementById("dim-dy-wrap");
+  const dimAngleWrap = document.getElementById("dim-angle-wrap");
+  const thAngle = document.getElementById("th-angle");
 
   let mockRowCount = 0;
   let mockOrient = false;
   let mockRef = false;
+  let mockRefDims = false;
 
-  const btnApplyRef = document.getElementById("btn-apply-ref");
+  function setHidden(el, hidden) {
+    if (!el) return;
+    el.hidden = !!hidden;
+  }
+
+  function syncFrameDimsVisibility() {
+    setHidden(dimDxWrap, !mockRefDims);
+    setHidden(dimDyWrap, !mockRefDims);
+    setHidden(dimAngleWrap, !mockOrient);
+    setHidden(frameDimsRow, !(mockRefDims || mockOrient));
+    setHidden(thAngle, !mockOrient);
+  }
+
+  function syncApplyRefVisibility() {
+    setHidden(btnApplyRef, !mockRef);
+  }
+
+  function syncOkVisibility() {
+    setHidden(btnOk, mockRowCount < 1);
+  }
+
+  function syncTargetVisibility() {
+    const op = document.querySelector('input[name="op"]:checked');
+    const cut = op && op.value === "cut";
+    setHidden(targetRow, !cut);
+  }
 
   if (btnRef) {
     btnRef.addEventListener("click", function () {
       mockRef = !mockRef;
+      if (!mockRef) {
+        mockRefDims = false;
+      }
       if (refLabel) {
         refLabel.textContent = mockRef
           ? "Mock ref ready"
           : "New or existing free pts";
       }
+      syncApplyRefVisibility();
+      syncFrameDimsVisibility();
       if (statusEl) {
         statusEl.textContent = mockRef
-          ? "Ref set — Add Point or Apply Ref Dims on unconstrained point — dummy UI"
+          ? "Ref set — Apply Ref Dims shown — dummy UI"
           : "";
       }
     });
@@ -42,18 +83,18 @@
 
   if (btnApplyRef) {
     btnApplyRef.addEventListener("click", function () {
+      if (!mockRef) return;
+      mockRefDims = true;
       var dx = document.getElementById("dim-dx");
       var dy = document.getElementById("dim-dy");
-      if (mockRef && dx && dy) {
-        dx.disabled = false;
-        dy.disabled = false;
+      if (dx && dy) {
         dx.value = "10 mm";
         dy.value = "5 mm";
       }
+      syncFrameDimsVisibility();
       if (statusEl) {
-        statusEl.textContent = mockRef
-          ? "dX/dY editable via GUI or triad translate — dummy UI"
-          : "Select a Ref point first — dummy UI";
+        statusEl.textContent =
+          "dX/dY shown — editable via GUI or triad translate — dummy UI";
       }
     });
   }
@@ -79,15 +120,14 @@
     var dyEl = document.getElementById("dim-dy");
     var angEl = document.getElementById("dim-angle");
     if (mockRef && dxEl && dyEl) {
-      dxEl.disabled = false;
-      dyEl.disabled = false;
+      mockRefDims = true;
       dxEl.value = dx;
       dyEl.value = dy;
     }
     if (mockOrient && angEl) {
-      angEl.disabled = false;
       angEl.value = angle;
     }
+    syncFrameDimsVisibility();
     if (statusEl) {
       statusEl.textContent =
         "Would auto-apply Ref dims to driving (after debounce), sync GUI, reset scale factor, then doExecutePreview — dummy UI (dX=" +
@@ -105,17 +145,15 @@
       mockOrient = true;
       if (orientLabel) orientLabel.textContent = "Mock vector";
       var ang = document.getElementById("dim-angle");
-      if (ang) {
-        ang.disabled = false;
-        ang.value = "0 deg";
-      }
+      if (ang) ang.value = "0 deg";
+      syncFrameDimsVisibility();
       if (manipStatus) {
         manipStatus.textContent =
           "Manipulators: Angle dim ✓ · Move ✓ · Scale→Ht ✓";
       }
       if (statusEl) {
         statusEl.textContent =
-          "Angle via GUI/triad rotate; Ht via GUI/triad unified scale — dummy UI";
+          "Angle field shown — via GUI/triad rotate; Ht via GUI/triad unified scale — dummy UI";
       }
     });
   }
@@ -140,12 +178,12 @@
 
   // Dummy UI: Add Point appends a fake selection count only.
   if (btnAddPoint) {
-    btnAddPoint.disabled = false;
     btnAddPoint.addEventListener("click", function () {
       mockRowCount += 1;
       if (pointsCount) {
         pointsCount.textContent = mockRowCount + " selected";
       }
+      syncOkVisibility();
       if (statusEl) {
         statusEl.textContent =
           "Would place point via preselect + custom-graphics projection ghost — dummy UI";
@@ -153,6 +191,20 @@
       if (manipStatus) {
         manipStatus.textContent =
           "Manipulators: Angle ✓ · Move ✓ · Scale→Ht ✓";
+      }
+    });
+  }
+
+  var btnPoints = document.getElementById("btn-points");
+  if (btnPoints) {
+    btnPoints.addEventListener("click", function () {
+      mockRowCount += 1;
+      if (pointsCount) {
+        pointsCount.textContent = mockRowCount + " selected";
+      }
+      syncOkVisibility();
+      if (statusEl) {
+        statusEl.textContent = "Mock point selection — dummy UI";
       }
     });
   }
@@ -179,17 +231,9 @@
     batchGrid.hidden = !batchEnabled.checked;
   });
 
-  function syncTargetEnabled() {
-    const op = document.querySelector('input[name="op"]:checked').value;
-    const cut = op === "cut";
-    targetRow.style.opacity = cut ? "1" : "0.45";
-    targetRow.style.pointerEvents = cut ? "auto" : "none";
-  }
-
   opRadios.forEach(function (r) {
-    r.addEventListener("change", syncTargetEnabled);
+    r.addEventListener("change", syncTargetVisibility);
   });
-  syncTargetEnabled();
 
   function syncPreviewStatus() {
     if (!statusEl) return;
@@ -199,6 +243,12 @@
   }
 
   livePreview.addEventListener("change", syncPreviewStatus);
+
+  // Initial visibility from conditions (hide, don't grey).
+  syncTargetVisibility();
+  syncApplyRefVisibility();
+  syncFrameDimsVisibility();
+  syncOkVisibility();
   syncPreviewStatus();
 
   window.fusionJavaScriptHandler = {

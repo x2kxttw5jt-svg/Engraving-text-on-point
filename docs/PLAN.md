@@ -23,7 +23,7 @@ Edit Text / Ht / Font / Flip / Justify / Align / Angle dim (or Batch) → previe
   ↓
 Choose Extrude: Cut | New Body → preview extrude updates
   ↓
-If Cut: enable Target Body picker
+If Cut: show Target Body picker (hidden for New Body)
   ↓
 OK → commit + timeline group
 Cancel / close → teardown preview; leave user-created Add Point geometry? (see decisions)
@@ -45,7 +45,7 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 │  ✛ Ref Pt    [ Select ]  [ Apply Ref Dims ]  (new or existing free pts) │
 │  ▭ Sketch    [ Select ]  (optional — used by Add Point)              │
 │  ↗ Orient    [ Select ]  (vector for text angle — required)          │
-│  ⬚ Target Body  [ Select ]     (Cut only)                            │
+│  ⬚ Target Body  [ Select ]     (shown only when Cut)                 │
 │  Active row: Angle dim ✓  Move ✓/✗  Scale→Ht ✓                      │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Operation / Distance / Direction / Live sketch preview              │
@@ -134,7 +134,7 @@ Pipeline (inside `apply_frame.py`):
    - For reuse, caller passes any sketch line/edge that should be angled to the projected vector.
 3. **Visibility (required during preview):** all frame dims (H, V, **and angle**) stay **visible** for the live-preview session — including while temporarily driven during drag. `areDimensionsShown`; re-assert after rebuilds.
 4. **Transform:** driven-during-drag for translate (H/V) and rotate (angle); **auto-apply driving after debounce, before `doExecutePreview`**; graphics stay on-screen.
-5. Without Ref, free move when unconstrained still applies. Without Orient, angle manipulator stays disabled.
+5. Without Ref, free move when unconstrained still applies. Without Orient, angle manipulator and Angle fields stay **hidden**.
 6. Hard-fail with reason on project/dim failure; no unlinked projection fallback.
 7. One frame instance per target point/row (replace/repair on re-apply).
 
@@ -229,8 +229,8 @@ Driving frame dimensions **and text height** must be editable from **either** th
 
 1. **GUI → model:** on commit/change of dX / dY / Angle / Ht → set driving dim or height parameter (expressions OK) → update triad pose / reset unified scale to 1.0 → debounced `doExecutePreview` for solids. No full text recreate for pose/height-only edits when the API allows parameter writes.
 2. **Triad → GUI:** on triad `inputChanged` / settle → push measured/snapped pose into dX / dY / Angle and scaled height into Ht (suppress feedback loops with a `_syncingUi` flag).
-3. **Missing Ref:** dX/dY inputs disabled (or hidden); translate may still free-move unconstrained points; fields show `—`.
-4. **Missing Orient:** Angle input disabled until Orient is set.
+3. **Missing Ref:** dX/dY inputs **hidden** (not greyed); translate may still free-move unconstrained points.
+4. **Missing Orient:** Angle input + table Angle column **hidden** until Orient is set.
 5. Snap applies to **triad** translate/rotate ticks; height from unified scale may use the linear snap step as a height quantum when snap ≠ Off; typed GUI values are authoritative (not force-snapped) — default: **no snap on typed entry**.
 6. Re-entrancy: ignore GUI→model updates while applying triad→GUI sync, and vice versa.
 
@@ -631,7 +631,7 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 
 ## Edge cases & validation
 
-- No points → OK disabled; preview empty.
+- No points → OK **hidden**; preview empty.
 - Empty text / height ≤ 0 → block OK; clear that row’s preview.
 - No orientation vector → block angle manipulator + OK for that row; status asks for vector.
 - Invalid angle expression → status error; leave last good dimension value.
@@ -673,7 +673,8 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Table | Working Text / Ht / Angle / Orient / Flip / Justify / Align / Font |
 | Font dropdown | Seeded list; text input `font-family` follows selection |
 | Batch | Prefix/suffix/start/digits/step rewrite mock row texts |
-| Operation / Distance / Live preview / Theme | Fully interactive; Cut enables Target Body row visually |
+| Operation / Distance / Live preview / Theme | Fully interactive; Cut **shows** Target Body (hidden otherwise — never greyed) |
+| Conditional chrome | Apply Ref Dims / Frame dX·dY·Angle / Angle column / OK stay **hidden** until conditions met |
 | Icons | Stock Fusion PNGs in place (or labeled placeholders until extracted) |
 | OK / Cancel | Status only — **no model changes** |
 | Bridge | Optional JS↔Python echo; geometry/manipulators no-op |
