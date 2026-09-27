@@ -42,11 +42,6 @@
 
   if (btnApplyRef) {
     btnApplyRef.addEventListener("click", function () {
-      if (statusEl) {
-        statusEl.textContent = mockRef
-          ? "Would apply associative H/V dims to active unconstrained point — dummy UI"
-          : "Select a Ref point first — dummy UI";
-      }
       var dx = document.getElementById("dim-dx");
       var dy = document.getElementById("dim-dy");
       if (mockRef && dx && dy) {
@@ -55,15 +50,10 @@
         dx.value = "10 mm";
         dy.value = "5 mm";
       }
-    });
-  }
-
-  if (btnOrient) {
-    btnOrient.addEventListener("click", function () {
-      var ang = document.getElementById("dim-angle");
-      if (ang && mockOrient) {
-        ang.disabled = false;
-        ang.value = "0 deg";
+      if (statusEl) {
+        statusEl.textContent = mockRef
+          ? "dX/dY editable via GUI or triad translate — dummy UI"
+          : "Select a Ref point first — dummy UI";
       }
     });
   }
@@ -83,18 +73,70 @@
     });
   });
 
+  // Dummy: mock triad settle → push pose into GUI dims (two-way counterpart).
+  function mockTriadSettled(dx, dy, angle) {
+    var dxEl = document.getElementById("dim-dx");
+    var dyEl = document.getElementById("dim-dy");
+    var angEl = document.getElementById("dim-angle");
+    if (mockRef && dxEl && dyEl) {
+      dxEl.disabled = false;
+      dyEl.disabled = false;
+      dxEl.value = dx;
+      dyEl.value = dy;
+    }
+    if (mockOrient && angEl) {
+      angEl.disabled = false;
+      angEl.value = angle;
+    }
+    if (statusEl) {
+      statusEl.textContent =
+        "Would sync GUI from triad settle — dummy UI (dX=" +
+        dx +
+        ", dY=" +
+        dy +
+        ", Angle=" +
+        angle +
+        ")";
+    }
+  }
+
   if (btnOrient) {
     btnOrient.addEventListener("click", function () {
       mockOrient = true;
       if (orientLabel) orientLabel.textContent = "Mock vector";
+      var ang = document.getElementById("dim-angle");
+      if (ang) {
+        ang.disabled = false;
+        ang.value = "0 deg";
+      }
       if (manipStatus) {
         manipStatus.textContent =
           "Manipulators: Angle dim ✓ · Move ✓ (unconstrained mock point)";
       }
       if (statusEl) {
         statusEl.textContent =
-          "Angle edits driving angular dimension vs Orient vector — dummy UI";
+          "Angle editable via GUI or triad rotate — dummy UI";
       }
+    });
+  }
+
+  // Dummy triad gesture: clicking manip status simulates a settle sync into GUI.
+  if (manipStatus) {
+    manipStatus.style.cursor = "pointer";
+    manipStatus.title = "Click to mock triad settle → GUI dim sync";
+    manipStatus.addEventListener("click", function () {
+      if (!mockRef && !mockOrient) {
+        if (statusEl) {
+          statusEl.textContent =
+            "Set Ref and/or Orient first to mock triad → GUI dim sync — dummy UI";
+        }
+        return;
+      }
+      mockTriadSettled(
+        mockRef ? "12 mm" : "—",
+        mockRef ? "5 mm" : "—",
+        mockOrient ? "15 deg" : "—"
+      );
     });
   }
 

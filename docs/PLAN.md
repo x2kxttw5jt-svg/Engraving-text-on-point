@@ -195,6 +195,27 @@ Use Fusion’s stock **`TriadCommandInput`** for translation + rotation (hide sc
 6. Never permanently drop center constraint or frame dims.
 7. **Re-entrancy guard:** ignore overlapping triad/`doExecutePreview` work while a solid preview or sketch move is in flight (`_busy` / single-flight flag).
 
+#### Dimension inputs — Triad **or** GUI (two-way)
+
+Driving frame dimensions must be editable from **either** the triad **or** palette/table fields. Both write the same sketch dimension parameters.
+
+| Dim | GUI control | Triad | Sketch |
+|-----|-------------|-------|--------|
+| **dX** (Ref horizontal) | Numeric input (active row / frame block); enabled when Ref dims exist | Translate X/Y handles | `dim_h.parameter` |
+| **dY** (Ref vertical) | Numeric input; enabled when Ref dims exist | Translate handles | `dim_v.parameter` |
+| **Angle** | Table Angle column + optional frame-block field; enabled when Orient dim exists | Rotate handle | angular `dimension.parameter` |
+
+**Sync rules**
+
+1. **GUI → model:** on commit/change of dX / dY / Angle field → set driving dim parameter (expressions OK, e.g. `12 mm`) → update triad `transform` to match → debounced `doExecutePreview` for solids. No full text recreate.
+2. **Triad → GUI:** on triad `inputChanged` / settle → push measured/snapped pose into dX / dY / Angle fields (suppress feedback loops with a `_syncingUi` flag).
+3. **Missing Ref:** dX/dY inputs disabled (or hidden); translate may still free-move unconstrained points; fields show `—`.
+4. **Missing Orient:** Angle input disabled until Orient is set.
+5. Snap applies to **triad** ticks; typed GUI values are taken as authoritative (user intent) and are not force-snapped unless we add an optional “snap on blur” later — default: **no snap on typed entry**.
+6. Re-entrancy: ignore GUI→model updates while applying triad→GUI sync, and vice versa.
+
+Dummy UI: dX / dY / Angle fields edit mock state and echo “would set dim / triad”.
+
 #### Snap increments
 
 | UI | Behavior |
@@ -231,7 +252,7 @@ Do **not** leave frame dims driven after the gesture. Do not toggle unrelated sk
 | `#` | Read-only index | Selection order |
 | Text | `<input type="text">` | Batch-driven or override; `font-family` = selected font |
 | Height | Length input | Default `3 mm` |
-| **Angle** | Dimension value (degrees) | Edits driving **angular dimension** vs projected Orient line (not a SketchText angle); default `0` |
+| **Angle** | Dimension value (degrees) | Same driving angular dim as triad rotate + frame Angle field; default `0` |
 | **Orient** | Vector picker / label | Selected orientation vector for that row (or “global”) |
 | **Flip** | Two icon toggles | H + V → `isHorizontalFlip` / `isVerticalFlip`; default off |
 | **Justify** | 3-way icon radio | Left / Center / Right → `HorizontalAlignments`; default **Center** |
@@ -343,7 +364,8 @@ Cancel / destroy
 
 | Event | Stage | Action |
 |-------|-------|--------|
-| Triad tick | **A** | Snapped (or Alt-free) matrix-move existing sketch text; no solids |
+| Triad tick | **A** | Snapped (or Alt-free) matrix-move existing sketch text; sync dX/dY/Angle fields; no solids |
+| GUI dX / dY / Angle edit | Dim write + triad retarget + debounced **B** | Set dim parameters; move sketch to match; solid preview |
 | `mouseDragEnd` | debounce → **B** | `doExecutePreview` → extrude/cut preview |
 | Point select / Add Point | Setup (+ optional B) | Create sketch text + frame; optional initial `doExecutePreview` after setup |
 | Text / font / height / flip / justify | Setup + debounced **B** | Update sketch text; then `doExecutePreview` |
@@ -648,6 +670,8 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] `mouseDragEnd` + debounce → `doExecutePreview` builds solid engraving preview
 - [ ] `execute` used for final commit only (not interactive preview)
 - [ ] Snap dropdown quantizes translate/rotate; Alt bypasses snap
+- [ ] dX / dY / Angle editable in GUI and via triad; two-way sync without feedback loops
+- [ ] Typed dim values update sketch dims + triad pose; triad drag updates the same GUI fields
 - [ ] Re-entrancy: overlapping move/preview ignored or coalesced; no nested preview
 - [ ] Angle column + triad rotate settle update angular dim; no SketchText.angle API
 - [ ] Orient associatively projected; dim to projected line; hard-fail if not
