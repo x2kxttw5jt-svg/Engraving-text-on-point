@@ -174,7 +174,32 @@ select:focus {
 .col-idx { width: 28px; }
 .col-ht { width: 56px; }
 .col-angle { width: 52px; }
-.col-font { width: 100px; }
+.col-flip { width: 48px; white-space: nowrap; }
+.col-font { width: 96px; }
+
+.icon-btn {
+  width: 22px;
+  height: 22px;
+  padding: 2px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 2px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.icon-btn img {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.icon-btn:hover { border-color: var(--border); background: var(--bg-header); }
+
+.icon-btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--bg-row-hover);
+}
 
 .data-table input,
 .data-table select {

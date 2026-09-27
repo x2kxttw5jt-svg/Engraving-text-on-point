@@ -4,6 +4,8 @@
   "defaultHeight": "3 mm",
   "defaultDistance": "1 mm",
   "defaultAngle": "0 deg",
+  "defaultFlipH": false,
+  "defaultFlipV": false,
   "defaultFont": "Arial",
   "batch": {
     "enabled": false,

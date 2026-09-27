@@ -63,13 +63,27 @@
             <th class="col-text">Text</th>
             <th class="col-ht">Ht</th>
             <th class="col-angle">Angle</th>
+            <th class="col-flip">Flip</th>
             <th class="col-font">Font</th>
           </tr>
         </thead>
         <tbody id="text-tbody">
           <tr class="empty">
-            <td colspan="5">Select sketch points to add rows</td>
+            <td colspan="6">Select sketch points to add rows</td>
           </tr>
+          <!--
+            Per-row Flip cell (Phase 1):
+            <td class="col-flip">
+              <button type="button" class="icon-btn" data-flip="h"
+                title="Flip Horizontal" aria-label="Flip Horizontal" aria-pressed="false">
+                <img src="../icons/flipH/16x16-normal.png" alt="" width="16" height="16" />
+              </button>
+              <button type="button" class="icon-btn" data-flip="v"
+                title="Flip Vertical" aria-label="Flip Vertical" aria-pressed="false">
+                <img src="../icons/flipV/16x16-normal.png" alt="" width="16" height="16" />
+              </button>
+            </td>
+          -->
         </tbody>
       </table>
     </section>

@@ -52,6 +52,16 @@ angle_rad = design.unitsManager.evaluateExpression(angle_user_str, "rad")
 
 Rotate about the text center (center alignment + center constraint to the sketch point). Rebuild text on angle change during preview rather than trying to animate in place.
 
+### Flip
+
+```python
+tin.isHorizontalFlip = flip_h  # bool
+tin.isVerticalFlip = flip_v
+# Also readable/writable on SketchText after add
+```
+
+Same semantics as the Sketch Text dialog flips. Apply on `SketchTextInput` before `add` during preview/execute rebuilds. Center constraints remain mandatory after flip; hard-fail with reason if they cannot be applied.
+
 ## Live preview (`executePreview`)
 
 - Keep a long-lived **Command** while the palette is open.

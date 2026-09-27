@@ -9,7 +9,7 @@ Planning complete — see [docs/PLAN.md](docs/PLAN.md).
 ## Highlights
 
 - Table-style palette (stock Fusion look)
-- Columns: Text, Height, **Angle**, Font (text field renders in selected font)
+- Columns: Text, Height, **Angle**, **Flip** (stock Fusion H/V icons), Font (text field renders in selected font)
 - **Live preview** (on by default); Cancel/destroy leaves no geometry
 - Batch sequential text with prefix / suffix
 - Cut (optional target body) or New Body

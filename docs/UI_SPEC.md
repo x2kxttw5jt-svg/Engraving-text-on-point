@@ -54,9 +54,10 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 ## Table
 
 - Sticky header row.
-- Columns: `#` (28px) | Text (flex) | Ht (56px) | **Angle (52px)** | Font (100px).
+- Columns: `#` (28px) | Text (flex) | Ht (56px) | **Angle (52px)** | **Flip (48px)** | Font (96px).
 - Text `<input>`: `style.fontFamily = selectedFont`.
 - Angle `<input>`: degrees; placeholder `0`; suffix label `°` in cell or unit in value (`0 deg`).
+- Flip: two 16×16 icon toggle buttons (stock Fusion Flip Horizontal / Flip Vertical). Gap 2px. Active = accent border or depressed `--bg-row-hover` fill (match Fusion tool toggles). `aria-pressed` + tooltips.
 - Font `<select>`: each `<option style="font-family: name">`.
 - No card wrappers; hairline row borders only.
 - Selection highlight uses `--bg-row-hover` / accent left bar (2px) optional.
