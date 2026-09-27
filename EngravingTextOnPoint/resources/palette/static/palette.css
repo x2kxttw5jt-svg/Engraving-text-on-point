@@ -292,28 +292,25 @@ select:focus {
 .col-font { width: 96px; min-width: 72px; }
 .col-resize { width: 10px; padding: 0 !important; }
 
-.font-cell {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
+/* B → I → Font select, always vertical (never beside) */
+.font-stack {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
   gap: 4px;
   padding: 4px 0;
-}
-
-.font-cell .icon-group-style {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  align-items: stretch;
-}
-
-.font-cell .icon-group-style .style-btn {
   width: 100%;
 }
 
-.font-cell .row-font {
-  width: 100%;
+.font-stack .style-btn {
+  width: 100% !important;
+  box-sizing: border-box;
+}
+
+.font-stack .row-font {
+  width: 100% !important;
   min-width: 0;
+  display: block !important;
 }
 
 .style-btn {

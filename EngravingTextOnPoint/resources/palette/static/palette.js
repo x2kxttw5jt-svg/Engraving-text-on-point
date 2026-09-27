@@ -445,20 +445,19 @@
   }
 
   function fontCellHtml(row) {
+    // Vertical stack only: B, then I, then Font select (no side-by-side).
     return (
-      '<span class="font-cell">' +
-      '<span class="icon-group icon-group-style" title="Style">' +
+      '<div class="font-stack">' +
       '<button type="button" class="icon-btn style-btn" data-key="bold" aria-pressed="' +
       (row.bold ? "true" : "false") +
       '" title="Bold">B</button>' +
       '<button type="button" class="icon-btn style-btn" data-key="italic" aria-pressed="' +
       (row.italic ? "true" : "false") +
       '" title="Italic">I</button>' +
-      "</span>" +
       '<select class="row-font" title="Font">' +
       fontOptions(row.font) +
       "</select>" +
-      "</span>"
+      "</div>"
     );
   }
 
