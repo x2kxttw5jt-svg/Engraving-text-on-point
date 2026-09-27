@@ -303,31 +303,31 @@ select:focus {
 .font-stack {
   display: flex !important;
   flex-direction: column !important;
-  align-items: stretch !important;
-  gap: 4px;
+  align-items: flex-start !important;
+  gap: 3px;
   padding: 4px 0;
   width: 100%;
 }
 
 .font-stack .style-btn {
-  width: 100% !important;
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  padding: 0 !important;
   box-sizing: border-box;
+  font: 700 11px/1 var(--font-ui) !important;
+  color: var(--text);
+}
+
+.font-stack .style-btn[data-key="italic"] {
+  font-style: italic !important;
+  font-weight: 600 !important;
 }
 
 .font-stack .row-font {
   width: 100% !important;
   min-width: 0;
   display: block !important;
-}
-
-.style-btn {
-  font: 700 11px/1 var(--font-ui);
-  color: var(--text);
-}
-
-.style-btn[data-key="italic"] {
-  font-style: italic;
-  font-weight: 600;
 }
 
 .data-table tbody tr.is-active {
