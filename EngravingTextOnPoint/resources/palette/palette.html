@@ -43,7 +43,7 @@
         <span class="icon-slot" title="Target body"></span>
         <label>Target Body</label>
         <button type="button" class="btn" id="btn-body">Select</button>
-        <span class="muted" id="body-label">Optional</span>
+        <span class="muted" id="body-label">Join / Cut / Intersect</span>
       </div>
       <p class="muted" id="manip-status" role="status">
         Manipulators: Angle dim (needs Orient) · Move · Scale→Ht
@@ -52,13 +52,40 @@
 
     <section class="block" aria-label="Extrude">
       <div class="field-row">
-        <label>Operation</label>
-        <label class="radio"><input type="radio" name="op" value="cut" checked /> Cut</label>
-        <label class="radio"><input type="radio" name="op" value="newBody" /> New Body</label>
+        <label for="op-trigger">Operation</label>
+        <div class="op-dropdown" id="op-dropdown">
+          <button type="button" class="op-trigger" id="op-trigger" aria-haspopup="listbox" aria-expanded="false" title="Extrude operation">
+            <span class="op-icon" id="op-trigger-icon" aria-hidden="true"></span>
+            <span class="op-label" id="op-trigger-label">Cut</span>
+            <span class="op-caret" aria-hidden="true">▾</span>
+          </button>
+          <ul class="op-menu" id="op-menu" role="listbox" hidden>
+            <!-- Join / Cut / Intersect / New Body — stock Extrude icons in Phase 1; New Component excluded -->
+            <li role="option" data-op="join" tabindex="-1">
+              <span class="op-icon op-icon-join" aria-hidden="true"></span><span>Join</span>
+            </li>
+            <li role="option" data-op="cut" tabindex="-1" aria-selected="true">
+              <span class="op-icon op-icon-cut" aria-hidden="true"></span><span>Cut</span>
+            </li>
+            <li role="option" data-op="intersect" tabindex="-1">
+              <span class="op-icon op-icon-intersect" aria-hidden="true"></span><span>Intersect</span>
+            </li>
+            <li role="option" data-op="newBody" tabindex="-1">
+              <span class="op-icon op-icon-newbody" aria-hidden="true"></span><span>New Body</span>
+            </li>
+          </ul>
+          <input type="hidden" id="operation" name="operation" value="cut" />
+        </div>
       </div>
       <div class="field-row">
-        <label for="distance">Distance</label>
-        <input id="distance" type="text" value="1 mm" />
+        <label for="depth">Depth</label>
+        <input id="depth" type="text" value="1 mm" title="Engraving / extrude depth" />
+        <label for="direction" class="inline-label">Direction</label>
+        <select id="direction" title="Positive or negative along sketch normal">
+          <option value="positive" selected>Positive</option>
+          <option value="negative">Negative</option>
+          <option value="symmetric">Symmetric</option>
+        </select>
       </div>
       <div class="field-row">
         <label class="check">

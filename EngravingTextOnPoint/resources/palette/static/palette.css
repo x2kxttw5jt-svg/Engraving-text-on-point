@@ -128,6 +128,103 @@ select:focus {
   color: var(--text) !important;
 }
 
+.inline-label {
+  min-width: 0 !important;
+  margin-left: 4px;
+}
+
+/* Fusion Extrude–style operation dropdown (icon + name; no New Component) */
+.op-dropdown {
+  position: relative;
+  flex: 1;
+  min-width: 140px;
+  max-width: 220px;
+}
+
+.op-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  border-radius: 2px;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.op-trigger:hover,
+.op-dropdown.is-open .op-trigger {
+  border-color: var(--accent);
+}
+
+.op-trigger .op-label { flex: 1; }
+
+.op-caret {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.op-menu {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  margin: 0;
+  padding: 2px 0;
+  list-style: none;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.op-menu [role="option"] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 8px;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.op-menu [role="option"]:hover,
+.op-menu [role="option"][aria-selected="true"] {
+  background: var(--bg-row-hover);
+}
+
+.op-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Placeholder glyphs approximating stock Extrude ops — swap for Fusion PNGs later */
+.op-icon-join,
+.op-trigger[data-op="join"] .op-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Crect x='2' y='4' width='8' height='8' rx='1' fill='%230696d7'/%3E%3Crect x='6' y='4' width='8' height='8' rx='1' fill='%233db5e8' opacity='0.9'/%3E%3C/svg%3E");
+}
+.op-icon-cut,
+.op-trigger[data-op="cut"] .op-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M2 4h12v9H2z' fill='%230696d7'/%3E%3Crect x='5' y='2' width='6' height='7' fill='%23c0392b'/%3E%3C/svg%3E");
+}
+.op-icon-intersect,
+.op-trigger[data-op="intersect"] .op-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Crect x='2' y='3' width='8' height='8' fill='none' stroke='%23666' stroke-width='1'/%3E%3Crect x='6' y='5' width='8' height='8' fill='none' stroke='%23666' stroke-width='1'/%3E%3Crect x='6' y='5' width='4' height='6' fill='%230696d7'/%3E%3C/svg%3E");
+}
+.op-icon-newbody,
+.op-trigger[data-op="newBody"] .op-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cellipse cx='8' cy='11' rx='5' ry='2.5' fill='%23bbb'/%3E%3Crect x='3' y='5' width='10' height='6' fill='%23ddd'/%3E%3Cellipse cx='8' cy='5' rx='5' ry='2.5' fill='%23eee' stroke='%23999'/%3E%3Ccircle cx='12.5' cy='3.5' r='2.2' fill='%23f1c40f'/%3E%3C/svg%3E");
+}
+
 .batch-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

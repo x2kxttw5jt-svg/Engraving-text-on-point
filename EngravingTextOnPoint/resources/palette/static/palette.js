@@ -18,7 +18,6 @@
   const btnRef = document.getElementById("btn-ref");
   const refLabel = document.getElementById("ref-label");
   const pointsCount = document.getElementById("points-count");
-  const opRadios = document.querySelectorAll('input[name="op"]');
   const targetRow = document.getElementById("target-row");
   const btnApplyRef = document.getElementById("btn-apply-ref");
   const btnOk = document.getElementById("btn-ok");
@@ -28,8 +27,28 @@
   const dimAngleWrap = document.getElementById("dim-angle-wrap");
   const thAngle = document.getElementById("th-angle");
   const tbody = document.getElementById("text-tbody");
+  const opDropdown = document.getElementById("op-dropdown");
+  const opTrigger = document.getElementById("op-trigger");
+  const opMenu = document.getElementById("op-menu");
+  const opHidden = document.getElementById("operation");
+  const opTriggerIcon = document.getElementById("op-trigger-icon");
+  const opTriggerLabel = document.getElementById("op-trigger-label");
 
   const FONTS = ["Arial", "Artifakt Element", "Courier New", "Times New Roman"];
+  const OP_LABELS = {
+    join: "Join",
+    cut: "Cut",
+    intersect: "Intersect",
+    newBody: "New Body",
+  };
+  const OP_ICON_CLASS = {
+    join: "op-icon-join",
+    cut: "op-icon-cut",
+    intersect: "op-icon-intersect",
+    newBody: "op-icon-newbody",
+  };
+  // Boolean ops need a target body; New Body does not. New Component excluded.
+  const OPS_NEED_TARGET = { join: true, cut: true, intersect: true };
 
   let mockOrient = false;
   let mockRef = false;
@@ -61,10 +80,72 @@
     setHidden(btnOk, rows.length < 1);
   }
 
+  function currentOperation() {
+    return (opHidden && opHidden.value) || "cut";
+  }
+
   function syncTargetVisibility() {
-    const op = document.querySelector('input[name="op"]:checked');
-    const cut = op && op.value === "cut";
-    setHidden(targetRow, !cut);
+    setHidden(targetRow, !OPS_NEED_TARGET[currentOperation()]);
+  }
+
+  function setOperation(op) {
+    if (!OP_LABELS[op]) return;
+    if (opHidden) opHidden.value = op;
+    if (opTrigger) opTrigger.setAttribute("data-op", op);
+    if (opTriggerLabel) opTriggerLabel.textContent = OP_LABELS[op];
+    if (opTriggerIcon) {
+      opTriggerIcon.className = "op-icon " + OP_ICON_CLASS[op];
+    }
+    if (opMenu) {
+      opMenu.querySelectorAll('[role="option"]').forEach(function (li) {
+        li.setAttribute(
+          "aria-selected",
+          li.getAttribute("data-op") === op ? "true" : "false"
+        );
+      });
+    }
+    syncTargetVisibility();
+    if (statusEl) {
+      statusEl.textContent =
+        "Operation → " +
+        OP_LABELS[op] +
+        (OPS_NEED_TARGET[op]
+          ? " (Target Body shown)"
+          : " (no target body)") +
+        " — dummy UI";
+    }
+  }
+
+  function closeOpMenu() {
+    if (!opMenu || !opTrigger || !opDropdown) return;
+    opMenu.hidden = true;
+    opTrigger.setAttribute("aria-expanded", "false");
+    opDropdown.classList.remove("is-open");
+  }
+
+  function openOpMenu() {
+    if (!opMenu || !opTrigger || !opDropdown) return;
+    opMenu.hidden = false;
+    opTrigger.setAttribute("aria-expanded", "true");
+    opDropdown.classList.add("is-open");
+  }
+
+  if (opTrigger && opMenu) {
+    opTrigger.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (opMenu.hidden) openOpMenu();
+      else closeOpMenu();
+    });
+    opMenu.querySelectorAll('[role="option"]').forEach(function (li) {
+      li.addEventListener("click", function (e) {
+        e.stopPropagation();
+        setOperation(li.getAttribute("data-op"));
+        closeOpMenu();
+      });
+    });
+    document.addEventListener("click", function () {
+      closeOpMenu();
+    });
   }
 
   function syncPointsCount() {
@@ -459,10 +540,6 @@
     batchGrid.hidden = !batchEnabled.checked;
   });
 
-  opRadios.forEach(function (r) {
-    r.addEventListener("change", syncTargetVisibility);
-  });
-
   function syncPreviewStatus() {
     if (!statusEl || rows.length) return;
     statusEl.textContent = livePreview.checked
@@ -474,10 +551,14 @@
 
   // Seed sample points so the table/chrome are reviewable on open.
   seedSampleRows();
-  syncTargetVisibility();
+  setOperation("cut");
   syncApplyRefVisibility();
   syncFrameDimsVisibility();
   syncOkVisibility();
+  if (statusEl) {
+    statusEl.textContent =
+      "Sample points loaded for UI review — dummy UI (not Fusion geometry)";
+  }
 
   window.fusionJavaScriptHandler = {
     handle: function (action, data) {

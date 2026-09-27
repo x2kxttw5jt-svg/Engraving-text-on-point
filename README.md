@@ -1,6 +1,6 @@
 # Engraving Text on Point
 
-Fusion 360 add-in: place centered sketch text on selected sketch points, then extrude as **Cut** or **New Body**.
+Fusion 360 add-in: place centered sketch text on selected sketch points, then extrude as **Join**, **Cut**, **Intersect**, or **New Body** (no New Component), with **Depth** and **Direction**.
 
 ## Status
 

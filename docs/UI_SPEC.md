@@ -78,8 +78,11 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - No card wrappers; hairline row borders only.
 - Selection highlight uses `--bg-row-hover` / accent left bar (2px) optional.
 
-## Extrude block extras
+## Extrude block
 
+- **Operation** — Fusion Extrude–style dropdown: **icon + name** per option. Options: **Join**, **Cut**, **Intersect**, **New Body**. **Exclude New Component.** Prefer stock Extrude command icons when packaged; dummy uses SVG stand-ins.
+- **Depth** — length input (default `1 mm`); engraving cut depth or positive extrude distance.
+- **Direction** — `Positive` / `Negative` / `Symmetric` along sketch normal (supports positive Join / Intersect / New Body).
 - **Live sketch preview** checkbox (default checked): sketch text + dims update live; **solid** preview runs after triad `mouseDragEnd` + debounce → auto-apply driving dims → `doExecutePreview`.
 - **Snap** dropdowns: linear + angular increments; label hint `Alt = free`.
 - **Frame dims** row (active selection): `dX`, `dY`, `Angle` text inputs — same driving dimensions as the triad. **Hidden** until the matching dim exists (dX/dY after Ref dims applied; Angle after Orient set). Whole Frame row hidden when none apply.
@@ -95,7 +98,7 @@ Icon button (16×16) + label + count badge (plain text, not pill chrome).
 | Control | Shown when |
 |---------|------------|
 | **Apply Ref Dims** | Ref point selected |
-| **Target Body** | Operation = Cut |
+| **Target Body** | Operation = Join, Cut, or Intersect |
 | Frame **dX** / **dY** | Ref H/V dims applied |
 | Frame **Angle** + table Angle column | Orient set |
 | **OK** | ≥1 point / table row |

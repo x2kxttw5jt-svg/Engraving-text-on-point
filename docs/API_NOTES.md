@@ -207,12 +207,15 @@ extrudeFeatures.createInput(sketchText, FeatureOperations.…)
 
 Do **not** require `sketch.profiles` for text — pass the `SketchText` object.
 
-Operations used:
+Operations used (stock Extrude set **minus New Component**):
 
-- `CutFeatureOperation` + optional `participantBodies`
-- `NewBodyFeatureOperation`
+- `JoinFeatureOperation` + `participantBodies`
+- `CutFeatureOperation` + `participantBodies`
+- `IntersectFeatureOperation` + `participantBodies`
+- `NewBodyFeatureOperation` (no target body)
+- **Do not** expose `NewComponentFeatureOperation`
 
-Extent: `setDistanceExtent(isSymmetric, ValueInput)` or `setOneSideExtent` for direction control.
+Extent: **Depth** via `setDistanceExtent(isSymmetric, ValueInput)` or one-side extent; **Direction** = positive / negative / symmetric along sketch normal.
 
 ## Selection filters
 

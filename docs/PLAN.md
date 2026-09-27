@@ -2,7 +2,7 @@
 
 ## Goal
 
-A Fusion 360 Python add-in that lets the user pick sketch points, place centered sketch text on each point, then extrude that text as **Cut** or **New Body**, with an optional target body. The UI is a **stock-looking table palette** (light default, dark, auto) that supports per-row text/height/font/**angle**/**flip**/**justify**/**align** and **batch sequential text** with prefix/suffix. Changes show as a **live preview** in the design; Cancel/destroy removes all preview geometry.
+A Fusion 360 Python add-in that lets the user pick sketch points, place centered sketch text on each point, then extrude that text as **Join**, **Cut**, **Intersect**, or **New Body** (no New Component), with optional target body for boolean ops, **Depth**, and **Direction** (positive / negative / symmetric). The UI is a **stock-looking table palette** (light default, dark, auto) that supports per-row text/height/font/**angle**/**flip**/**justify**/**align** and **batch sequential text** with prefix/suffix. Changes show as a **live preview** in the design; Cancel/destroy removes all preview geometry.
 
 ---
 
@@ -21,9 +21,9 @@ Active row: Fusion manipulators — angle edits the **angular dimension**; move 
   ↓
 Edit Text / Ht / Font / Flip / Justify / Align / Angle dim (or Batch) → preview updates
   ↓
-Choose Extrude: Cut | New Body → preview extrude updates
+Choose Extrude op (icon dropdown): Join | Cut | Intersect | New Body → preview updates
   ↓
-If Cut: show Target Body picker (hidden for New Body)
+If Join / Cut / Intersect: show Target Body picker (hidden for New Body)
   ↓
 OK → commit + timeline group
 Cancel / close → teardown preview; leave user-created Add Point geometry? (see decisions)
@@ -45,11 +45,12 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 │  ✛ Ref Pt    [ Select ]  [ Apply Ref Dims ]  (new or existing free pts) │
 │  ▭ Sketch    [ Select ]  (optional — used by Add Point)              │
 │  ↗ Orient    [ Select ]  (vector for text angle — required)          │
-│  ⬚ Target Body  [ Select ]     (shown only when Cut)                 │
+│  ⬚ Target Body  [ Select ]     (Join / Cut / Intersect)              │
 │  Active row: Angle dim ✓  Move ✓/✗  Scale→Ht ✓                      │
 ├──────────────────────────────────────────────────────────────────────┤
-│  Operation / Distance / Direction / Live sketch preview              │
-│  Snap        [ 1 mm ▼ ]  [ 5° ▼ ]   (Alt = free)                     │
+│  Operation   [✂ Cut ▼]  (Join · Cut · Intersect · New Body)          │
+│  Depth       [ 1 mm ]   Direction [ Positive ▼ ]                     │
+│  Live sketch preview · Snap [ 1 mm ▼ ] [ 5° ▼ ]  (Alt = free)       │
 │  Frame dims  dX [ 12 mm ]  dY [ 5 mm ]  Angle [ 0 deg ]             │
 │              ↕ two-way with Triad + sketch dimensions                │
 │              Ht also via triad unified scale                         │
@@ -362,7 +363,7 @@ mouseDragEnd
 
 executePreview (handler)
   → assumes frame dims are already driving (auto-applied above)
-  → create/update Cut | New Body from current sketch text
+  → create/update Join | Cut | Intersect | New Body from current sketch text
   → keep frame dims visible; do not recreate text if pose-only
 
 execute (OK only)
@@ -404,7 +405,7 @@ Cancel / destroy
 | Point select / Add Point | Setup (+ optional B) | Create sketch text + frame; optional initial `doExecutePreview` after setup |
 | Text / font / height / flip / justify | Setup + debounced **B** | Update sketch text; then `doExecutePreview` |
 | Orient / Ref apply | Setup + **B** | Frame dims; then solid preview |
-| Distance / op / target change | Debounced **B** | Solid preview only (sketch unchanged) |
+| Depth / direction / op / target change | Debounced **B** | Solid preview only (sketch unchanged) |
 | Theme | None | No geometry |
 | OK | **C** | `execute` final commit |
 | Cancel | Teardown | Cancel timers; remove preview |
@@ -426,7 +427,7 @@ Prefer built-in Fusion glyphs; else Photoshop 16/32/64 PNGs (see `resources/icon
 | Command | Extrude / Text | Point + “T”, Fusion blue |
 | Point select | SketchPoint | Crosshair |
 | Body select | BRep body | Body silhouette |
-| Cut / New Body | Extrude Cut / New Body | Cutter / plus+body |
+| Operation dropdown | Join / Cut / Intersect / New Body (no New Component) | Stock Extrude op icons |
 | **Flip Horizontal** | **Stock Fusion Flip Horizontal** (Sketch Text family) | Photoshop retouch of stock only |
 | **Flip Vertical** | **Stock Fusion Flip Vertical** | Same |
 | **Justify L/C/R** | **Stock Fusion text align left / center / right** | Same |
@@ -549,20 +550,32 @@ Raise a dedicated error type (e.g. `TextConstraintError(stage, detail, row_id)`)
 ### 3. Extrude
 
 ```python
-ext_in = extrudes.createInput(
-    sk_text,
-    adsk.fusion.FeatureOperations.CutFeatureOperation  # or NewBodyFeatureOperation
-)
-ext_in.setDistanceExtent(False, adsk.core.ValueInput.createByReal(dist_cm))
-if op == Cut and target_bodies:
+OP_MAP = {
+    "join": adsk.fusion.FeatureOperations.JoinFeatureOperation,
+    "cut": adsk.fusion.FeatureOperations.CutFeatureOperation,
+    "intersect": adsk.fusion.FeatureOperations.IntersectFeatureOperation,
+    "newBody": adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+    # New Component intentionally unsupported
+}
+ext_in = extrudes.createInput(sk_text, OP_MAP[op])
+# Depth + direction (positive / negative / symmetric)
+if direction == "symmetric":
+    ext_in.setDistanceExtent(True, adsk.core.ValueInput.createByReal(depth_cm))
+else:
+    ext_in.setDistanceExtent(False, adsk.core.ValueInput.createByReal(depth_cm))
+    # flip / one-side sense for positive vs negative along sketch normal
+if op in ("join", "cut", "intersect") and target_bodies:
     ext_in.participantBodies = target_bodies
 extrudes.add(ext_in)
 ```
 
 | Operation | FeatureOperations | Target body |
 |-----------|-------------------|-------------|
-| Cut | `CutFeatureOperation` | Optional `participantBodies` |
+| Join | `JoinFeatureOperation` | Shown — `participantBodies` |
+| Cut | `CutFeatureOperation` | Shown — `participantBodies` |
+| Intersect | `IntersectFeatureOperation` | Shown — `participantBodies` |
 | New Body | `NewBodyFeatureOperation` | Hidden |
+| New Component | **Excluded** | — |
 
 Commit: one timeline group **Engraving Text on Point**.
 
@@ -610,7 +623,7 @@ Engraving code may depend on `sketch_transform_frame`. The frame package must **
 | JS → Python | `rowUpdated` | `{ id, text, height, angle, font, flipH, flipV, justify, align }` |
 | JS → Python | `orientChanged` | `{ id\|global, entityToken }` |
 | JS → Python | `batchChanged` | `{ enabled, prefix, suffix, start, digits, step }` |
-| JS → Python | `optionsChanged` | `{ operation, distance, direction, theme, livePreview }` |
+| JS → Python | `optionsChanged` | `{ operation, depth, direction, theme, livePreview }` |
 | JS → Python | `execute` / `cancel` | — |
 | Python → JS | `setRows` | `[{ id, text, height, angle, orientLabel, font, flipH, flipV, justify, align, pointLabel }]` |
 | Python → JS | `setFonts` / `setTheme` / `setStatus` / `setTargetEnabled` | … |
@@ -673,7 +686,8 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Table | Seeded with **3 sample point rows** on open for visual review; Add Point appends more |
 | Font dropdown | Seeded list; text input `font-family` follows selection |
 | Batch | Prefix/suffix/start/digits/step rewrite mock row texts |
-| Operation / Distance / Live preview / Theme | Fully interactive; Cut **shows** Target Body (hidden otherwise — never greyed) |
+| Operation dropdown | Icon + name: Join / Cut / Intersect / New Body (no New Component) |
+| Depth / Direction | Depth length + Positive / Negative / Symmetric; boolean ops show Target Body |
 | Conditional chrome | Apply Ref Dims / Frame dX·dY·Angle / Angle column / OK stay **hidden** until conditions met |
 | Icons | Stock Fusion PNGs in place (or labeled placeholders until extracted) |
 | OK / Cancel | Status only — **no model changes** |
@@ -687,11 +701,11 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - `mouseDragEnd` → debounce → **auto-apply Ref/Orient dims to driving** → `doExecutePreview`.
 - `execute` = final commit only.
 
-### Phase 3 — Cut + target body polish
-- Participant bodies, distance/direction in preview + commit; error UX.
+### Phase 3 — Boolean ops + depth polish
+- Join / Cut / Intersect / New Body; participant bodies; depth + direction in preview + commit; error UX.
 
-### Phase 4 — Cut + target body
-- `participantBodies`, distance/direction in preview and commit.
+### Phase 4 — Target body + extents
+- `participantBodies` for Join/Cut/Intersect; depth/direction in preview and commit.
 
 ### Phase 5 — Polish
 - Settings persistence, final icons, error UX, README install, dummy-mode flag removed or gated for dev only.
@@ -741,10 +755,13 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] Live preview updates on text/height/font/angle/distance edits (debounced)
 - [ ] Cancel / close leaves no sketch text or extrudes
 - [ ] Live preview off → no geometry until OK
+- [ ] Operation dropdown shows Join / Cut / Intersect / New Body with icons; **no New Component**
+- [ ] Depth + Direction (positive / negative / symmetric) drive extrude extent
+- [ ] Positive Join / Intersect / New Body extrusions preview and commit
 - [ ] Single point → centered text → New Body
 - [ ] Multi-point batch sequence order matches selection
 - [ ] Font dropdown + text input face
-- [ ] Cut with / without explicit target body
+- [ ] Join / Cut / Intersect with / without explicit target body
 - [ ] Undo reverses entire engraving group after OK
 
 ---
@@ -753,7 +770,9 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 
 | Topic | Decision |
 |-------|----------|
-| Join operation | Defer; Cut + New Body only |
+| **Operations** | **Join, Cut, Intersect, New Body via stock-like icon dropdown; New Component excluded** |
+| **Depth** | **Length field (default `1 mm`) — engraving cut depth or positive extrude distance** |
+| **Direction** | **Positive / Negative / Symmetric along sketch normal** |
 | **Text angle API** | **None (retired). Do not use.** |
 | **Rotation** | **Orient vector → associative project → driving angular dim to `rectangleLines`; manipulator edits the dim** |
 | **Orientation** | **Required vector select → associative project onto text sketch → angular dim to projected line** |
@@ -769,7 +788,9 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | **Re-entrancy** | **Single-flight guards on pose move, height write, and solid preview** |
 | Default height | `3 mm` |
 | Default font | `Arial` |
-| Default distance | `1 mm` |
+| Default depth | `1 mm` |
+| Default direction | `positive` |
+| Default operation | `cut` |
 | Default angle | `0 deg` |
 | Default flip H/V | `false` / `false` |
 | Default justify / align | `center` / `middle` |
@@ -781,7 +802,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 
 1. Stock-like table palette with Fusion icons where possible.
 2. Text centered and **associatively constrained** to each sketch point; orientation vector **associatively projected** onto the sketch; **driving angular dimension** between text and that projected line; failures **hard-fail with reason**.
-3. Extrude Cut or New Body with optional target body for Cut.
+3. Extrude Join / Cut / Intersect / New Body with Depth + Direction; target body for boolean ops.
 4. Batch sequential text with prefix/suffix.
 5. Font-aware text field + font dropdown + **angle dim**, **orient vector**, **flip**, **justify**, **align**.
 6. **Triad fast path** (move/rotate + **unified scale→height**) + **debounce → auto-apply driving → `doExecutePreview`** + **`execute` commit only**; snap + Alt; re-entrancy guards.

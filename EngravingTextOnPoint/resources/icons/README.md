@@ -8,7 +8,11 @@ Prefer Fusion built-in command glyphs when packaging allows reuse.
 | `point/` | Sketch point / select | Crosshair + point |
 | `body/` | Body select | Solid body silhouette |
 | `cut/` | Extrude Cut | Cutter + minus |
+| `join/` | Extrude Join | Merged blocks |
+| `intersect/` | Extrude Intersect | Overlap volume |
 | `newbody/` | New Body | Body + plus |
+
+Operation dropdown uses these **16×16** Extrude-family icons next to labels (Join / Cut / Intersect / New Body). **New Component is not offered.**
 | `flipH/` | **Stock Fusion Flip Horizontal** (Sketch Text family) | Retouch stock only |
 | `flipV/` | **Stock Fusion Flip Vertical** | Retouch stock only |
 | `justifyLeft/` | **Stock Fusion text align left** | Retouch stock only |
