@@ -36,6 +36,9 @@ class TextConstraintError(RuntimeError):
 # - "midPoint constraint"
 # - "coincident to sketch point"
 # - "verify associativity"
+# - "associative project failed"
+# - "projected line unavailable"
+# - "angular dimension failed"
 # detail = str(exception) or a precise local check message
 ```
 
@@ -59,30 +62,36 @@ Do not swallow Fusion exceptions into a generic toast; chain `detail` from the o
 
 These control text placement **inside** the text rectangle. The rectangle center stays constrained to the sketch point.
 
-### Angle = driving angular dimension + orientation vector
+### Angle = associative project of Orient vector + driving angular dimension
 
-Do **not** use retired `SketchText.angle` / `SketchTextInput.angle`. Orientation is associative:
+Do **not** use retired `SketchText.angle` / `SketchTextInput.angle`.
+
+**Always** associatively project the selected orientation vector onto the text sketch, then dimension the text to that **projected** line:
 
 ```python
-# 1) Orientation vector in the text sketch (project if needed)
-proj = sketch.project2(selected_edge_or_line, True)  # or use existing SketchLine
-orient_line = ...  # SketchLine along vector
+# 1) Associative (linked) projection onto the text sketch — required
+#    project2(entity, isLinked=True)  — verify arg name on target Fusion build
+proj_entities = sketch.project2(selected_vector_entity, True)
+projected_line = as_sketch_line(proj_entities)  # must be usable SketchLine
 
 # 2) Text frame edge from MultiLineTextDefinition.rectangleLines
 text_edge = pick_baseline_edge(sk_text.definition.rectangleLines)
 
-# 3) Driving angular dimension (controls rotation)
+# 3) Driving angular dimension: text edge ↔ projected line (not the source entity)
 dim = sketch.sketchDimensions.addAngularDimension(
-    text_edge, orient_line, dim_text_point, True)
+    text_edge, projected_line, dim_text_point, True)
 dim.parameter.expression = "0 deg"  # or row angle
 
 # 4) Angle manipulator / Angle column → update dim.parameter only
-#    Text rotates via constraints; do not recreate SketchText for angle-only edits
 ```
 
-- User **must** select an orientation vector before angle is meaningful.
+Rules:
+
+- Dimension **only** against the projected line, never against the off-sketch source.
+- Projection must be **linked/associative** so source edits update the sketch reference.
+- Do not use an unlinked/fixed projection as a fallback.
+- Hard-fail stages: `orient vector missing`, `associative project failed`, `projected line unavailable`, `angular dimension failed`.
 - `setAsMultiLine` 5th arg is **characterSpacing** (%), not angle.
-- Hard-fail with reason if vector missing, `project2` fails, or `addAngularDimension` fails.
 
 ### Flip
 

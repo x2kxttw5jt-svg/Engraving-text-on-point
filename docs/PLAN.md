@@ -295,12 +295,13 @@ sk_text = sketch.sketchTexts.add(tin)
 
 **Orientation + angular dimension (required)**
 
-1. Resolve orientation vector into the text sketch (use as-is or `project2`).
-2. From `MultiLineTextDefinition.rectangleLines`, pick the edge that defines text baseline/orientation.
-3. `sketch.sketchDimensions.addAngularDimension(textEdge, orientLine, dimTextPoint, True)` — **driving**.
-4. Set initial dimension value to the row Angle (default `0`).
-5. Angle column / angle manipulator write `dimension.parameter.expression` (or value) — text rotates because the dimension drives the frame; **do not** call retired `SketchText.angle`.
-6. Hard-fail with reason if vector missing, projection fails, or dimension cannot be added.
+1. User selects orientation vector (line / axis / edge).
+2. **Associatively project** it onto the text sketch: `sketch.project2(vectorEntity, True)` (`isLinked=True`). Keep a reference to the **projected** `SketchLine` (or curve used as the dimension side).
+3. From `MultiLineTextDefinition.rectangleLines`, pick the text baseline / orientation edge.
+4. `sketch.sketchDimensions.addAngularDimension(textEdge, projectedOrientLine, dimTextPoint, True)` — **driving**.
+5. Set initial dimension value to the row Angle (default `0`).
+6. Angle column / manipulator write `dimension.parameter` only — text rotates via constraints/dimension; **do not** use retired `SketchText.angle`.
+7. Hard-fail stages (include in error text): `orient vector missing`, `associative project failed`, `projected line unavailable`, `angular dimension failed`.
 
 **Justify + Align columns**
 
@@ -509,7 +510,9 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] Dark and Auto follow / override correctly
 - [ ] User must select orientation vector before angle is available
 - [ ] Angle column + manipulator update the **angular dimension**; text rotates without recreate
-- [ ] Orient vector from another sketch/edge is projected; dimension failure hard-fails with reason
+- [ ] Orient vector is **associatively projected** onto the text sketch; dimension is to the **projected** line
+- [ ] Moving/changing the source orientation vector updates the projected line (linked); text orientation relationship holds
+- [ ] Unlinked projection or dimension-to-source (not projected) is not allowed; failures hard-fail with reason
 - [ ] Move manipulator enabled only when point unconstrained; text follows center constraint
 - [ ] Move manipulator disabled + reason when point constrained
 - [ ] Add Point: custom-graphics ghost follows preselect projected location on sketch plane
@@ -540,7 +543,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 |-------|----------|
 | Join operation | Defer; Cut + New Body only |
 | **Text angle** | **Driving angular dimension vs user-selected orientation vector; manipulator edits the dim** |
-| **Orientation** | **Required vector select (sketch line / axis / edge→project)** |
+| **Orientation** | **Required vector select → associative project onto text sketch → angular dim to projected line** |
 | **Position** | **Stock Fusion move manipulators; only if sketch point is unconstrained** |
 | **Add Point** | **Preselect + custom-graphics projected ghost; click commits in selected sketch or new sketch** |
 | **Text flip** | **Per-row H + V toggles; stock Fusion flip icons; default off** |
@@ -560,7 +563,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 ## Success criteria
 
 1. Stock-like table palette with Fusion icons where possible.
-2. Text centered and **associatively constrained** to each sketch point; orientation from a **driving angular dimension** to a selected vector; failures **hard-fail with reason**.
+2. Text centered and **associatively constrained** to each sketch point; orientation vector **associatively projected** onto the sketch; **driving angular dimension** between text and that projected line; failures **hard-fail with reason**.
 3. Extrude Cut or New Body with optional target body for Cut.
 4. Batch sequential text with prefix/suffix.
 5. Font-aware text field + font dropdown + **angle dim**, **orient vector**, **flip**, **justify**, **align**.
