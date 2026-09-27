@@ -641,8 +641,22 @@ input.row-dy.is-xy-locked {
   field-sizing: content;
 }
 
-.data-table textarea.row-text.is-bold { font-weight: 700 !important; }
-.data-table textarea.row-text.is-italic { font-style: italic !important; }
+.data-table textarea.row-text.is-bold,
+.data-table .row-text-display.is-bold { font-weight: 700 !important; }
+.data-table textarea.row-text.is-italic,
+.data-table .row-text-display.is-italic { font-style: italic !important; }
+
+/* Batch mode: Text is display-only (no input) */
+.data-table .row-text-display {
+  display: block;
+  min-height: var(--ctrl-h);
+  line-height: 1.35;
+  padding: 3px 2px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  color: var(--text);
+}
 
 .row-resize-handle {
   display: block;

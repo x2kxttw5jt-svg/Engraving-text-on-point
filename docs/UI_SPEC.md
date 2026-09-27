@@ -94,7 +94,7 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - **Live solid preview** (default checked): Fusion bool row — label left, checkbox right. Controls **extrude/cut solid preview** after triad settle → auto-apply → `doExecutePreview`. Details in tooltip only (no parenthetical chrome). Sketch / triad still update live regardless.
 - **Snap** dropdowns: linear + angular increments; label hint `Alt = free`.
 - When solid preview unchecked: triad / sketch still update; skip settle `doExecutePreview`; OK/Apply commit solids.
-- **Batch sequence** (bool row): when on, shows Prefix / Suffix / Start / Digits / Step and a live example. Rewrites each row’s Text as `Prefix + padded number + Suffix` in table order. Manual Text edits override that row until Batch is toggled off→on.
+- **Batch sequence** (bool row): when on, shows Prefix / Suffix / Start / Digits / Step and a live example. Rewrites each row’s Text as `Prefix + padded number + Suffix` in table order. **Text column inputs are removed** while Batch is on (display-only); turn Batch off to edit Text per row.
 
 ## Selection rows
 

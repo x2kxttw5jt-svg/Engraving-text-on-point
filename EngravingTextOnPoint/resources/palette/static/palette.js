@@ -382,6 +382,34 @@
     );
   }
 
+  function textCellHtml(row) {
+    var styleCls =
+      (row.bold ? " is-bold" : "") + (row.italic ? " is-italic" : "");
+    var fontStyle = ' style="font-family:' + (row.font || "Arial") + '"';
+    // Batch drives Text — no per-row input field.
+    if (batchEnabled && batchEnabled.checked) {
+      return (
+        '<td class="col-text">' +
+        '<span class="row-text-display' +
+        styleCls +
+        '"' +
+        fontStyle +
+        ' title="Driven by Batch sequence">' +
+        escapeHtml(row.text) +
+        "</span></td>"
+      );
+    }
+    return (
+      '<td class="col-text"><textarea class="row-text' +
+      styleCls +
+      '" rows="1"' +
+      fontStyle +
+      ">" +
+      escapeHtml(row.text) +
+      "</textarea></td>"
+    );
+  }
+
   function renderRows() {
     if (!tbody) return;
     if (!rows.length) {
@@ -401,14 +429,7 @@
           '<td class="col-idx">' +
           (i + 1) +
           "</td>" +
-          '<td class="col-text"><textarea class="row-text' +
-          (row.bold ? " is-bold" : "") +
-          (row.italic ? " is-italic" : "") +
-          '" rows="1" style="font-family:' +
-          row.font +
-          '">' +
-          escapeHtml(row.text) +
-          "</textarea></td>" +
+          textCellHtml(row) +
           '<td class="col-ht"><input type="text" class="row-ht" value="' +
           row.height +
           '" /></td>' +
@@ -441,12 +462,7 @@
         var row = rows.find(function (r) {
           return r.id === id;
         });
-        if (row) {
-          row.text = ta.value;
-          if (batchEnabled && batchEnabled.checked) {
-            row.batchOverride = true;
-          }
-        }
+        if (row) row.text = ta.value;
         autosizeTextarea(ta);
       });
     });
