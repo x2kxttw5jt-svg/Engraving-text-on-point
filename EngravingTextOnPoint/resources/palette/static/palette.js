@@ -303,6 +303,10 @@
           row.text +
           '" style="font-family:' +
           row.font +
+          ";font-weight:" +
+          (row.bold ? "700" : "400") +
+          ";font-style:" +
+          (row.italic ? "italic" : "normal") +
           '" /></td>' +
           '<td class="col-ht"><input type="text" class="row-ht" value="' +
           row.height +
@@ -318,9 +322,9 @@
           '<td class="col-format">' +
           formatCellHtml(row) +
           "</td>" +
-          '<td class="col-font"><select class="row-font">' +
-          fontOptions(row.font) +
-          "</select></td>" +
+          '<td class="col-font">' +
+          fontCellHtml(row) +
+          "</td>" +
           "</tr>"
         );
       })
@@ -334,7 +338,7 @@
       });
     });
 
-    tbody.querySelectorAll(".format-btn").forEach(function (btn) {
+    tbody.querySelectorAll(".format-btn, .style-btn").forEach(function (btn) {
       btn.addEventListener("click", function (e) {
         e.stopPropagation();
         var tr = btn.closest("tr");
@@ -360,10 +364,35 @@
     tbody.querySelectorAll(".row-font").forEach(function (sel) {
       sel.addEventListener("change", function () {
         var tr = sel.closest("tr");
+        var id = tr && tr.getAttribute("data-id");
+        var row = rows.find(function (r) {
+          return r.id === id;
+        });
+        if (row) row.font = sel.value;
         var textInput = tr && tr.querySelector(".row-text");
-        if (textInput) textInput.style.fontFamily = sel.value;
+        if (textInput) {
+          textInput.style.fontFamily = sel.value;
+        }
       });
     });
+  }
+
+  function fontCellHtml(row) {
+    return (
+      '<span class="font-cell">' +
+      '<span class="icon-group icon-group-style" title="Style">' +
+      '<button type="button" class="icon-btn style-btn" data-key="bold" aria-pressed="' +
+      (row.bold ? "true" : "false") +
+      '" title="Bold">B</button>' +
+      '<button type="button" class="icon-btn style-btn" data-key="italic" aria-pressed="' +
+      (row.italic ? "true" : "false") +
+      '" title="Italic">I</button>' +
+      "</span>" +
+      '<select class="row-font" title="Font">' +
+      fontOptions(row.font) +
+      "</select>" +
+      "</span>"
+    );
   }
 
   function addRow(partial) {
@@ -379,6 +408,8 @@
         flipV: false,
         justify: "center",
         align: "middle",
+        bold: false,
+        italic: false,
         font: "Arial",
       },
       partial || {}
@@ -412,6 +443,8 @@
       orient: "XY edge",
       justify: "center",
       align: "middle",
+      bold: false,
+      italic: false,
       font: "Arial",
     });
     addRow({
@@ -422,6 +455,8 @@
       flipH: true,
       justify: "left",
       align: "middle",
+      bold: true,
+      italic: false,
       font: "Artifakt Element",
     });
     addRow({
@@ -432,6 +467,8 @@
       flipV: true,
       justify: "center",
       align: "top",
+      bold: false,
+      italic: true,
       font: "Courier New",
     });
     activeRowId = rows[0].id;

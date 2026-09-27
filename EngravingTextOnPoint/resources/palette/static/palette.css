@@ -275,7 +275,34 @@ select:focus {
 .col-angle { width: 48px; }
 .col-orient { width: 64px; }
 .col-format { width: 84px; vertical-align: middle; }
-.col-font { width: 92px; }
+.col-font { width: 148px; vertical-align: middle; }
+
+.font-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.font-cell .icon-group-style {
+  display: inline-flex;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.font-cell .row-font {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.style-btn {
+  font: 700 11px/1 var(--font-ui);
+  color: var(--text);
+}
+
+.style-btn[data-key="italic"] {
+  font-style: italic;
+  font-weight: 600;
+}
 
 .data-table tbody tr.is-active {
   background: var(--bg-row-hover);

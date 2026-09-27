@@ -279,7 +279,7 @@ Do **not** leave frame dims driven into solid preview. Do not toggle unrelated s
 | **Angle** | Dimension value (degrees) | Same driving angular dim as triad rotate + frame Angle field; default `0` |
 | **Orient** | Vector picker / label | Selected orientation vector for that row (or “global”) |
 | **Format** | Stacked cell: Flip → Justify (3) → Align (3) | Fusion-style icons; active = **accent border**; defaults Center / Middle / flip off |
-| Font | `<select>` | Options styled in that font; drives Text input face |
+| **Font** | **B** + **I** toggles + `<select>` | Style via `textStyle` (bold/italic); font name drives face; Text preview follows |
 
 Optional header “apply to all” for angle / flip / justify / align.
 
@@ -613,12 +613,12 @@ Engraving code may depend on `sketch_transform_frame`. The frame package must **
 
 | Direction | Action | Payload |
 |-----------|--------|---------|
-| JS → Python | `rowUpdated` | `{ id, text, height, angle, font, flipH, flipV, justify, align }` |
+| JS → Python | `rowUpdated` | `{ id, text, height, angle, font, bold, italic, flipH, flipV, justify, align }` |
 | JS → Python | `orientChanged` | `{ id\|global, entityToken }` |
 | JS → Python | `batchChanged` | `{ enabled, prefix, suffix, start, digits, step }` |
 | JS → Python | `optionsChanged` | `{ operation, depth, direction, theme, livePreview }` |
 | JS → Python | `execute` / `cancel` | — |
-| Python → JS | `setRows` | `[{ id, text, height, angle, orientLabel, font, flipH, flipV, justify, align, pointLabel }]` |
+| Python → JS | `setRows` | `[{ id, text, height, angle, orientLabel, font, bold, italic, flipH, flipV, justify, align, pointLabel }]` |
 | Python → JS | `setFonts` / `setTheme` / `setStatus` / `setTargetEnabled` | … |
 
 Any geometry-affecting message schedules a preview refresh (if live preview on).
