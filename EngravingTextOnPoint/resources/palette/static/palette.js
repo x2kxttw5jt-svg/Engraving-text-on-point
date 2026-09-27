@@ -299,14 +299,13 @@
           '<td class="col-idx">' +
           (i + 1) +
           "</td>" +
-          '<td class="col-text"><input type="text" class="row-text" value="' +
+          '<td class="col-text"><input type="text" class="row-text' +
+          (row.bold ? " is-bold" : "") +
+          (row.italic ? " is-italic" : "") +
+          '" value="' +
           row.text +
           '" style="font-family:' +
           row.font +
-          ";font-weight:" +
-          (row.bold ? "700" : "400") +
-          ";font-style:" +
-          (row.italic ? "italic" : "normal") +
           '" /></td>' +
           '<td class="col-ht"><input type="text" class="row-ht" value="' +
           row.height +
@@ -368,13 +367,20 @@
         var row = rows.find(function (r) {
           return r.id === id;
         });
-        if (row) row.font = sel.value;
-        var textInput = tr && tr.querySelector(".row-text");
-        if (textInput) {
-          textInput.style.fontFamily = sel.value;
-        }
+        if (!row) return;
+        row.font = sel.value;
+        applyTextPreview(tr, row);
       });
     });
+  }
+
+  /** Mirror Font / Bold / Italic onto the Text cell (same live preview as font). */
+  function applyTextPreview(tr, row) {
+    var textInput = tr && tr.querySelector(".row-text");
+    if (!textInput || !row) return;
+    textInput.style.fontFamily = row.font || "Arial";
+    textInput.classList.toggle("is-bold", !!row.bold);
+    textInput.classList.toggle("is-italic", !!row.italic);
   }
 
   function fontCellHtml(row) {

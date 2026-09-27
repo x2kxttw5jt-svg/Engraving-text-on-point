@@ -77,7 +77,7 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - Angle `<input>`: angular dimension value; **hidden** until Orient is set.
 - Orient: short label of selected vector (or “global”).
 - **Font** cell: **Bold (B)** + **Italic (I)** toggles grouped with the font `<select>` (Fusion Sketch Text Style + Font feel). Active B/I use accent blue border.
-- Font `<select>`: each `<option style="font-family: name">`; Text field preview follows family + bold/italic.
+- Font `<select>` + B/I: the row **Text** field updates live the same way — `font-family`, bold weight, and italic style.
 - No card wrappers; hairline row borders only.
 - Selection highlight uses `--bg-row-hover` / accent left bar (2px) optional.
 

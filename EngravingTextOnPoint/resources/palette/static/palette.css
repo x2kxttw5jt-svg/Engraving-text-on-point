@@ -385,6 +385,21 @@ select:focus {
   width: 100%;
 }
 
+/* Text preview follows Font + Bold/Italic (override shorthand font: inherit) */
+.data-table input.row-text {
+  font-family: inherit;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.data-table input.row-text.is-bold {
+  font-weight: 700 !important;
+}
+
+.data-table input.row-text.is-italic {
+  font-style: italic !important;
+}
+
 .footer {
   display: flex;
   align-items: center;
