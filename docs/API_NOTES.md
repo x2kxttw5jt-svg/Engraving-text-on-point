@@ -18,6 +18,8 @@ VerticalAlignments.MiddleVerticalAlignment
 
 Constraint strategy: after `add`, constrain rectangle center to selected `SketchPoint` via mid-point / coincident constraints on `rectangleLines`.
 
+**Hard fail if constraints cannot be applied** — do not leave text positioned only by coordinates. Delete/roll back the attempted text (and any dependent preview extrude), raise/return an error to the command, and surface it in the palette status (and messageBox on OK). Associativity with the sketch point is mandatory so moving the point moves the text.
+
 ### Angle
 
 `SketchTextInput.setAsMultiLine(cornerOne, cornerTwo, hAlign, vAlign, angle)` — **angle is in radians**.

@@ -198,13 +198,13 @@ sk_text = sketch.sketchTexts.add(tin)
 - Default `0`. Range unrestricted in v1 (normalize display to −180…180 optional).
 - Changing angle updates `setAsMultiLine` angle on rebuild; constraints keep center on the point (rotate about center).
 
-**Center constraint**
+**Center constraint (required — hard fail)**
 
 After add, use `MultiLineTextDefinition.rectangleLines`:
 
 1. Keep the four rectangle lines from the definition.
 2. Mid-point / coincident constraints so rectangle center stays on the selected `SketchPoint`.
-3. Fallback: position box mathematically at the point; log if constraints fail.
+3. **No soft fallback.** If `rectangleLines` is missing, constraint creation throws, or the center is not associatively tied to the point → **hard fail** that row (and abort the whole OK transaction). Roll back any geometry created for that attempt; show a clear status/messageBox (`Failed to constrain text to point`). Preview: drop that rebuild and surface the error; do not leave unconstrained text in the sketch.
 
 ### 3. Extrude
 
@@ -286,6 +286,7 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 - No points → OK disabled; preview empty.
 - Empty text / height ≤ 0 → block OK; clear that row’s preview.
 - Invalid angle expression → status error; keep last good preview.
+- **Center constraint failure → hard fail** (no unconstrained placement). Preview shows error + no text for that tick; OK aborts and rolls back the full transaction.
 - Cut with no intersection → text-only preview + warning; OK still attempts and rolls back on hard failure.
 - Mixed components → features in each point’s component.
 - Live preview off → OK builds everything in `execute` only.
@@ -319,6 +320,8 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 - [ ] Light theme default on first launch
 - [ ] Dark and Auto follow / override correctly
 - [ ] Angle column: `0`, `45`, `-90` rotate about point center in preview and commit
+- [ ] Moving the sketch point after OK moves the text (constraints hold)
+- [ ] Simulated / real constraint failure → hard fail, no leftover unconstrained text
 - [ ] Live preview updates on text/height/font/angle/distance edits (debounced)
 - [ ] Cancel / close leaves no sketch text or extrudes
 - [ ] Live preview off → no geometry until OK
@@ -349,7 +352,7 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 ## Success criteria
 
 1. Stock-like table palette with Fusion icons where possible.
-2. Text centered and constrained to each selected sketch point, at the row’s angle.
+2. Text centered and **associatively constrained** to each selected sketch point, at the row’s angle; constraint failure is a **hard fail** (no unconstrained fallback).
 3. Extrude Cut or New Body with optional target body for Cut.
 4. Batch sequential text with prefix/suffix.
 5. Font-aware text field + font dropdown + **angle column**.
