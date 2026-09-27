@@ -322,9 +322,24 @@ prefs = app.preferences.generalPreferences
 # activeUserInterfaceTheme is the resolved Light/Dark
 ```
 
-## Fonts
+## Fonts + Bold / Italic
 
 Set `SketchTextInput.fontName = "Arial"` (or discovered name). Invalid names fail at `add` — validate against known list.
+
+Palette **Font** cell groups **B** / **I** toggles with the font dropdown (Sketch Text Style + Font).
+
+```python
+# Bitwise TextStyles — combine bold + italic as needed
+style = adsk.fusion.TextStyles.TextStyleRegular
+if bold:
+    style |= adsk.fusion.TextStyles.TextStyleBold  # verify enum names vs installed API
+if italic:
+    style |= adsk.fusion.TextStyles.TextStyleItalic
+tin.textStyle = style
+# Also on existing SketchText: sketch_text.textStyle = style
+```
+
+Confirm exact `TextStyles` member names against the installed Fusion build (`BoldTextDecoration` vs `TextStyleBold`, etc.).
 
 ## Transactions / timeline
 

@@ -471,6 +471,7 @@ tin.setAsMultiLine(
     v_align,
     0.0)  # characterSpacing % — orientation comes from constraints/dimension, not retired angle
 tin.fontName = font_name
+tin.textStyle = bold_italic_flags  # TextStyles bitwise; B/I toggles in Font cell
 tin.isHorizontalFlip = flip_h
 tin.isVerticalFlip = flip_v
 sk_text = sketch.sketchTexts.add(tin)
