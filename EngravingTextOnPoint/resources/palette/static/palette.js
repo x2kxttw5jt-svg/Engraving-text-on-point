@@ -73,7 +73,7 @@
     });
   });
 
-  // Dummy: mock triad settle → push pose into GUI dims (two-way counterpart).
+  // Dummy: after debounce, auto-apply driven → driving, then solid preview.
   function mockTriadSettled(dx, dy, angle) {
     var dxEl = document.getElementById("dim-dx");
     var dyEl = document.getElementById("dim-dy");
@@ -90,7 +90,7 @@
     }
     if (statusEl) {
       statusEl.textContent =
-        "Would sync GUI from triad settle — dummy UI (dX=" +
+        "Would auto-apply Ref dims to driving (after debounce), sync GUI, then doExecutePreview — dummy UI (dX=" +
         dx +
         ", dY=" +
         dy +
@@ -123,12 +123,13 @@
   // Dummy triad gesture: clicking manip status simulates a settle sync into GUI.
   if (manipStatus) {
     manipStatus.style.cursor = "pointer";
-    manipStatus.title = "Click to mock triad settle → GUI dim sync";
+    manipStatus.title =
+      "Click to mock debounce → auto-apply driving → preview";
     manipStatus.addEventListener("click", function () {
       if (!mockRef && !mockOrient) {
         if (statusEl) {
           statusEl.textContent =
-            "Set Ref and/or Orient first to mock triad → GUI dim sync — dummy UI";
+            "Set Ref and/or Orient first to mock auto-apply driving — dummy UI";
         }
         return;
       }

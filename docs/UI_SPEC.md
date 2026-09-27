@@ -9,7 +9,7 @@ Match Fusion’s native docked palettes (Parameters-adjacent density, Extrude-di
 ## Selection / Add Point row
 
 - `Point(s)` Select + **`+ Add Point`** button (stock-style + or point icon).
-- Optional **`Ref Pt` Select** + **`Apply Ref Dims`** — via reusable `sketch_transform_frame` (H/V + angle when Orient set) for Add Point or existing unconstrained points. Frame dims stay **visible during live preview** (including driven-during-drag).
+- Optional **`Ref Pt` Select** + **`Apply Ref Dims`** (initial attach) — via reusable `sketch_transform_frame` (H/V + angle when Orient set) for Add Point or existing unconstrained points. After triad drag: Ref dims stay driven through debounce, then **auto-apply** (convert to driving) before solid preview. Frame dims stay **visible during live preview** (including driven-during-drag).
 - Optional `Sketch` Select (muted helper text: used by Add Point).
 - **`Orient` Select** — required orientation vector; angular dim is part of the same transform frame as Ref H/V.
 - Status strip: `Angle dim ✓` (or `Select orientation vector`) and `Move ✓` / `Move locked — point is constrained`.
@@ -79,7 +79,7 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 
 ## Extrude block extras
 
-- **Live sketch preview** checkbox (default checked): sketch text + dims update live; **solid** preview runs after triad `mouseDragEnd` + debounce via `doExecutePreview`.
+- **Live sketch preview** checkbox (default checked): sketch text + dims update live; **solid** preview runs after triad `mouseDragEnd` + debounce → auto-apply driving dims → `doExecutePreview`.
 - **Snap** dropdowns: linear + angular increments; label hint `Alt = free`.
 - **Frame dims** row (active selection): `dX`, `dY`, `Angle` text inputs — same driving dimensions as the triad. Disabled with `—` when Ref/Orient dims are absent.
 - Table **Angle** column is the same parameter as the frame Angle field (keep in sync).

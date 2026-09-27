@@ -6,12 +6,12 @@ Fusion 360 add-in: place centered sketch text on selected sketch points, then ex
 
 Planning complete — see [docs/PLAN.md](docs/PLAN.md).
 
-**Build order:** Dummy UI → Triad fast path + settle `doExecutePreview` → cut/target polish. **`execute` = final commit only.**
+**Build order:** Dummy UI → Triad fast path + debounce → auto-apply driving → `doExecutePreview` → cut/target polish. **`execute` = final commit only.**
 
 ## Highlights
 
 - **`TriadCommandInput`**: lightweight `sketch.move` on `inputChanged`
-- **`mouseDragEnd` + debounce → `doExecutePreview`**: solid engraving preview after drag
+- **`mouseDragEnd` + debounce → auto-apply Ref dims to driving → `doExecutePreview`**
 - **Snap** dropdowns (linear + angular) with **Alt bypass**; re-entrancy guards
 - Frame **dX / dY / Angle** set via **triad or GUI** (two-way sync to sketch dims)
 - Reusable **`sketch_transform_frame`**: Ref H/V + Orient angle dims

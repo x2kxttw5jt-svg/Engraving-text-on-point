@@ -87,7 +87,7 @@ sketch_transform_frame/           # reusable — no dependency on EngravingTextO
   __init__.py                     # public API re-exports
   project.py                      # associative project2 helpers
   apply_frame.py                  # apply Ref H/V + Orient angular dims to a target point
-  drag_cadence.py                 # driven-during-drag / restore-driving
+  drag_cadence.py                 # driven-during-drag / auto-apply driving after debounce
   manipulators.py                 # TriadCommandInput; delta matrix from transform/lastTransform
   visibility.py                   # keep dims visible (preview + drag)
   errors.py                       # staged hard-fail errors with reasons
@@ -109,8 +109,9 @@ frame.ensure_visible(sketch)
 frame.bind_triad(triad_input)  # TriadCommandInput — translate + rotate, no scale
 # On triad inputChanged (host command):
 frame.on_triad_changed(triad)  # dims driven once/gesture; sketch.move(text, delta_matrix)
-# On drag end:
-frame.on_triad_settled()       # restore driving dims from pose; no solid regen
+# After mouseDragEnd debounce, before doExecutePreview:
+frame.apply_driving_from_pose()  # auto-apply: driven Ref/Orient dims → driving from pose
+# (alias: on_triad_settled) — then host calls doExecutePreview
 ```
 
 This engraving add-in **calls** the module; it does not reimplement projection/dim/drag logic inline.
@@ -131,7 +132,7 @@ Pipeline (inside `apply_frame.py`):
    - For engraving, `angleEntity` = text `rectangleLines` baseline edge.  
    - For reuse, caller passes any sketch line/edge that should be angled to the projected vector.
 3. **Visibility (required during preview):** all frame dims (H, V, **and angle**) stay **visible** for the live-preview session — including while temporarily driven during drag. `areDimensionsShown`; re-assert after rebuilds.
-4. **Transform:** driven-during-drag for translate (H/V) and rotate (angle); restore driving on stop; graphics stay on-screen.
+4. **Transform:** driven-during-drag for translate (H/V) and rotate (angle); **auto-apply driving after debounce, before `doExecutePreview`**; graphics stay on-screen.
 5. Without Ref, free move when unconstrained still applies. Without Orient, angle manipulator stays disabled.
 6. Hard-fail with reason on project/dim failure; no unlinked projection fallback.
 7. One frame instance per target point/row (replace/repair on re-apply).
@@ -170,7 +171,7 @@ Angle is handled **inside the reusable transform-frame module** the same way as 
 | **Angular dimension** | Module creates driving `addAngularDimension` between caller-supplied angle entity (engraving: text `rectangleLines` edge) and the **projected** orient line |
 | Angle column / manipulator | Read/write that dimension parameter via `TransformFrame` — not a SketchText property |
 | Visibility | Angle dim visible during preview + rotate drag (driven/driving), same rules as Ref H/V |
-| Drag cadence | Rotate gesture: angular dim → driven during drag → driving on stop (lag avoidance) |
+| Drag cadence | Rotate: angular dim driven during drag + debounce wait → auto-apply driving before preview |
 | Default | `0 deg` (= parallel to projected vector) |
 
 Missing Orient → angle manipulator + OK blocked for engraving rows that require it. Hard-fail with reason on project/dim failure.
@@ -190,10 +191,11 @@ Use Fusion’s stock **`TriadCommandInput`** for translation + rotation (hide sc
 1. Place triad at active row’s sketch point; orient axes from sketch plane (+ Orient vector when set).
 2. On **`inputChanged`** for the triad: apply **snap** (unless Alt held) → compute delta from `transform` / `lastTransform` → `sketch.move` **existing** sketch text (+ point as needed). Immediate feedback; **do not** call `doExecutePreview` / create solids here.
 3. During triad drag: frame dims → **driven**; stay **visible**; no text recreate; no extrude/cut.
-4. On **`mouseDragEnd`**: start short debounce → then solid preview path (see architecture). On settle also restore driving dims from pose; sync Angle / H / V UI.
-5. Without Ref / when point locked: disable translate or hard status; rotate still available when Orient angle dim exists.
-6. Never permanently drop center constraint or frame dims.
-7. **Re-entrancy guard:** ignore overlapping triad/`doExecutePreview` work while a solid preview or sketch move is in flight (`_busy` / single-flight flag).
+4. On **`mouseDragEnd`**: start short debounce only — dims stay **driven** during the wait. Do **not** restore driving at drag-end itself.
+5. **Between debounce fire and `doExecutePreview`:** **auto-apply** Ref (and Orient angle) dims = convert driven → **driving** from measured pose (`isDriving = True`); sync GUI dX / dY / Angle; then call `doExecutePreview`. Solid preview always sees driving dims.
+6. Without Ref / when point locked: disable translate or hard status; rotate still available when Orient angle dim exists.
+7. Never permanently drop center constraint or frame dims.
+8. **Re-entrancy guard:** ignore overlapping triad/`doExecutePreview` work while a solid preview or sketch move is in flight (`_busy` / single-flight flag).
 
 #### Dimension inputs — Triad **or** GUI (two-way)
 
@@ -231,19 +233,22 @@ Dummy UI: Snap dropdown interactive; Alt noted in status only.
 
 Implemented once in the reusable module; engraving only calls it.
 
-| Gesture | Dims toggled to driven during drag | On stop |
-|---------|--------------------------------------|---------|
-| **Translate** | Ref **H + V** (angle stays driving unless it blocks the move) | Write H/V values → driving; keep **all frame dims visible** |
-| **Rotate** | **Angular** dim (H/V stay driving unless they block) | Write angle value → driving; keep visible |
+| Gesture | Dims toggled to driven during drag | Auto-apply (after debounce, before preview) |
+|---------|--------------------------------------|---------------------------------------------|
+| **Translate** | Ref **H + V** (angle stays driving unless it blocks the move) | Write H/V from pose → `isDriving = True`; keep **all frame dims visible** |
+| **Rotate** | **Angular** dim (H/V stay driving unless they block) | Write angle from pose → `isDriving = True`; keep visible |
 
 | Phase | Action |
 |-------|--------|
 | **Drag start** | `isDriving = False` on the affected frame dims; visibility stays on |
-| **During drag** | Move/rotate via manipulators; driven dims measure with visible lines/values; throttle heavy extrude preview |
-| **Drag end** | Set parameters from measured pose → `isDriving = True`; one final solve; sync UI |
+| **During drag** | Move/rotate via manipulators; driven dims measure with visible lines/values; **no** solid preview |
+| **`mouseDragEnd`** | Start debounce only; dims remain **driven** while waiting |
+| **Debounce fire → auto-apply** | Set parameters from measured pose → `isDriving = True` (Ref H/V and/or angle). Sync GUI. One final solve. **Then** `doExecutePreview`. |
 | **Cancel / error** | Best-effort restore driving at last good values; hard-fail with reason if restore fails |
 
-Do **not** leave frame dims driven after the gesture. Do not toggle unrelated sketch dims. Driven/driving swaps must **not** hide dimension graphics.
+**Auto-apply = convert to driving** happens in the window **after debounce fires and before `doExecutePreview`** — not at drag-end, not inside `executePreview`. No separate “Apply Ref Dims” click is required for this settle path.
+
+Do **not** leave frame dims driven into solid preview. Do not toggle unrelated sketch dims. Driven/driving swaps must **not** hide dimension graphics.
 
 ### Table columns
 
@@ -306,7 +311,7 @@ Keep **lightweight sketch updates** on every triad tick; run **solid engraving p
 | Stage | When | What runs | Must not do |
 |-------|------|-----------|-------------|
 | **A — Fast pose** | `inputChanged` on `TriadCommandInput` (each drag tick) | Snap (unless Alt); dims → driven (once/gesture); `sketch.move` **existing** sketch text by delta matrix; dims stay visible | `doExecutePreview`, create/delete text, create/delete extrude/cut, nested re-entry |
-| **B — Solid preview** | `mouseDragEnd` → short debounce → `command.doExecutePreview()` | `executePreview` handler builds/updates **extrude or cut** from current sketch pose (Fusion preview rollback between previews) | Run on every triad tick; call `doExecute` |
+| **B — Solid preview** | `mouseDragEnd` → short debounce → **auto-apply driving dims** → `command.doExecutePreview()` | Convert driven Ref/Orient dims → driving from pose; then `executePreview` builds/updates **extrude or cut** | Run on every triad tick; call `doExecute`; preview while dims still driven |
 | **C — Final commit** | User OK → `execute` (or `doExecute` from palette) | Commit solids + sketch + timeline group | Fire during drag or as a substitute for preview |
 
 ```
@@ -320,14 +325,18 @@ Triad drag tick (inputChanged)
 
 mouseDragEnd
   → schedule solid_preview_timer (e.g. 80–150 ms)
+  → dims stay driven during debounce wait
   → on fire (if no newer drag started):
-        restore driving dims from pose; sync UI
         if _busy: skip / reschedule
         _busy = True
-        cmd.doExecutePreview()                # solid engraving preview
+        # AUTO-APPLY (between debounce and execute preview):
+        frame.apply_driving_from_pose()       # Ref H/V (+ angle) driven → driving
+        sync GUI dX / dY / Angle
+        cmd.doExecutePreview()                # solid engraving preview (dims already driving)
         _busy = False
 
 executePreview (handler)
+  → assumes frame dims are already driving (auto-applied above)
   → create/update Cut | New Body from current sketch text
   → keep frame dims visible; do not recreate text if pose-only
 
@@ -364,9 +373,9 @@ Cancel / destroy
 
 | Event | Stage | Action |
 |-------|-------|--------|
-| Triad tick | **A** | Snapped (or Alt-free) matrix-move existing sketch text; sync dX/dY/Angle fields; no solids |
-| GUI dX / dY / Angle edit | Dim write + triad retarget + debounced **B** | Set dim parameters; move sketch to match; solid preview |
-| `mouseDragEnd` | debounce → **B** | `doExecutePreview` → extrude/cut preview |
+| Triad tick | **A** | Snapped (or Alt-free) matrix-move existing sketch text; sync dX/dY/Angle fields; dims driven; no solids |
+| GUI dX / dY / Angle edit | Dim write + triad retarget + debounced **B** | Set dim parameters (already driving); move sketch to match; solid preview |
+| `mouseDragEnd` | debounce → **auto-apply driving** → **B** | Driven → driving from pose; then `doExecutePreview` |
 | Point select / Add Point | Setup (+ optional B) | Create sketch text + frame; optional initial `doExecutePreview` after setup |
 | Text / font / height / flip / justify | Setup + debounced **B** | Update sketch text; then `doExecutePreview` |
 | Orient / Ref apply | Setup + **B** | Frame dims; then solid preview |
@@ -481,7 +490,7 @@ sk_text = sketch.sketchTexts.add(tin)
 **Move manipulator**
 
 - **No Ref dims / unconstrained:** stock move manipulators; `SketchPoint.move` / `sketch.move`.
-- **With Ref H/V dims:** use **driven-during-drag → driving-on-stop** (see Translate cadence). Do not edit driving parameters every tick.
+- **With Ref H/V dims:** use **driven-during-drag → auto-apply driving between debounce and `doExecutePreview`** (see Translate cadence). Do not edit driving parameters every tick.
 - Other locks: disable move; status explains why.
 - Never permanently break center or angular constraints to force a move.
 
@@ -588,8 +597,8 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 1. Toolbar → start command + show palette + arm selection.
 2. Command hosts **`TriadCommandInput`** (translate + rotate; scaling hidden) + Snap dropdown.
 3. Active row → triad at point; `inputChanged` → snapped matrix-move (path A); re-entrancy guarded.
-4. `mouseDragEnd` → debounce → `doExecutePreview` (path B solid preview).
-5. Definition changes → update sketch + debounced `doExecutePreview`.
+4. `mouseDragEnd` → debounce → **auto-apply Ref/Orient dims to driving** → `doExecutePreview` (path B).
+5. Definition changes → update sketch + debounced `doExecutePreview` (dims already driving).
 6. OK → `execute` final commit only (path C).
 7. Cancel / destroy → cancel timers; teardown preview per policy.
 
@@ -667,7 +676,8 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] Dark and Auto follow / override correctly
 - [ ] User must select orientation vector before angle is available
 - [ ] Triad ticks: lightweight `sketch.move` only; no `doExecutePreview` mid-drag
-- [ ] `mouseDragEnd` + debounce → `doExecutePreview` builds solid engraving preview
+- [ ] `mouseDragEnd` + debounce → auto-apply driving dims → `doExecutePreview` builds solid engraving preview
+- [ ] Ref (H/V) dims stay driven during debounce wait; convert to driving only after debounce, before preview
 - [ ] `execute` used for final commit only (not interactive preview)
 - [ ] Snap dropdown quantizes translate/rotate; Alt bypasses snap
 - [ ] dX / dY / Angle editable in GUI and via triad; two-way sync without feedback loops
@@ -675,7 +685,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] Re-entrancy: overlapping move/preview ignored or coalesced; no nested preview
 - [ ] Angle column + triad rotate settle update angular dim; no SketchText.angle API
 - [ ] Orient associatively projected; dim to projected line; hard-fail if not
-- [ ] Translate with Ref: driven-during-drag → driving on settle; dims visible; no jitter/flicker
+- [ ] Translate with Ref: driven-during-drag → auto-apply driving between debounce and preview; dims visible; no jitter/flicker
 - [ ] Add Point: custom-graphics ghost follows preselect projected location on sketch plane
 - [ ] Add Point: projection guide when cursor hit is off-plane
 - [ ] Add Point: click commits point at ghost; Esc/cancel clears CG with no point
@@ -684,8 +694,9 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] Optional Ref on **Add Point**: associative project + driving H/V dims to new point
 - [ ] Optional Ref on **existing unconstrained** point: same apply_ref_dims path
 - [ ] Existing constrained point + Ref → hard-fail with reason (no dims)
-- [ ] Move with Ref: dims switch to driven during drag and back to driving on stop; final values match pose
+- [ ] Move with Ref: dims driven during drag + debounce wait; auto-applied to driving before `doExecutePreview`; final values match pose
 - [ ] Move with Ref stays responsive (no per-tick driving solve); dimension lines still update as driven measures
+- [ ] Solid preview never runs while Ref dims are still driven
 - [ ] Ref H/V **and angle** dims visible throughout live preview (idle, drag, after rebuilds)
 - [ ] Cancel/error mid-drag restores driving dims when possible
 - [ ] Ref/Orient source moves update linked projections; dimensional relationships hold
@@ -721,7 +732,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | **Text flip** | **Per-row H + V toggles; stock Fusion flip icons; default off** |
 | **Justify / Align** | **Per-row H (L/C/R) + V (T/M/B); stock Fusion align icons; default Center / Middle** |
 | Sketch creation | Use existing sketch of selected/Add Point target; create only when Add Point has no sketch |
-| **Preview** | **Triad ticks = sketch.move; mouseDragEnd+debounce = doExecutePreview solids; execute = commit only** |
+| **Preview** | **Triad ticks = sketch.move; mouseDragEnd+debounce → auto-apply driving dims → doExecutePreview solids; execute = commit only** |
 | **Snap** | **Dropdown increments; Alt bypasses** |
 | **Re-entrancy** | **Single-flight guards on pose move and solid preview** |
 | Default height | `3 mm` |
@@ -741,7 +752,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 3. Extrude Cut or New Body with optional target body for Cut.
 4. Batch sequential text with prefix/suffix.
 5. Font-aware text field + font dropdown + **angle dim**, **orient vector**, **flip**, **justify**, **align**.
-6. **Triad fast path** + **settle `doExecutePreview`** + **`execute` commit only**; snap + Alt; re-entrancy guards.
+6. **Triad fast path** + **debounce → auto-apply driving → `doExecutePreview`** + **`execute` commit only**; snap + Alt; re-entrancy guards.
 7. **Reusable `sketch_transform_frame`** for Ref/Orient dims + triad binding.
 8. **Add Point** with preselect CG ghost; frame on new or existing unconstrained points.
 9. Light / Dark / Auto themes; **Light default**.

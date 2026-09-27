@@ -119,10 +119,10 @@ Same semantics as the Sketch Text dialog. Apply before `add`. Center constraints
 
 | Event | Role |
 |-------|------|
-| `inputChanged` (triad) | Fast pose: snap (unless Alt) + `sketch.move` existing text; **no** solids |
-| `mouseDragEnd` | Start debounce timer for solid preview |
-| Debounce fire | `command.doExecutePreview()` if drag still settled and not busy |
-| `executePreview` | Build/update **extrude or cut** preview from current sketch pose |
+| `inputChanged` (triad) | Fast pose: snap (unless Alt) + dims → driven + `sketch.move`; **no** solids |
+| `mouseDragEnd` | Start debounce timer only — dims stay **driven** during wait |
+| Debounce fire | **Auto-apply** Ref/Orient dims (driven → driving from pose) → then `doExecutePreview` |
+| `executePreview` | Build/update **extrude or cut** preview; dims already driving |
 | `inputChanged` (definition / snap / op) | Update sketch/state; debounced `doExecutePreview` when solids affected |
 | `execute` | **Final commit only** (OK / `doExecute`) |
 | `destroy` | Cancel timers; teardown preview; clear tokens |
@@ -138,6 +138,7 @@ def on_triad_input_changed(triad):
     _busy = True
     try:
         step = snap_step_unless_alt(mouse_args_or_cached_modifiers)
+        frame.ensure_dims_driven()  # once per gesture
         delta = delta_matrix(triad.transform, triad.lastTransform, step)
         sketch.move(existing_text_entities, delta)
     finally:
@@ -147,18 +148,21 @@ def on_mouse_drag_end(args):
     global _preview_token
     _preview_token += 1
     token = _preview_token
-    # schedule ~100ms later:
+    # schedule ~100ms later — dims remain driven until fire():
     def fire():
         if token != _preview_token or _busy:
             return
         _busy = True
         try:
-            frame.on_triad_settled()
-            cmd.doExecutePreview()
+            # AUTO-APPLY: between debounce and execute preview
+            frame.apply_driving_from_pose()  # Ref H/V (+ angle) → isDriving=True
+            push_dims_to_gui(frame)
+            cmd.doExecutePreview()           # solid preview sees driving dims
         finally:
             _busy = False
 ```
 
+- **Auto-apply = convert to driving** runs after debounce fires and **before** `doExecutePreview`. Not at `mouseDragEnd`, not inside `executePreview`.
 - Detect Alt bypass from `MouseEventArgs` modifiers during drag when available; cache last-known modifier state for triad `inputChanged` if needed.
 - Never call `doExecutePreview` from inside `executePreview`.
 - Do not rebuild on theme-only changes or Add Point hover (CG only).
@@ -257,19 +261,20 @@ frame = TransformFrame.apply(
 frame.ensure_visible(sketch)
 frame.bind_triad(triad)
 
-# inputChanged (triad) — FAST PATH: snap + sketch.move; no doExecutePreview
+# inputChanged (triad) — FAST PATH: snap + sketch.move; dims driven; no doExecutePreview
 frame.on_triad_changed(triad)
 
-# mouseDragEnd → debounce → doExecutePreview (solid preview)
-frame.on_triad_settled()
+# mouseDragEnd → debounce wait (dims still driven) → auto-apply driving → doExecutePreview
+frame.apply_driving_from_pose()  # between debounce fire and execute preview
 cmd.doExecutePreview()
 
 # execute — FINAL COMMIT ONLY
 commit_sketch_and_solids(...)
 ```
 
-- Triad ticks: matrix-move existing sketch text only; dims driven during gesture, visible always.
-- Solid preview: after `mouseDragEnd` + debounce via `doExecutePreview`.
+- Triad ticks: matrix-move existing sketch text only; dims driven during gesture + debounce wait; visible always.
+- Auto-apply: after debounce, before solid preview — Ref/Orient dims converted to driving from pose.
+- Solid preview: `doExecutePreview` only after auto-apply (never while Ref dims are still driven).
 - Final commit: `execute` / `doExecute` only.
 - Re-entrancy: single-flight around move + preview; cancel stale debounce tokens.
 - Destroy CG on `preSelectEnd`, cancel, destroy, or after commit.
