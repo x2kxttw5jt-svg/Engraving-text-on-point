@@ -260,7 +260,8 @@ Palette change / selection change
 | Text / height / font edit | Debounced rebuild (text entity) |
 | Angle field / angle manipulator | Update angular **dimension** parameter; no text recreate |
 | Orient vector change | Repair dimension to new vector; hard-fail with reason if needed |
-| Move manipulator (unconstrained point) | Move point; text follows center constraint; extrude updates |
+| Move manipulator (no Ref dims) | Move point; text follows center constraint; throttle extrude refresh |
+| Move manipulator (with Ref H/V dims) | Dims → driven on drag start; move point; dims → driving on drag end |
 | Flip H / V toggle | Immediate rebuild (cheap boolean) |
 | Justify / Align change | Immediate rebuild |
 | Distance / direction / operation / target | Rebuild extrude portion (full rebuild OK v1) |
@@ -379,11 +380,12 @@ sk_text = sketch.sketchTexts.add(tin)
 - Field ↔ manipulator ↔ `SketchAngularDimension` parameter stay synchronized.
 - After the dimension exists, angle edits should **not** recreate sketch text — only update the dimension (extrude/model updates with the sketch).
 
-**Move manipulator (unconstrained points only)**
+**Move manipulator**
 
-- When `isUnconstrained`: show stock move manipulators; apply `SketchPoint.move` / `sketch.move`.
-- When constrained: disable move; angle dimension still editable; status explains move lock.
-- Never break center or angular constraints to “force” a move.
+- **No Ref dims / unconstrained:** stock move manipulators; `SketchPoint.move` / `sketch.move`.
+- **With Ref H/V dims:** use **driven-during-drag → driving-on-stop** (see Translate cadence). Do not edit driving parameters every tick.
+- Other locks: disable move; status explains why.
+- Never permanently break center or angular constraints to force a move.
 
 **Center constraint (required — hard fail)**
 
@@ -575,7 +577,9 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] Optional Ref on **Add Point**: associative project + driving H/V dims to new point
 - [ ] Optional Ref on **existing unconstrained** point: same apply_ref_dims path
 - [ ] Existing constrained point + Ref → hard-fail with reason (no dims)
-- [ ] Move manipulator with Ref updates H/V dim values; dimension lines stay live; text follows point
+- [ ] Move with Ref: dims switch to driven during drag and back to driving on stop; final values match pose
+- [ ] Move with Ref stays responsive (no per-tick driving solve); dimension lines still update as driven measures
+- [ ] Cancel/error mid-drag restores driving dims when possible
 - [ ] Ref source move updates linked projection; offsets remain dimensional
 - [ ] Flip H / Flip V toggles use stock Fusion icons; preview and commit match
 - [ ] Justify L/C/R and Align T/M/B use stock Fusion icons; preview and commit match
@@ -603,7 +607,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | **Rotation** | **Orient vector → associative project → driving angular dim to `rectangleLines`; manipulator edits the dim** |
 | **Orientation** | **Required vector select → associative project onto text sketch → angular dim to projected line** |
 | **Position** | **Stock Fusion move manipulators; only if sketch point is unconstrained** |
-| **Ref XY dims** | **Optional; Add Point or existing unconstrained points; associative project + driving H/V dims; move edits dims** |
+| **Ref XY dims** | **Optional; Add Point or existing free points; associative project + driving H/V dims; translate uses driven-during-drag** |
 | **Add Point** | **Preselect + CG ghost; optional Ref auto-applies dims on commit** |
 | **Text flip** | **Per-row H + V toggles; stock Fusion flip icons; default off** |
 | **Justify / Align** | **Per-row H (L/C/R) + V (T/M/B); stock Fusion align icons; default Center / Middle** |
