@@ -42,7 +42,7 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 │  Engraving Text on Point                                       [?] │
 ├──────────────────────────────────────────────────────────────────────┤
 │  ⊙ Point(s)  [ Select ]  [ + Add Point ]   3 selected                │
-│  ✛ Ref Pt    [ Select ]  [ Apply Ref Dims ]  (new or existing free pts) │
+│  ✛ Ref Pt    [ Select ]  (auto-applies dX/dY to free pts)               │
 │  ▭ Sketch    [ Select ]  (optional — used by Add Point)              │
 │  ↗ Orient    [ Select ]  (global — applies to all rows; required)    │
 │  ⬚ Target Body  [ Select ]     (Join / Cut / Intersect)              │
@@ -74,7 +74,7 @@ Icon groups use **stock Fusion glyphs** from the Sketch Text dialog family (Flip
 | No sketch selected | Resolve planar face / construction plane from preselect/click; **create a new sketch** on it (fallback: root `xYConstructionPlane`). Then add the projected point |
 | After create | Clear placement CG; if Ref was set → apply Ref dims (below); select new point; add table row; focus manipulators |
 
-Dummy UI: **+ Add Point** / **Ref Point** / **Apply Ref Dims** are mock controls only.
+Dummy UI: **+ Add Point** / **Ref Point** are mock controls only; Ref select auto-applies dX/dY.
 
 #### Standalone reusable module: sketch transform frame (`sketch_transform_frame`)
 
@@ -123,7 +123,7 @@ Works for **both**:
 | Target | When |
 |--------|------|
 | **New point** (Add Point) | If Ref and/or Orient set at commit → `TransformFrame.apply(...)` |
-| **Existing unconstrained point** | Active free point → Apply Ref Dims / Orient → same `TransformFrame.apply` |
+| **Existing unconstrained point** | Active free point → selecting Ref (and/or Orient) auto-runs `TransformFrame.apply` |
 
 Pipeline (inside `apply_frame.py`):
 
@@ -669,7 +669,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Open palette | Toolbar command shows docked palette only |
 | Point(s) / Sketch / Target Body | Buttons add/remove **fake rows** / fake sketch/body labels |
 | **+ Add Point** | Appends a fake row; status mentions preselect + CG projection preview |
-| **Ref Pt** / **Apply Ref Dims** | Fake select; Apply Ref Dims **hidden** until Ref set; apply reveals dX/dY |
+| **Ref Pt** | Fake select **auto-applies** dX/dY to free rows and reveals columns (no Apply button) |
 | Orient | Fake “Select” sets **global** vector; Angle column appears for all rows |
 | Manipulator status | Click mocks debounce → auto-apply Ref dims to driving → preview; syncs table dX/dY/Angle |
 | Placement columns | Per-row dX/dY/Angle in the table; constrained points grey out dX/dY; edit echoes GUI→driving |
@@ -679,7 +679,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Batch | Prefix/suffix/start/digits/step rewrite mock row texts |
 | Operation dropdown | Icon + name: Join / Cut / Intersect / New Body (no New Component) |
 | Depth / Direction | Depth length + Positive / Negative / Symmetric; boolean ops show Target Body |
-| Conditional chrome | Apply Ref Dims / table dX·dY / Angle column / OK stay **hidden** until conditions met |
+| Conditional chrome | table dX·dY / Angle column / OK stay **hidden** until conditions met |
 | Icons | Stock Fusion PNGs in place (or labeled placeholders until extracted) |
 | OK / Cancel | Status only — **no model changes** |
 | Bridge | Optional JS↔Python echo; geometry/manipulators no-op |

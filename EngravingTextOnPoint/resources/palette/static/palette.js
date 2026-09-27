@@ -19,7 +19,6 @@
   const refLabel = document.getElementById("ref-label");
   const pointsCount = document.getElementById("points-count");
   const targetRow = document.getElementById("target-row");
-  const btnApplyRef = document.getElementById("btn-apply-ref");
   const btnOk = document.getElementById("btn-ok");
   const thDx = document.getElementById("th-dx");
   const thDy = document.getElementById("th-dy");
@@ -72,12 +71,22 @@
     });
   }
 
-  function syncApplyRefVisibility() {
-    setHidden(btnApplyRef, !mockRef);
-  }
-
   function syncOkVisibility() {
     setHidden(btnOk, rows.length < 1);
+  }
+
+  /** Selecting Ref auto-applies H/V dims to free (unconstrained) rows — no Apply button. */
+  function applyRefDimsToFreeRows() {
+    mockRefDims = true;
+    rows.forEach(function (row, i) {
+      if (row.xyConstrained) return;
+      if (!row.dx || row.dx === "0 mm" || row.dx === "—") {
+        row.dx = 10 + i * 8 + " mm";
+      }
+      if (!row.dy || row.dy === "0 mm" || row.dy === "—") {
+        row.dy = "5 mm";
+      }
+    });
   }
 
   function currentOperation() {
@@ -556,6 +565,7 @@
     );
     rows.push(row);
     activeRowId = row.id;
+    if (mockRef) applyRefDimsToFreeRows();
     syncPointsCount();
     syncOkVisibility();
     renderRows();
@@ -612,7 +622,6 @@
       font: "Courier New",
     });
     activeRowId = rows[0].id;
-    syncApplyRefVisibility();
     syncPlacementVisibility();
     renderRows();
 
@@ -631,37 +640,19 @@
       mockRef = !mockRef;
       if (!mockRef) {
         mockRefDims = false;
+        if (refLabel) refLabel.textContent = "Auto-applies dX/dY to free pts";
+        syncPlacementVisibility();
+        renderRows();
+        if (statusEl) statusEl.textContent = "Ref cleared — dX/dY hidden — dummy UI";
+        return;
       }
-      if (refLabel) {
-        refLabel.textContent = mockRef
-          ? "Mock ref ready"
-          : "New or existing free pts";
-      }
-      syncApplyRefVisibility();
-      syncPlacementVisibility();
-      renderRows();
-      if (statusEl) {
-        statusEl.textContent = mockRef
-          ? "Ref set — Apply Ref Dims shown — dummy UI"
-          : "";
-      }
-    });
-  }
-
-  if (btnApplyRef) {
-    btnApplyRef.addEventListener("click", function () {
-      if (!mockRef) return;
-      mockRefDims = true;
-      rows.forEach(function (row, i) {
-        if (row.xyConstrained) return;
-        if (!row.dx || row.dx === "0 mm") row.dx = 10 + i * 8 + " mm";
-        if (!row.dy || row.dy === "0 mm") row.dy = "5 mm";
-      });
+      if (refLabel) refLabel.textContent = "Origin (auto-applied)";
+      applyRefDimsToFreeRows();
       syncPlacementVisibility();
       renderRows();
       if (statusEl) {
         statusEl.textContent =
-          "dX/dY in table — free points editable; constrained points greyed out — dummy UI";
+          "Ref selected — dX/dY auto-applied to free points (constrained greyed) — dummy UI";
       }
     });
   }
@@ -794,7 +785,6 @@
   // Seed sample points so the table/chrome are reviewable on open.
   seedSampleRows();
   setOperation("cut");
-  syncApplyRefVisibility();
   syncPlacementVisibility();
   syncOkVisibility();
   if (statusEl) {
