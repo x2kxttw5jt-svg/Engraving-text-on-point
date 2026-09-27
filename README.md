@@ -6,6 +6,8 @@ Fusion 360 add-in: place centered sketch text on selected sketch points, then ex
 
 Planning complete — see [docs/PLAN.md](docs/PLAN.md).
 
+**Build order:** Phase 1 = **dummy UI** (interactive mock palette, no geometry) → then selection → then live preview / extrude.
+
 ## Highlights
 
 - Table-style palette (stock Fusion look)

@@ -351,26 +351,49 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 
 ---
 
+## Implementation strategy
+
+**Build a complete dummy UI first, then wire Fusion geometry.**  
+Do not start sketch-text / extrude / constraint code until the palette looks and behaves like the final product with mock data. Review and iterate on layout, icons, theme, and table interactions in the dummy before binding real selection and preview.
+
+---
+
 ## Implementation phases
 
-### Phase 0 — Scaffold (current)
-- Manifest, palette shell (incl. Angle + Flip columns), light-default CSS, settings.
-- Flip icon slots wired for stock Fusion glyphs.
+### Phase 0 — Scaffold (done)
+- Manifest, palette shell columns, light-default CSS, settings stubs.
+- Docs for full behavior (geometry, constraints, preview).
 
-### Phase 1 — Selection + table
-- Multi point → rows; Text / Height / **Angle** / **Flip** / **Justify** / **Align** / Font; batch; font preview on text input.
-- Stock Fusion icons for flip + justify + align groups.
+### Phase 1 — Dummy UI (**next / current build focus**)
+Fully interactive mock palette that can be opened from the add-in **without** creating sketch text or extrudes.
 
-### Phase 2 — Geometry + live preview (New Body)
+| Area | Dummy behavior |
+|------|----------------|
+| Open palette | Toolbar command shows docked palette only |
+| Point(s) / Target Body | Buttons add/remove **fake rows** / fake body label (no Fusion selection API yet) |
+| Table | Working Text / Ht / Angle / Flip / Justify / Align / Font controls |
+| Font dropdown | Seeded list; text input `font-family` follows selection |
+| Batch | Prefix/suffix/start/digits/step rewrite mock row texts |
+| Operation / Distance / Live preview / Theme | Fully interactive; Cut enables Target Body row visually |
+| Icons | Stock Fusion PNGs in place (or labeled placeholders until extracted) |
+| OK / Cancel | Status messages only (`Would create N texts…` / clear mock state) — **no model changes** |
+| Bridge | Optional JS↔Python echo for theme/status; geometry actions no-op |
+
+**Exit criteria for Phase 1:** UI matches `UI_SPEC.md` in light/dark/auto, table + batch feel stock, Ryan can click through the full flow with dummy data and sign off before Phase 2.
+
+### Phase 2 — Selection + real table binding
+- Replace mock point/body buttons with Fusion `SketchPoint` / `BRepBody` selection.
+- Rows driven by real selection tokens; keep the same palette chrome.
+
+### Phase 3 — Geometry + live preview (New Body)
 - Builder: text + angle + flip + justify + align + center constraints + extrude New Body.
-- `PreviewSession` + `executePreview`; cancel teardown.
-- Live preview checkbox.
+- `PreviewSession` + `executePreview`; cancel teardown; hard-fail constraints with reason.
 
-### Phase 3 — Cut + target body
-- Body selection, `participantBodies`, distance/direction in preview and commit.
+### Phase 4 — Cut + target body
+- `participantBodies`, distance/direction in preview and commit.
 
-### Phase 4 — Polish
-- Auto theme, settings persistence, icons, error UX, README install.
+### Phase 5 — Polish
+- Settings persistence, final icons, error UX, README install, dummy-mode flag removed or gated for dev only.
 
 ---
 

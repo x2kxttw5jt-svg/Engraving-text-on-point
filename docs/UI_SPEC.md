@@ -4,6 +4,8 @@
 
 Match Fusion’s native docked palettes (Parameters-adjacent density, Extrude-dialog field rhythm). One composition: toolbar of options above a data table — not a dashboard of cards.
 
+**Dummy UI first:** implement this spec as a fully clickable mock (fake rows, no Fusion geometry) and sign off visuals/interactions before wiring selection, constraints, or extrude.
+
 ## Tokens
 
 ```css
