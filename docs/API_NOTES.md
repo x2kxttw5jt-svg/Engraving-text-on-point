@@ -62,9 +62,23 @@ Do not swallow Fusion exceptions into a generic toast; chain `detail` from the o
 
 These control text placement **inside** the text rectangle. The rectangle center stays constrained to the sketch point.
 
-### Angle = associative project of Orient vector + driving angular dimension
+### There is no text placement angle API
 
-Do **not** use retired `SketchText.angle` / `SketchTextInput.angle`.
+`SketchText.angle` and `SketchTextInput.angle` are **retired** (Jan 2021). `setAsMultiLine` does **not** take a rotation angle — its 5th argument is **characterSpacing** (%).
+
+Autodesk’s guidance for multiline text: control orientation by constraining / transforming `MultiLineTextDefinition.rectangleLines` (the four box edges). `MultiLineTextDefinition.rotate` is a one-shot box rotate, **not** a parametric angle — we do **not** use it for user angle edits.
+
+**Our approach (parametric):** associatively project the Orient vector → driving `addAngularDimension` between a text `rectangleLines` edge and that projected line. The palette “Angle” field is that **dimension parameter**, not a SketchText property.
+
+```text
+❌ sketchText.angle = …
+❌ sketchTextInput.angle = …
+❌ treat setAsMultiLine(..., angle) as rotation
+✅ project2(orient, linked=True) + addAngularDimension(textEdge, projectedLine, …)
+✅ angle UI / manipulator → dimension.parameter
+```
+
+### Orientation = associative project + driving angular dimension
 
 **Always** associatively project the selected orientation vector onto the text sketch, then dimension the text to that **projected** line:
 
@@ -91,7 +105,6 @@ Rules:
 - Projection must be **linked/associative** so source edits update the sketch reference.
 - Do not use an unlinked/fixed projection as a fallback.
 - Hard-fail stages: `orient vector missing`, `associative project failed`, `projected line unavailable`, `angular dimension failed`.
-- `setAsMultiLine` 5th arg is **characterSpacing** (%), not angle.
 
 ### Flip
 

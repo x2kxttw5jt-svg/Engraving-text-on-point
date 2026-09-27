@@ -90,9 +90,11 @@ While in Add Point mode, **do not** create the sketch point until click-commit. 
 
 Preselect filtering: allow hits useful for placement (faces, construction planes, sketch curves/points, edges/vertices as project sources). Reject invalid hits (`isSelectable = False`) when they cannot define a projection onto the target plane.
 
-### Orientation vector (required for angle)
+### Orientation vector + angle dimension (no SketchText angle API)
 
-Text rotation is **not** a free-floating angle property. It is a **driving sketch angular dimension** between the text frame and an **associatively projected** copy of the user-selected orientation vector.
+**Fusion has no usable text-placement angle.** `SketchText.angle` / `SketchTextInput.angle` are retired; `setAsMultiLine`’s last argument is character spacing, not rotation. Orientation is done only by constraining the text box (`rectangleLines`).
+
+Our rotation model: a **driving sketch angular dimension** between a text frame edge and an **associatively projected** copy of the user-selected orientation vector. The palette “Angle” column is that dimension’s value — not a text property.
 
 | Item | Behavior |
 |------|----------|
@@ -133,7 +135,7 @@ Use Fusion’s **native command-input manipulators** (not a custom triad):
 | `#` | Read-only index | Selection order |
 | Text | `<input type="text">` | Batch-driven or override; `font-family` = selected font |
 | Height | Length input | Default `3 mm` |
-| **Angle** | Dimension value (degrees) | Edits driving **angular dimension** vs Orient vector; default `0` |
+| **Angle** | Dimension value (degrees) | Edits driving **angular dimension** vs projected Orient line (not a SketchText angle); default `0` |
 | **Orient** | Vector picker / label | Selected orientation vector for that row (or “global”) |
 | **Flip** | Two icon toggles | H + V → `isHorizontalFlip` / `isVerticalFlip`; default off |
 | **Justify** | 3-way icon radio | Left / Center / Right → `HorizontalAlignments`; default **Center** |
@@ -300,8 +302,9 @@ sk_text = sketch.sketchTexts.add(tin)
 3. From `MultiLineTextDefinition.rectangleLines`, pick the text baseline / orientation edge.
 4. `sketch.sketchDimensions.addAngularDimension(textEdge, projectedOrientLine, dimTextPoint, True)` — **driving**.
 5. Set initial dimension value to the row Angle (default `0`).
-6. Angle column / manipulator write `dimension.parameter` only — text rotates via constraints/dimension; **do not** use retired `SketchText.angle`.
-7. Hard-fail stages (include in error text): `orient vector missing`, `associative project failed`, `projected line unavailable`, `angular dimension failed`.
+6. Angle column / manipulator write `dimension.parameter` only — text rotates via constraints/dimension.
+7. **Never** call retired `SketchText.angle` / `SketchTextInput.angle`, and do not pretend `setAsMultiLine` accepts a placement angle.
+8. Hard-fail stages: `orient vector missing`, `associative project failed`, `projected line unavailable`, `angular dimension failed`.
 
 **Justify + Align columns**
 
@@ -542,7 +545,8 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Topic | Decision |
 |-------|----------|
 | Join operation | Defer; Cut + New Body only |
-| **Text angle** | **Driving angular dimension vs user-selected orientation vector; manipulator edits the dim** |
+| **Text angle API** | **None (retired). Do not use.** |
+| **Rotation** | **Orient vector → associative project → driving angular dim to `rectangleLines`; manipulator edits the dim** |
 | **Orientation** | **Required vector select → associative project onto text sketch → angular dim to projected line** |
 | **Position** | **Stock Fusion move manipulators; only if sketch point is unconstrained** |
 | **Add Point** | **Preselect + custom-graphics projected ghost; click commits in selected sketch or new sketch** |
