@@ -66,30 +66,36 @@ Icon groups use **stock Fusion glyphs** from the Sketch Text dialog family (Flip
 | Step | Behavior |
 |------|----------|
 | Click **+ Add Point** | Enter point-placement mode (click in viewport) |
-| Optional **Reference point** | User may select a reference point first (sketch point, vertex, construction point, etc.) |
+| Optional **Reference point** | Select Ref (sketch point, vertex, construction point, …) for XY dims |
 | Sketch already selected | Add `SketchPoint` at the **projected** click location in that sketch |
 | No sketch selected | Resolve planar face / construction plane from preselect/click; **create a new sketch** on it (fallback: root `xYConstructionPlane`). Then add the projected point |
-| After create | Clear placement CG; if Ref was set → associative project + XY dimensions (below); select new point; add table row; focus manipulators |
+| After create | Clear placement CG; if Ref was set → apply Ref dims (below); select new point; add table row; focus manipulators |
 
-Dummy UI: **+ Add Point** / **Ref Point** are mock controls only.
+Dummy UI: **+ Add Point** / **Ref Point** / **Apply Ref Dims** are mock controls only.
 
 #### Optional reference point + live XY dimensions
 
-Yes — this is supported with normal Fusion sketch associativity:
+Works for **both**:
 
-1. **Select Ref** (optional) before/during Add Point: sketch point, BRep vertex, construction point, or similar.
-2. On commit of the new point, **associatively project** the Ref onto the placement sketch (`project2(..., isLinked=True)`). Result is a projected `SketchPoint` in sketch XY.
-3. Create **driving** linear dimensions between the **projected Ref** and the **new point** in sketch space:
-   - Horizontal: `addDistanceDimension(projRef, newPt, HorizontalDimensionOrientation, …, True)`
-   - Vertical: `addDistanceDimension(projRef, newPt, VerticalDimensionOrientation, …, True)`
-   - (Optional later: aligned dimension instead of / in addition to H+V.)
-4. Those dimension lines are real sketch dimensions. When the new point is transformed:
-   - **Preferred:** move manipulator edits the **H/V dimension parameters** (same pattern as angle dim). Dimension lines and values update live; text follows the point via center constraint; extrude updates with the sketch.
-   - If Ref source moves, the **linked projection** moves, and the dimensions maintain the offset relationship.
-5. With Ref + driving H/V dims, the new point is **no longer freely unconstrained** — move handles drive dim values (do not free-`SketchPoint.move` in a way that fights the dimensions). Without Ref, free move when unconstrained still applies.
-6. Hard-fail with reason if Ref cannot be associatively projected or H/V dimensions cannot be created. No unlinked projection fallback.
+| Target | When |
+|--------|------|
+| **New point** (Add Point) | If Ref is selected at commit, auto-apply Ref dims to the new point |
+| **Existing unconstrained point** | Active row / selected sketch point that is still free (no locking constraints). User selects Ref → **Apply Ref Dims** (or auto-apply when Ref is picked with an eligible active point) |
 
-During placement ghosting, optionally show custom-graphics preview of H/V offset from projected Ref to the ghost point (cosmetic only until commit).
+Same geometry pipeline either way:
+
+1. **Select Ref** (optional): sketch point, BRep vertex, construction point, or similar.
+2. Target point = newly created point **or** existing unconstrained sketch point on the row.
+3. **Associatively project** Ref onto that point’s sketch (`project2(..., isLinked=True)`) → projected `SketchPoint` in sketch XY.
+4. Create **driving** H + V dimensions between **projected Ref** and the **target point**:
+   - `addDistanceDimension(projRef, targetPt, HorizontalDimensionOrientation, …, True)`
+   - `addDistanceDimension(projRef, targetPt, VerticalDimensionOrientation, …, True)`
+5. On transform: move manipulator edits **H/V dimension parameters**; dimension lines/values update live; text follows center constraint; extrude follows the sketch. If Ref source moves, linked projection updates.
+6. After Ref dims are applied, the point is no longer freely unconstrained — move drives dim values (no free-`move` that fights dims). Existing unconstrained points **without** Ref still free-move.
+7. Eligibility for existing points: must be unconstrained enough to accept H/V dims (hard-fail with reason if already locked / dims cannot be added). Re-applying Ref replaces or repairs prior Ref dims for that row (define clearly in impl: one Ref-dim pair per row).
+8. Hard-fail with reason if Ref cannot be associatively projected or H/V dimensions cannot be created. No unlinked projection fallback.
+
+During Add Point ghosting, optionally CG-preview H/V offsets from projected Ref to the ghost (cosmetic until commit).
 
 #### Placement preview (custom graphics + preselect)
 
@@ -289,12 +295,19 @@ Ship under `resources/icons/flipH|flipV|justifyLeft|justifyCenter|justifyRight|a
 - Allow multi-sketch; process per parent sketch under one timeline group on commit.
 - **Add Point** flow:
   1. Optional sketch selection; optional **Ref point** selection.
-  2. Enter placement mode: arm preselect + allocate a `CustomGraphicsGroup` for the ghost point (and optional Ref offset guides).
-  3. On `preSelectMouseMove`: hit → project onto target sketch plane → update CG ghost (+ preview offsets from projected Ref if set).
+  2. Enter placement mode: arm preselect + CG ghost (+ optional Ref offset guides).
+  3. On `preSelectMouseMove`: hit → project onto target sketch plane → update CG ghost.
   4. On click commit: create sketch if needed → `sketch.sketchPoints.add(projectedSketchPt)`. Clear CG.
-  5. If Ref set: `project2(ref, linked=True)` → driving H + V `addDistanceDimension(projRef, newPt, …)` in sketch XY. Hard-fail with reason on failure.
-  6. Push new point into selection/rows; focus manipulators (move drives H/V dims when Ref exists).
-  7. Teardown CG on cancel / command destroy / leaving placement mode.
+  5. If Ref set: run **apply_ref_dims(targetPt)** (below).
+  6. Push new point into rows; focus manipulators.
+  7. Teardown CG on cancel / destroy / leaving placement mode.
+
+- **`apply_ref_dims(target_pt)`** (shared by Add Point and existing unconstrained points):
+  1. Require Ref selection + target sketch point.
+  2. For existing points: verify unconstrained / can accept dims; else hard-fail with reason.
+  3. `project2(ref, linked=True)` into `target_pt.parentSketch`.
+  4. Driving H + V `addDistanceDimension(projRef, target_pt, …)`.
+  5. Store dim tokens on the row; retarget move manipulator to edit those parameters.
 
 ### 2. Centered, angled sketch text
 
@@ -500,7 +513,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Open palette | Toolbar command shows docked palette only |
 | Point(s) / Sketch / Target Body | Buttons add/remove **fake rows** / fake sketch/body labels |
 | **+ Add Point** | Appends a fake row; status mentions preselect + CG projection preview |
-| **Ref Pt** | Fake select toggles “XY dims from ref” status on next Add Point |
+| **Ref Pt** / **Apply Ref Dims** | Fake select + apply on mock unconstrained row or next Add Point |
 | Orient | Fake “Select” sets mock vector label on rows |
 | Manipulator status | `Angle dim ✓ (needs Orient)` / `Move ✓` / constrained Move locked |
 | Table | Working Text / Ht / Angle / Orient / Flip / Justify / Align / Font |
@@ -546,7 +559,9 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] Add Point: click commits point at ghost; Esc/cancel clears CG with no point
 - [ ] Add Point into selected sketch at projected location
 - [ ] Add Point with no sketch selected creates sketch (plane/XY) then point
-- [ ] Optional Ref: associative project + driving H/V dims between projected Ref and new point
+- [ ] Optional Ref on **Add Point**: associative project + driving H/V dims to new point
+- [ ] Optional Ref on **existing unconstrained** point: same apply_ref_dims path
+- [ ] Existing constrained point + Ref → hard-fail with reason (no dims)
 - [ ] Move manipulator with Ref updates H/V dim values; dimension lines stay live; text follows point
 - [ ] Ref source move updates linked projection; offsets remain dimensional
 - [ ] Flip H / Flip V toggles use stock Fusion icons; preview and commit match
@@ -575,7 +590,8 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | **Rotation** | **Orient vector → associative project → driving angular dim to `rectangleLines`; manipulator edits the dim** |
 | **Orientation** | **Required vector select → associative project onto text sketch → angular dim to projected line** |
 | **Position** | **Stock Fusion move manipulators; only if sketch point is unconstrained** |
-| **Add Point** | **Preselect + CG ghost; optional Ref → associative project + driving H/V dims that update with transform** |
+| **Ref XY dims** | **Optional; Add Point or existing unconstrained points; associative project + driving H/V dims; move edits dims** |
+| **Add Point** | **Preselect + CG ghost; optional Ref auto-applies dims on commit** |
 | **Text flip** | **Per-row H + V toggles; stock Fusion flip icons; default off** |
 | **Justify / Align** | **Per-row H (L/C/R) + V (T/M/B); stock Fusion align icons; default Center / Middle** |
 | Sketch creation | Use existing sketch of selected/Add Point target; create only when Add Point has no sketch |
@@ -597,8 +613,8 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 3. Extrude Cut or New Body with optional target body for Cut.
 4. Batch sequential text with prefix/suffix.
 5. Font-aware text field + font dropdown + **angle dim**, **orient vector**, **flip**, **justify**, **align**.
-6. **Stock Fusion manipulators**: angle → dimension; move → unconstrained point.
-7. **Add Point** with preselect projection preview (custom graphics) into selected or new sketch.
+6. **Stock Fusion manipulators**: angle → angular dim; move → free point or Ref H/V dims.
+7. **Add Point** with preselect CG ghost; optional Ref dims on new **or existing unconstrained** points.
 8. **Live preview** with clean cancel/destroy teardown.
 9. Light / Dark / Auto themes; **Light default**.
 
