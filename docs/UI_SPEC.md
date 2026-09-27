@@ -69,7 +69,7 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - **Ht column floor:** Ht keeps a hard ~56px width in portrait/narrow; the table scrolls horizontally instead of letting Ht collapse into Text.
 - **Rows are resizable** — drag the right-edge handle (or the Text field’s vertical resize) to grow/shrink row height; Text textarea autosizes with content.
 - Columns: `#` | Text | Ht | **Position** | **Format** | Font. (no Orient column — Orient is global above the table)
-- **Position** (one column), compact trial: **Pos X** / **Pos Y** (from Ref) stacked, **A** (angle vs Orient) below — same rhythm as the Format stack. Column shows when Ref and/or Orient apply; Pos X/Y or A hide until their source is set.
+- **Position** (one column), compact trial: **Pos X** / **Pos Y** (from Ref) stacked, **Angle** (vs Orient) below — same rhythm as the Format stack. Column shows when Ref and/or Orient apply; Pos X/Y or Angle hide until their source is set.
 - **Format** (one column), stacked like Fusion SketchText:
   1. Flip H | Flip V (mirrored-triangle icons)
   2. Justify L | C | R (text-line icons)

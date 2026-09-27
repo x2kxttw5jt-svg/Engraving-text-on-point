@@ -474,14 +474,19 @@ textarea:focus {
 }
 
 .place-key {
-  flex: 0 0 36px;
-  width: 36px;
+  flex: 0 0 40px;
+  width: 40px;
   text-align: left;
   font-weight: 600;
   font-size: 0.9em;
   color: var(--text-muted);
   user-select: none;
   white-space: nowrap;
+}
+
+.place-angle .place-key {
+  flex-basis: 40px;
+  width: 40px;
 }
 
 .place-row input {

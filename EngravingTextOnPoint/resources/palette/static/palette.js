@@ -332,7 +332,7 @@
       "</div>" +
       '<label class="place-angle place-row"' +
       (mockOrient ? "" : " hidden") +
-      '><span class="place-key">A</span>' +
+      '><span class="place-key">Angle</span>' +
       '<input type="text" class="row-angle" value="' +
       escapeHtml(row.angle) +
       '" title="Rotation vs Orient" /></label>' +
