@@ -20,9 +20,7 @@
   const pointsCount = document.getElementById("points-count");
   const targetRow = document.getElementById("target-row");
   const btnOk = document.getElementById("btn-ok");
-  const thDx = document.getElementById("th-dx");
-  const thDy = document.getElementById("th-dy");
-  const thAngle = document.getElementById("th-angle");
+  const thPlace = document.getElementById("th-place");
   const tbody = document.getElementById("text-tbody");
   const opDropdown = document.getElementById("op-dropdown");
   const opTrigger = document.getElementById("op-trigger");
@@ -58,16 +56,18 @@
     el.hidden = !!hidden;
   }
 
-  /** Placement lives in the table: dX/dY when Ref dims exist; Angle when Orient set. */
+  /** One Place cell: X/Y when Ref set; Angle when Orient set. Column shows if either applies. */
   function syncPlacementVisibility() {
-    setHidden(thDx, !mockRefDims);
-    setHidden(thDy, !mockRefDims);
-    setHidden(thAngle, !mockOrient);
-    document.querySelectorAll(".cell-dx, .cell-dy").forEach(function (td) {
-      setHidden(td, !mockRefDims);
+    var showCol = mockRefDims || mockOrient;
+    setHidden(thPlace, !showCol);
+    document.querySelectorAll(".cell-place").forEach(function (td) {
+      setHidden(td, !showCol);
     });
-    document.querySelectorAll(".cell-angle").forEach(function (td) {
-      setHidden(td, !mockOrient);
+    document.querySelectorAll(".place-xy").forEach(function (el) {
+      setHidden(el, !mockRefDims);
+    });
+    document.querySelectorAll(".place-angle").forEach(function (el) {
+      setHidden(el, !mockOrient);
     });
   }
 
@@ -290,34 +290,51 @@
   }
 
   /**
-   * dX / dY: editable when Ref dims exist and the sketch point is free;
-   * greyed out (disabled) when the point is already constrained.
+   * Single Place cell: stacked X / Y / Angle (trial layout).
+   * X/Y greyed when point already constrained; fields hide until Ref / Orient.
    */
-  function xyPlacementCellHtml(row, axis) {
+  function placeCellHtml(row) {
     var locked = !!row.xyConstrained;
-    var val = axis === "dx" ? row.dx : row.dy;
-    var title = locked
+    var showCol = mockRefDims || mockOrient;
+    var xyTitle = locked
       ? "Point is constrained — XY placement locked"
-      : axis === "dx"
-        ? "Horizontal offset from Ref"
-        : "Vertical offset from Ref";
+      : "Offset from Ref";
     return (
-      '<td class="col-' +
-      axis +
-      " cell-" +
-      axis +
-      (locked ? " is-xy-locked" : "") +
-      '"' +
+      '<td class="col-place cell-place"' +
+      (showCol ? "" : " hidden") +
+      ">" +
+      '<div class="place-stack">' +
+      '<label class="place-xy place-row"' +
       (mockRefDims ? "" : " hidden") +
-      '><input type="text" class="row-' +
-      axis +
+      '><span class="place-key">X</span>' +
+      '<input type="text" class="row-dx' +
+      (locked ? " is-xy-locked" : "") +
       '" value="' +
-      escapeHtml(val) +
+      escapeHtml(row.dx) +
       '" title="' +
-      title +
+      xyTitle +
       '"' +
       (locked ? " disabled" : "") +
-      " /></td>"
+      " /></label>" +
+      '<label class="place-xy place-row"' +
+      (mockRefDims ? "" : " hidden") +
+      '><span class="place-key">Y</span>' +
+      '<input type="text" class="row-dy' +
+      (locked ? " is-xy-locked" : "") +
+      '" value="' +
+      escapeHtml(row.dy) +
+      '" title="' +
+      xyTitle +
+      '"' +
+      (locked ? " disabled" : "") +
+      " /></label>" +
+      '<label class="place-angle place-row"' +
+      (mockOrient ? "" : " hidden") +
+      '><span class="place-key">∠</span>' +
+      '<input type="text" class="row-angle" value="' +
+      escapeHtml(row.angle) +
+      '" title="Rotation vs Orient" /></label>' +
+      "</div></td>"
     );
   }
 
@@ -325,7 +342,7 @@
     if (!tbody) return;
     if (!rows.length) {
       tbody.innerHTML =
-        '<tr class="empty"><td colspan="9">Select sketch points to add rows</td></tr>';
+        '<tr class="empty"><td colspan="7">Select sketch points to add rows</td></tr>';
       return;
     }
     tbody.innerHTML = rows
@@ -351,13 +368,7 @@
           '<td class="col-ht"><input type="text" class="row-ht" value="' +
           row.height +
           '" /></td>' +
-          xyPlacementCellHtml(row, "dx") +
-          xyPlacementCellHtml(row, "dy") +
-          '<td class="col-angle cell-angle"' +
-          (mockOrient ? "" : " hidden") +
-          '><input type="text" class="row-angle" value="' +
-          escapeHtml(row.angle) +
-          '" title="Rotation vs Orient" /></td>' +
+          placeCellHtml(row) +
           '<td class="col-format">' +
           formatCellHtml(row) +
           "</td>" +

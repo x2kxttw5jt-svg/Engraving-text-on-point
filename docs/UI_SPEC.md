@@ -68,8 +68,9 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - **Skinny dock scaling:** when the palette gets narrow (~400px / 320px / 260px), scale UI font and control heights down (container queries) so chrome doesn’t crush — prefer readable smaller type over squished 12px.
 - **Ht column floor:** Ht keeps a hard ~56px width in portrait/narrow; the table scrolls horizontally instead of letting Ht collapse into Text.
 - **Rows are resizable** — drag the right-edge handle (or the Text field’s vertical resize) to grow/shrink row height; Text textarea autosizes with content.
-- Columns: `#` | Text | Ht | **dX** | **dY** | **Angle** | **Format** | Font. (no Orient column — Orient is global above the table)
-- **Format** (one column), stacked like Fusion Sketch Text:
+- Columns: `#` | Text | Ht | **Place** | **Format** | Font. (no Orient column — Orient is global above the table)
+- **Place** (one column), stacked trial: **X** / **Y** (from Ref) + **∠** (vs Orient). Column shows when Ref and/or Orient apply; individual rows inside the cell hide until their source is set.
+- **Format** (one column), stacked like Fusion SketchText:
   1. Flip H | Flip V (mirrored-triangle icons)
   2. Justify L | C | R (text-line icons)
   3. Align T | M | B (block + guideline icons)

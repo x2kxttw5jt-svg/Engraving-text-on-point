@@ -431,27 +431,53 @@ textarea:focus {
   min-width: 0;
   box-sizing: border-box;
 }
-.col-dx,
-.col-dy {
-  width: 52px;
-  min-width: 52px;
+/* Trial: X / Y / Angle stacked in one Place cell */
+.col-place {
+  width: 88px;
+  min-width: 80px;
   overflow-wrap: normal;
   word-break: normal;
   white-space: nowrap;
+  vertical-align: top;
 }
-.col-angle {
-  width: 56px;
-  min-width: 56px;
-  overflow-wrap: normal;
-  word-break: normal;
-  white-space: nowrap;
+
+.place-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 2px 0;
+}
+
+.place-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 0.92em;
+}
+
+.place-key {
+  flex: 0 0 12px;
+  width: 12px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.place-row input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
 }
 
 /* Constrained XY: mute the input only — not the whole cell */
-.cell-dx.is-xy-locked input,
-.cell-dy.is-xy-locked input,
 input.row-dx:disabled,
-input.row-dy:disabled {
+input.row-dy:disabled,
+input.row-dx.is-xy-locked,
+input.row-dy.is-xy-locked {
   opacity: 0.55;
   color: var(--text-muted);
   background: var(--bg-band);
