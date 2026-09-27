@@ -12,12 +12,31 @@
   const btnAddPoint = document.getElementById("btn-add-point");
   const btnOrient = document.getElementById("btn-orient");
   const orientLabel = document.getElementById("orient-label");
+  const btnRef = document.getElementById("btn-ref");
+  const refLabel = document.getElementById("ref-label");
   const pointsCount = document.getElementById("points-count");
   const opRadios = document.querySelectorAll('input[name="op"]');
   const targetRow = document.getElementById("target-row");
 
   let mockRowCount = 0;
   let mockOrient = false;
+  let mockRef = false;
+
+  if (btnRef) {
+    btnRef.addEventListener("click", function () {
+      mockRef = !mockRef;
+      if (refLabel) {
+        refLabel.textContent = mockRef
+          ? "Mock ref (H/V dims on add)"
+          : "Optional XY dims";
+      }
+      if (statusEl) {
+        statusEl.textContent = mockRef
+          ? "Next Add Point would project ref associatively and create H/V dims — dummy UI"
+          : "";
+      }
+    });
+  }
 
   if (btnOrient) {
     btnOrient.addEventListener("click", function () {

@@ -42,10 +42,11 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 │  Engraving Text on Point                                       [?] │
 ├──────────────────────────────────────────────────────────────────────┤
 │  ⊙ Point(s)  [ Select ]  [ + Add Point ]   3 selected                │
+│  ✛ Ref Pt    [ Select ]  (optional — XY dims from ref to new point)  │
 │  ▭ Sketch    [ Select ]  (optional — used by Add Point)              │
 │  ↗ Orient    [ Select ]  (vector for text angle — required)          │
 │  ⬚ Target Body  [ Select ]     (Cut only)                            │
-│  Active row: Angle dim ✓  Move ✓/✗                                   │
+│  Active row: Angle dim ✓  Move (dims / free) ✓/✗                     │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Operation / Distance / Direction / Live preview                     │
 ├──────────────────────────────────────────────────────────────────────┤
@@ -65,11 +66,30 @@ Icon groups use **stock Fusion glyphs** from the Sketch Text dialog family (Flip
 | Step | Behavior |
 |------|----------|
 | Click **+ Add Point** | Enter point-placement mode (click in viewport) |
+| Optional **Reference point** | User may select a reference point first (sketch point, vertex, construction point, etc.) |
 | Sketch already selected | Add `SketchPoint` at the **projected** click location in that sketch |
 | No sketch selected | Resolve planar face / construction plane from preselect/click; **create a new sketch** on it (fallback: root `xYConstructionPlane`). Then add the projected point |
-| After create | Clear placement custom graphics; new point selected; table row added; live preview + manipulators focus that row |
+| After create | Clear placement CG; if Ref was set → associative project + XY dimensions (below); select new point; add table row; focus manipulators |
 
-Dummy UI: **+ Add Point** appends a fake row / fake sketch label only; status mentions projection preview.
+Dummy UI: **+ Add Point** / **Ref Point** are mock controls only.
+
+#### Optional reference point + live XY dimensions
+
+Yes — this is supported with normal Fusion sketch associativity:
+
+1. **Select Ref** (optional) before/during Add Point: sketch point, BRep vertex, construction point, or similar.
+2. On commit of the new point, **associatively project** the Ref onto the placement sketch (`project2(..., isLinked=True)`). Result is a projected `SketchPoint` in sketch XY.
+3. Create **driving** linear dimensions between the **projected Ref** and the **new point** in sketch space:
+   - Horizontal: `addDistanceDimension(projRef, newPt, HorizontalDimensionOrientation, …, True)`
+   - Vertical: `addDistanceDimension(projRef, newPt, VerticalDimensionOrientation, …, True)`
+   - (Optional later: aligned dimension instead of / in addition to H+V.)
+4. Those dimension lines are real sketch dimensions. When the new point is transformed:
+   - **Preferred:** move manipulator edits the **H/V dimension parameters** (same pattern as angle dim). Dimension lines and values update live; text follows the point via center constraint; extrude updates with the sketch.
+   - If Ref source moves, the **linked projection** moves, and the dimensions maintain the offset relationship.
+5. With Ref + driving H/V dims, the new point is **no longer freely unconstrained** — move handles drive dim values (do not free-`SketchPoint.move` in a way that fights the dimensions). Without Ref, free move when unconstrained still applies.
+6. Hard-fail with reason if Ref cannot be associatively projected or H/V dimensions cannot be created. No unlinked projection fallback.
+
+During placement ghosting, optionally show custom-graphics preview of H/V offset from projected Ref to the ghost point (cosmetic only until commit).
 
 #### Placement preview (custom graphics + preselect)
 

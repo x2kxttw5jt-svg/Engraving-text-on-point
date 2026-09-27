@@ -9,6 +9,7 @@ Match Fusion’s native docked palettes (Parameters-adjacent density, Extrude-di
 ## Selection / Add Point row
 
 - `Point(s)` Select + **`+ Add Point`** button (stock-style + or point icon).
+- Optional **`Ref Pt` Select** — reference point for associative project + driving H/V dims to the new point.
 - Optional `Sketch` Select (muted helper text: used by Add Point).
 - **`Orient` Select** — required direction vector for text angle (sketch line / axis / edge).
 - Status strip: `Angle dim ✓` (or `Select orientation vector`) and `Move ✓` / `Move locked — point is constrained`.

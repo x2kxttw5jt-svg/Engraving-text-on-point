@@ -164,7 +164,7 @@ cg = rootComp.customGraphicsGroups.add()
 # billboard point / small circle / coordinates at ghost_model
 # optional: CustomGraphicsLines from hit_point → ghost_model (projection guide)
 # 4) On click commit:
-sketch.sketchPoints.add(sk_pt)
+new_pt = sketch.sketchPoints.add(sk_pt)
 cg.deleteMe()  # or clear group
 
 # No sketch selected:
@@ -173,9 +173,32 @@ cg.deleteMe()  # or clear group
 # - Fallback: rootComp.xYConstructionPlane
 ```
 
-- Destroy CG on `preSelectEnd` (hide ghost when leaving valid hit), cancel, destroy, or after commit.
+### Optional Ref point → associative project + H/V dimensions
+
+```python
+# After new_pt is created, if user selected a reference entity:
+proj = sketch.project2(ref_entity, True)  # linked / associative
+proj_ref_pt = as_sketch_point(proj)
+
+dims = sketch.sketchDimensions
+dim_h = dims.addDistanceDimension(
+    proj_ref_pt, new_pt,
+    adsk.fusion.DimensionOrientations.HorizontalDimensionOrientation,
+    text_pt_h, True)  # driving
+dim_v = dims.addDistanceDimension(
+    proj_ref_pt, new_pt,
+    adsk.fusion.DimensionOrientations.VerticalDimensionOrientation,
+    text_pt_v, True)  # driving
+
+# Move manipulator / DistanceValueCommandInput → update dim_h/dim_v.parameter
+# Dimension lines update as the point transforms; linked proj follows Ref source
+```
+
+- Destroy CG on `preSelectEnd`, cancel, destroy, or after commit.
 - Do not leave custom graphics after placement mode ends.
-- Filter preselect: set `args.isSelectable = False` when hit cannot project onto the target plane.
+- Filter preselect: `args.isSelectable = False` when hit cannot project onto the target plane.
+- Hard-fail stages: `ref associative project failed`, `horizontal dimension failed`, `vertical dimension failed`.
+- With Ref dims present, do not free-move the point in a way that conflicts with driving dimensions — edit the dim parameters instead.
 
 ## Stock transform manipulators
 
