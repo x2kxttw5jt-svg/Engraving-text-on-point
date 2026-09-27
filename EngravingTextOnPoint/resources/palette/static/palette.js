@@ -284,7 +284,7 @@
     if (!tbody) return;
     if (!rows.length) {
       tbody.innerHTML =
-        '<tr class="empty"><td colspan="6">Select sketch points to add rows</td></tr>';
+        '<tr class="empty"><td colspan="7">Select sketch points to add rows</td></tr>';
       return;
     }
     tbody.innerHTML = rows
@@ -299,14 +299,14 @@
           '<td class="col-idx">' +
           (i + 1) +
           "</td>" +
-          '<td class="col-text"><input type="text" class="row-text' +
+          '<td class="col-text"><textarea class="row-text' +
           (row.bold ? " is-bold" : "") +
           (row.italic ? " is-italic" : "") +
-          '" value="' +
-          row.text +
-          '" style="font-family:' +
+          '" rows="1" style="font-family:' +
           row.font +
-          '" /></td>' +
+          '">' +
+          escapeHtml(row.text) +
+          "</textarea></td>" +
           '<td class="col-ht"><input type="text" class="row-ht" value="' +
           row.height +
           '" /></td>' +
@@ -321,6 +321,7 @@
           '<td class="col-font">' +
           fontCellHtml(row) +
           "</td>" +
+          '<td class="col-resize" aria-hidden="true"><span class="row-resize-handle" title="Drag to resize row"></span></td>' +
           "</tr>"
         );
       })
@@ -328,11 +329,26 @@
 
     tbody.querySelectorAll(".data-row").forEach(function (tr) {
       tr.addEventListener("click", function (e) {
-        if (e.target.closest("button, input, select")) return;
+        if (e.target.closest("button, input, select, textarea")) return;
         activeRowId = tr.getAttribute("data-id");
         renderRows();
       });
     });
+
+    tbody.querySelectorAll("textarea.row-text").forEach(function (ta) {
+      autosizeTextarea(ta);
+      ta.addEventListener("input", function () {
+        var tr = ta.closest("tr");
+        var id = tr && tr.getAttribute("data-id");
+        var row = rows.find(function (r) {
+          return r.id === id;
+        });
+        if (row) row.text = ta.value;
+        autosizeTextarea(ta);
+      });
+    });
+
+    bindRowResizeHandles();
 
     tbody.querySelectorAll(".format-btn, .style-btn").forEach(function (btn) {
       btn.addEventListener("click", function (e) {
@@ -371,6 +387,53 @@
     });
   }
 
+  function escapeHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function autosizeTextarea(ta) {
+    if (!ta) return;
+    ta.style.height = "auto";
+    var next = Math.max(24, ta.scrollHeight);
+    var tr = ta.closest("tr");
+    var minH = tr && parseInt(tr.style.minHeight || tr.dataset.minHeight || "0", 10);
+    if (minH && next < minH - 8) next = minH - 8;
+    ta.style.height = next + "px";
+  }
+
+  /** Drag handle on each row — resize row height; text area grows with it. */
+  function bindRowResizeHandles() {
+    tbody.querySelectorAll(".row-resize-handle").forEach(function (handle) {
+      handle.addEventListener("mousedown", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var tr = handle.closest("tr");
+        if (!tr) return;
+        var startY = e.clientY;
+        var startH = tr.getBoundingClientRect().height;
+        function onMove(ev) {
+          var h = Math.max(36, startH + (ev.clientY - startY));
+          tr.style.height = h + "px";
+          tr.dataset.minHeight = String(h);
+          var ta = tr.querySelector("textarea.row-text");
+          if (ta) {
+            ta.style.minHeight = Math.max(24, h - 12) + "px";
+          }
+        }
+        function onUp() {
+          document.removeEventListener("mousemove", onMove);
+          document.removeEventListener("mouseup", onUp);
+        }
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+      });
+    });
+  }
+
   /** Mirror Font / Bold / Italic onto the Text cell (same live preview as font). */
   function applyTextPreview(tr, row) {
     var textInput = tr && tr.querySelector(".row-text");
@@ -378,6 +441,7 @@
     textInput.style.fontFamily = row.font || "Arial";
     textInput.classList.toggle("is-bold", !!row.bold);
     textInput.classList.toggle("is-italic", !!row.italic);
+    if (textInput.tagName === "TEXTAREA") autosizeTextarea(textInput);
   }
 
   function fontCellHtml(row) {
