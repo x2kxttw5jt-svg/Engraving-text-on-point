@@ -92,18 +92,19 @@ Preselect filtering: allow hits useful for placement (faces, construction planes
 
 ### Orientation vector (required for angle)
 
-Text rotation is **not** a free-floating angle property. It is a **driving sketch angular dimension** between the text frame and a user-selected **orientation vector**.
+Text rotation is **not** a free-floating angle property. It is a **driving sketch angular dimension** between the text frame and an **associatively projected** copy of the user-selected orientation vector.
 
 | Item | Behavior |
 |------|----------|
-| **Orient select** | User picks a direction reference: sketch line, construction axis/line, or linear edge (projected into the text sketch if needed) |
+| **Orient select** | User picks a direction reference: sketch line, construction axis/line, or linear edge |
+| **Associative project** | **Always** project that vector onto the text’s sketch with a **linked/associative** projection (`project2(..., isLinked=True)` or equivalent). The projected line updates if the source vector moves |
 | Per-row Orient | Table column / picker; optional “use global Orient for all rows” |
 | Missing vector | Angle manipulator + OK blocked for that row; status: `Select orientation vector` |
-| Geometry | One side of `rectangleLines` (text baseline / box edge) is related to the orientation line by `SketchDimensions.addAngularDimension(...)` (**driving**) |
-| Angle column | Displays/edits that dimension’s parameter value (degrees); changing it updates the **dimension**, which rotates the constrained text |
-| Default | `0 deg` relative to the selected vector (text aligned to vector) |
+| Geometry | Driving `addAngularDimension` between a text `rectangleLines` edge and the **projected** orientation line — never dimension directly to the off-sketch source |
+| Angle column | Edits that dimension’s parameter; text rotates via the dimension |
+| Default | `0 deg` (= parallel to projected vector) |
 
-If the vector is not already in the text’s sketch, **project** it into that sketch (`project2`) and dimension against the projected line. Hard-fail with reason if projection/dimension cannot be created.
+**Hard-fail with reason** if associative projection cannot be created, the projected entity is not a usable line, or the angular dimension cannot be added. Do not fall back to an unlinked/fixed copy or a numeric-only angle.
 
 ### Built-in Fusion transform manipulators
 
