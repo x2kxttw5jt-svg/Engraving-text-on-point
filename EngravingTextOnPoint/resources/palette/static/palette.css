@@ -397,11 +397,7 @@ textarea:focus {
 .col-dy { width: 52px; }
 .col-angle { width: 52px; }
 
-.cell-dx.is-xy-locked,
-.cell-dy.is-xy-locked {
-  background: rgba(0, 0, 0, 0.05);
-}
-
+/* Constrained XY: mute the input only — not the whole cell */
 .cell-dx.is-xy-locked input,
 .cell-dy.is-xy-locked input,
 input.row-dx:disabled,
@@ -410,11 +406,6 @@ input.row-dy:disabled {
   color: var(--text-muted);
   background: var(--bg-band);
   cursor: not-allowed;
-}
-
-[data-theme="dark"] .cell-dx.is-xy-locked,
-[data-theme="dark"] .cell-dy.is-xy-locked {
-  background: rgba(255, 255, 255, 0.05);
 }
 
 .col-format { width: 84px; }
