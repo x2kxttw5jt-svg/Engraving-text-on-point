@@ -349,6 +349,28 @@ textarea:focus {
 .col-dx,
 .col-dy { width: 52px; }
 .col-angle { width: 52px; }
+
+/* Already-constrained sketch point: XY placement visible but not editable */
+.cell-dx.is-xy-locked,
+.cell-dy.is-xy-locked {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.cell-dx.is-xy-locked input,
+.cell-dy.is-xy-locked input,
+input.row-dx:disabled,
+input.row-dy:disabled {
+  opacity: 0.55;
+  color: var(--text-muted);
+  background: var(--bg-band);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .cell-dx.is-xy-locked,
+[data-theme="dark"] .cell-dy.is-xy-locked {
+  background: rgba(255, 255, 255, 0.06);
+}
 .col-format { width: 84px; }
 .col-font { width: 96px; min-width: 72px; }
 .col-resize { width: 10px; padding: 0 !important; }

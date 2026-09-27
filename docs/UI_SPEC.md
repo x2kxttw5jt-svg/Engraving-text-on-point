@@ -77,6 +77,7 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - Text `<input>`: `style.fontFamily = selectedFont`.
 - **Placement in the table** (not a header row): per-row `dX` / `dY` (offsets from Ref) and `Angle` (vs global Orient) — same driving sketch dimensions as the triad.
 - `dX` / `dY` columns: **hidden** until Ref dims are applied.
+- If a sketch point is **already constrained** (XY locked): keep dX/dY cells visible but **greyed out / disabled** — not editable via GUI or triad translate. Free (unconstrained) points stay editable.
 - Angle `<input>`: per-row angular dimension value vs the **global** Orient; **hidden** until Orient is set.
 - **Font** cell: **Bold (B)** + **Italic (I)** stacked vertically, grouped with the font `<select>`. Active B/I use accent blue border.
 - Font `<select>` + B/I: the row **Text** field updates live the same way — `font-family`, bold weight, and italic style.
@@ -102,7 +103,7 @@ Icon button (16×16) + label + count badge (plain text, not pill chrome).
 |---------|------------|
 | **Apply Ref Dims** | Ref point selected |
 | **Target Body** | Operation = Join, Cut, or Intersect |
-| Table **dX** / **dY** columns | Ref H/V dims applied |
+| Table **dX** / **dY** columns | Ref H/V dims applied (cells greyed if that point is already constrained) |
 | Table **Angle** column | Orient set |
 | **OK** | ≥1 point / table row |
 

@@ -219,8 +219,8 @@ Driving frame dimensions **and text height** must be editable from **either** th
 
 | Dim | GUI control | Triad | Sketch |
 |-----|-------------|-------|--------|
-| **dX** (Ref horizontal) | Table **dX** column; **shown** when Ref dims exist | Translate X/Y handles | `dim_h.parameter` |
-| **dY** (Ref vertical) | Table **dY** column; **shown** when Ref dims exist | Translate handles | `dim_v.parameter` |
+| **dX** (Ref horizontal) | Table **dX** column; **shown** when Ref dims exist; **greyed / disabled** if point already constrained | Translate X/Y handles (free points only) | `dim_h.parameter` |
+| **dY** (Ref vertical) | Table **dY** column; **shown** when Ref dims exist; **greyed / disabled** if point already constrained | Translate handles (free points only) | `dim_v.parameter` |
 | **Angle** | Table **Angle** column; **shown** when Orient dim exists | Rotate handle | angular `dimension.parameter` |
 | **Height** | Table **Ht** column | **Unified scale** handle | `SketchText.heightParameter` |
 
@@ -672,7 +672,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | **Ref Pt** / **Apply Ref Dims** | Fake select; Apply Ref Dims **hidden** until Ref set; apply reveals dX/dY |
 | Orient | Fake “Select” sets **global** vector; Angle column appears for all rows |
 | Manipulator status | Click mocks debounce → auto-apply Ref dims to driving → preview; syncs table dX/dY/Angle |
-| Placement columns | Per-row dX/dY/Angle in the table; edit echoes GUI→driving; status mentions auto-apply window |
+| Placement columns | Per-row dX/dY/Angle in the table; constrained points grey out dX/dY; edit echoes GUI→driving |
 | Ht / scale | Ht edit echoes “would set heightParameter”; status notes triad unified scale ↔ Ht |
 | Table | Seeded with **3 sample point rows** on open for visual review; Add Point appends more |
 | Font dropdown | Seeded list; text input `font-family` follows selection |

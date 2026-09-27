@@ -280,6 +280,38 @@
     }).join("");
   }
 
+  /**
+   * dX / dY: editable when Ref dims exist and the sketch point is free;
+   * greyed out (disabled) when the point is already constrained.
+   */
+  function xyPlacementCellHtml(row, axis) {
+    var locked = !!row.xyConstrained;
+    var val = axis === "dx" ? row.dx : row.dy;
+    var title = locked
+      ? "Point is constrained — XY placement locked"
+      : axis === "dx"
+        ? "Horizontal offset from Ref"
+        : "Vertical offset from Ref";
+    return (
+      '<td class="col-' +
+      axis +
+      " cell-" +
+      axis +
+      (locked ? " is-xy-locked" : "") +
+      '"' +
+      (mockRefDims ? "" : " hidden") +
+      '><input type="text" class="row-' +
+      axis +
+      '" value="' +
+      escapeHtml(val) +
+      '" title="' +
+      title +
+      '"' +
+      (locked ? " disabled" : "") +
+      " /></td>"
+    );
+  }
+
   function renderRows() {
     if (!tbody) return;
     if (!rows.length) {
@@ -310,16 +342,8 @@
           '<td class="col-ht"><input type="text" class="row-ht" value="' +
           row.height +
           '" /></td>' +
-          '<td class="col-dx cell-dx"' +
-          (mockRefDims ? "" : " hidden") +
-          '><input type="text" class="row-dx" value="' +
-          escapeHtml(row.dx) +
-          '" title="Horizontal offset from Ref" /></td>' +
-          '<td class="col-dy cell-dy"' +
-          (mockRefDims ? "" : " hidden") +
-          '><input type="text" class="row-dy" value="' +
-          escapeHtml(row.dy) +
-          '" title="Vertical offset from Ref" /></td>' +
+          xyPlacementCellHtml(row, "dx") +
+          xyPlacementCellHtml(row, "dy") +
           '<td class="col-angle cell-angle"' +
           (mockOrient ? "" : " hidden") +
           '><input type="text" class="row-angle" value="' +
@@ -409,8 +433,8 @@
 
   function bindPlacementInputs() {
     [
-      { sel: ".row-dx", key: "dx", label: "dX" },
-      { sel: ".row-dy", key: "dy", label: "dY" },
+      { sel: ".row-dx", key: "dx", label: "dX", xyOnly: true },
+      { sel: ".row-dy", key: "dy", label: "dY", xyOnly: true },
       { sel: ".row-angle", key: "angle", label: "Angle" },
       { sel: ".row-ht", key: "height", label: "Ht" },
     ].forEach(function (spec) {
@@ -418,6 +442,7 @@
         inp.addEventListener("change", function () {
           var row = rowFromEl(inp);
           if (!row) return;
+          if (spec.xyOnly && row.xyConstrained) return;
           row[spec.key] = inp.value;
           if (statusEl) {
             statusEl.textContent =
@@ -517,6 +542,7 @@
         height: "3 mm",
         dx: "0 mm",
         dy: "0 mm",
+        xyConstrained: false,
         angle: "0 deg",
         flipH: false,
         flipV: false,
@@ -549,6 +575,7 @@
       height: "3 mm",
       dx: "12 mm",
       dy: "5 mm",
+      xyConstrained: false,
       angle: "0 deg",
       justify: "center",
       align: "middle",
@@ -561,6 +588,7 @@
       height: "4 mm",
       dx: "28 mm",
       dy: "5 mm",
+      xyConstrained: false,
       angle: "15 deg",
       flipH: true,
       justify: "left",
@@ -572,8 +600,9 @@
     addRow({
       text: "REV A",
       height: "2.5 mm",
-      dx: "12 mm",
-      dy: "18 mm",
+      dx: "—",
+      dy: "—",
+      xyConstrained: true,
       angle: "-5 deg",
       flipV: true,
       justify: "center",
@@ -624,6 +653,7 @@
       if (!mockRef) return;
       mockRefDims = true;
       rows.forEach(function (row, i) {
+        if (row.xyConstrained) return;
         if (!row.dx || row.dx === "0 mm") row.dx = 10 + i * 8 + " mm";
         if (!row.dy || row.dy === "0 mm") row.dy = "5 mm";
       });
@@ -631,7 +661,7 @@
       renderRows();
       if (statusEl) {
         statusEl.textContent =
-          "dX/dY columns shown in table — editable per row or via triad — dummy UI";
+          "dX/dY in table — free points editable; constrained points greyed out — dummy UI";
       }
     });
   }
@@ -640,7 +670,7 @@
     var row = rows.find(function (r) {
       return r.id === activeRowId;
     });
-    if (mockRef && row) {
+    if (mockRef && row && !row.xyConstrained) {
       mockRefDims = true;
       row.dx = dx;
       row.dy = dy;
