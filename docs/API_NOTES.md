@@ -115,16 +115,17 @@ tin.isVerticalFlip = flip_v
 
 Same semantics as the Sketch Text dialog. Apply before `add`. Center constraints remain mandatory after flip/align rebuilds; hard-fail with reason if they cannot be applied.
 
-## Live preview (`executePreview`)
+## Command event split (low latency)
 
-- Keep a long-lived **Command** while the palette is open.
-- Palette/`SelectionEvent` changes set a dirty flag and call into the command so Fusion invokes `CommandEventHandler.notify` on **preview**.
-- In preview: create sketch texts + extrudes; Fusion rolls them back before the next preview/execute unless committed.
-- On **destroy** / cancel: do not commit; clear any non-preview bookmarks the add-in holds (entity tokens, selection).
-- Debounce typing (~150 ms). Single-flight: ignore overlapping rebuild requests.
-- Do not rebuild on theme-only changes or pointer hover during selection.
+| Event | Role |
+|-------|------|
+| `inputChanged` (triad) | Fast pose: `sketch.move` existing text; no solids |
+| `inputChanged` (definition fields) | Update sketch text / frame only; debounced |
+| `executePreview` | **Avoid for triad.** Optional/rare for non-solid setup if Fusion requires a tick — never rebuild extrude here |
+| `execute` | Create/update **extrude or cut** once from current sketch pose |
+| `destroy` | Teardown session sketch text / uncommitted solids; clear tokens |
 
-Optional fallback if command-preview + palette bridging is awkward on a given Fusion build: manually create/delete preview entities in a named timeline bookmark and delete on cancel — prefer official `executePreview` first.
+Do not rebuild on theme-only changes or Add Point hover (CG only).
 
 ## Extrude from text
 

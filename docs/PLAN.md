@@ -662,7 +662,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | **Text flip** | **Per-row H + V toggles; stock Fusion flip icons; default off** |
 | **Justify / Align** | **Per-row H (L/C/R) + V (T/M/B); stock Fusion align icons; default Center / Middle** |
 | Sketch creation | Use existing sketch of selected/Add Point target; create only when Add Point has no sketch |
-| **Preview** | **Live preview on by default via executePreview; teardown on cancel** |
+| **Preview** | **Fast path: triad matrix-moves sketch text; solids only on execute; no executePreview on triad ticks** |
 | Default height | `3 mm` |
 | Default font | `Arial` |
 | Default distance | `1 mm` |
@@ -680,9 +680,9 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 3. Extrude Cut or New Body with optional target body for Cut.
 4. Batch sequential text with prefix/suffix.
 5. Font-aware text field + font dropdown + **angle dim**, **orient vector**, **flip**, **justify**, **align**.
-6. **Reusable `sketch_transform_frame`** owns Ref H/V + angle dims, visibility, manipulators, drag cadence.
-7. **Add Point** with preselect CG ghost; frame applies to new **or existing unconstrained** points.
-8. **Live preview** with clean cancel/destroy teardown.
+6. **Reusable `sketch_transform_frame`** + **`TriadCommandInput`**: matrix-move existing text on `inputChanged`; driven-during-drag; dims visible.
+7. **Solids (extrude/cut) only in `execute`** — never on triad ticks.
+8. **Add Point** with preselect CG ghost; frame on new or existing unconstrained points.
 9. Light / Dark / Auto themes; **Light default**.
 
 **Cancel vs Add Point:** Preview text/extrudes are always removed on cancel. Points/sketches created via **Add Point** during the session **remain** (user-authored geometry), unless we add an explicit “remove points I added” option later.
