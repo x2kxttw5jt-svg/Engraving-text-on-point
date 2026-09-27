@@ -7,7 +7,10 @@ Target: current Fusion production API (2024+ multiline text). Python add-in.
 | Prefer | Avoid |
 |--------|--------|
 | `SketchTexts.createInput2(text, height)` + `setAsMultiLine(...)` | Retired `createInput(text, height, point)` for new work |
+| `SketchText.heightParameter` (expression / value) | Retired `SketchText.height` |
 | `SketchText.definition` → `MultiLineTextDefinition.rectangleLines` | Retired `SketchText.boundaryLines` |
+
+**Height edits:** write `heightParameter` from the palette Ht column **or** triad **unified scale** (`unifiedScaleFactor` × height at gesture start). Never geometrically scale the text rectangle via `sketch.move`.
 
 Center alignment:
 
@@ -119,7 +122,7 @@ Same semantics as the Sketch Text dialog. Apply before `add`. Center constraints
 
 | Event | Role |
 |-------|------|
-| `inputChanged` (triad) | Fast pose: snap (unless Alt) + dims → driven + `sketch.move`; **no** solids |
+| `inputChanged` (triad) | Fast pose: snap (unless Alt); translate/rotate → driven dims + `sketch.move`; unified scale → `heightParameter`; **no** solids |
 | `mouseDragEnd` | Start debounce timer only — dims stay **driven** during wait |
 | Debounce fire | **Auto-apply** Ref/Orient dims (driven → driving from pose) → then `doExecutePreview` |
 | `executePreview` | Build/update **extrude or cut** preview; dims already driving |
@@ -250,6 +253,7 @@ Lives at `EngravingTextOnPoint/sketch_transform_frame/`. **No engraving imports.
 ```python
 triad = inputs.addTriadCommandInput("triad", mat)
 triad.hideAllScaling()
+triad.isUnifiedScalingVisible = True  # only unified scale → text height
 
 frame = TransformFrame.apply(
     sketch, target_pt,
@@ -261,22 +265,44 @@ frame = TransformFrame.apply(
 frame.ensure_visible(sketch)
 frame.bind_triad(triad)
 
-# inputChanged (triad) — FAST PATH: snap + sketch.move; dims driven; no doExecutePreview
+# inputChanged (triad) — branch on lastChangeMade
+#   translate/rotate: snap + sketch.move; dims driven; no doExecutePreview
+#   unified scale: height = height0 * triad.unifiedScaleFactor → heightParameter
 frame.on_triad_changed(triad)
 
 # mouseDragEnd → debounce wait (dims still driven) → auto-apply driving → doExecutePreview
 frame.apply_driving_from_pose()  # between debounce fire and execute preview
+triad.unifiedScaleFactor = 1.0   # height already committed to heightParameter
 cmd.doExecutePreview()
 
 # execute — FINAL COMMIT ONLY
 commit_sketch_and_solids(...)
 ```
 
-- Triad ticks: matrix-move existing sketch text only; dims driven during gesture + debounce wait; visible always.
-- Auto-apply: after debounce, before solid preview — Ref/Orient dims converted to driving from pose.
+### Height via triad unified scale
+
+```python
+# Prefer heightParameter (retired SketchText.height).
+hp = sketch_text.heightParameter
+height0 = hp.value  # cm at gesture start
+
+def on_unified_scale(triad):
+    factor = triad.unifiedScaleFactor  # unitless
+    if not triad.isValidExpressions:
+        return
+    h = max(height0 * factor, MIN_HEIGHT_CM)
+    # optional: quantize h with linear snap unless Alt
+    hp.value = h
+    # sync palette Ht; do NOT apply Matrix3D scale via sketch.move
+```
+
+- Show **unified scale only** (`isUnifiedScalingVisible`); keep per-axis / plane scales hidden.
+- Branch with `lastChangeMade` so translate/rotate path never applies scale, and scale path never `sketch.move`s a scaled matrix.
+- Triad ticks: matrix-move **or** heightParameter write; dims driven during translate/rotate + debounce wait; visible always.
+- Auto-apply: after debounce, before solid preview — Ref/Orient dims converted to driving from pose; reset unified scale to 1.0.
 - Solid preview: `doExecutePreview` only after auto-apply (never while Ref dims are still driven).
 - Final commit: `execute` / `doExecute` only.
-- Re-entrancy: single-flight around move + preview; cancel stale debounce tokens.
+- Re-entrancy: single-flight around move + height write + preview; cancel stale debounce tokens.
 - Destroy CG on `preSelectEnd`, cancel, destroy, or after commit.
 
 ## Palette

@@ -12,7 +12,7 @@ Match Fusion’s native docked palettes (Parameters-adjacent density, Extrude-di
 - Optional **`Ref Pt` Select** + **`Apply Ref Dims`** (initial attach) — via reusable `sketch_transform_frame` (H/V + angle when Orient set) for Add Point or existing unconstrained points. After triad drag: Ref dims stay driven through debounce, then **auto-apply** (convert to driving) before solid preview. Frame dims stay **visible during live preview** (including driven-during-drag).
 - Optional `Sketch` Select (muted helper text: used by Add Point).
 - **`Orient` Select** — required orientation vector; angular dim is part of the same transform frame as Ref H/V.
-- Status strip: `Angle dim ✓` (or `Select orientation vector`) and `Move ✓` / `Move locked — point is constrained`.
+- Status strip: `Angle dim ✓` (or `Select orientation vector`), `Move ✓` / `Move locked — point is constrained`, and `Scale→Ht ✓` (triad unified scale drives text height).
 - During Add Point mode, status: `Click to place point — ghost shows projected location`.
 
 ## Tokens
@@ -66,6 +66,7 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 
 - Sticky header row; table may scroll horizontally in a narrow dock.
 - Columns: `#` | Text | Ht | **Angle** (dim value) | **Orient** (vector label) | Flip | Justify | Align | Font.
+- **Ht** is two-way with triad **unified scale** (same `heightParameter`); typed Ht resets triad scale factor to 1.0.
 - Text `<input>`: `style.fontFamily = selectedFont`.
 - Angle `<input>`: **angular dimension** value (not a SketchText angle — that API is retired); placeholder `0`; unit `deg`. Disabled until Orient is set.
 - Orient: short label of selected vector + per-row pick control (or “global”).

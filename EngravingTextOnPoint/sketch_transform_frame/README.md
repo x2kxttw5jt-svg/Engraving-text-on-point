@@ -1,6 +1,6 @@
 # sketch_transform_frame
 
-Standalone Fusion helper: associative Ref H/V + Orient angle dims, **`TriadCommandInput`**, driven-during-drag, visibility.
+Standalone Fusion helper: associative Ref H/V + Orient angle dims, **`TriadCommandInput`** (translate / rotate / unified scale→height), driven-during-drag, visibility.
 
 **No imports from host add-ins.** Copy this folder to reuse.
 
@@ -8,7 +8,7 @@ Standalone Fusion helper: associative Ref H/V + Orient angle dims, **`TriadComma
 
 | Stage | Event | Work |
 |-------|-------|------|
-| Fast pose | `inputChanged` (triad) | Snap (unless Alt) → `sketch.move` existing entities; dims driven; **no** `doExecutePreview` |
+| Fast pose | `inputChanged` (triad) | Translate/rotate: snap → `sketch.move`; **unified scale → host height callback** (not matrix scale); dims driven on move/rotate; **no** `doExecutePreview` |
 | Debounce wait | after `mouseDragEnd` | Dims stay **driven**; no solid preview yet |
 | Auto-apply | debounce fire, **before** preview | Driven Ref/Orient dims → **driving** from measured pose |
 | Solid preview | then `doExecutePreview` | Host `executePreview` builds extrude/cut (dims already driving) |
@@ -24,10 +24,13 @@ frame.ensure_visible(sketch)
 frame.bind_triad(triad_input)
 
 frame.on_triad_changed(triad, snap_linear_cm=..., snap_angle_rad=..., alt_bypass=False)
+# Host handles unified scale → SketchText.heightParameter (engraving-specific).
 # Host: mouseDragEnd → debounce → then:
 frame.apply_driving_from_pose()  # auto-apply: driven → driving; alias on_triad_settled()
-# Host: then doExecutePreview()
+# Host: reset triad.unifiedScaleFactor = 1.0; then doExecutePreview()
 ```
+
+Triad setup: `hideAllScaling()` then `isUnifiedScalingVisible = True` (per-axis / plane scales stay off).
 
 ## Modules
 

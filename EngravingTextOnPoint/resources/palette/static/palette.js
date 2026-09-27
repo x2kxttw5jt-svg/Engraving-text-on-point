@@ -111,33 +111,30 @@
       }
       if (manipStatus) {
         manipStatus.textContent =
-          "Manipulators: Angle dim ✓ · Move ✓ (unconstrained mock point)";
+          "Manipulators: Angle dim ✓ · Move ✓ · Scale→Ht ✓";
       }
       if (statusEl) {
         statusEl.textContent =
-          "Angle editable via GUI or triad rotate — dummy UI";
+          "Angle via GUI/triad rotate; Ht via GUI/triad unified scale — dummy UI";
       }
     });
   }
 
-  // Dummy triad gesture: clicking manip status simulates a settle sync into GUI.
+  // Dummy triad gesture: click manip status → settle (auto-apply + optional scale→Ht).
   if (manipStatus) {
     manipStatus.style.cursor = "pointer";
     manipStatus.title =
-      "Click to mock debounce → auto-apply driving → preview";
+      "Click to mock debounce → auto-apply driving / scale→Ht → preview";
     manipStatus.addEventListener("click", function () {
-      if (!mockRef && !mockOrient) {
-        if (statusEl) {
-          statusEl.textContent =
-            "Set Ref and/or Orient first to mock auto-apply driving — dummy UI";
-        }
-        return;
-      }
       mockTriadSettled(
         mockRef ? "12 mm" : "—",
         mockRef ? "5 mm" : "—",
         mockOrient ? "15 deg" : "—"
       );
+      if (statusEl && !mockRef && !mockOrient) {
+        statusEl.textContent =
+          "Would set heightParameter from triad unified scale (×1.2 → 3.6 mm), reset factor to 1.0, then doExecutePreview — dummy UI";
+      }
     });
   }
 
@@ -155,7 +152,7 @@
       }
       if (manipStatus) {
         manipStatus.textContent =
-          "Manipulators: Angle ✓ · Move ✓ (unconstrained mock point)";
+          "Manipulators: Angle ✓ · Move ✓ · Scale→Ht ✓";
       }
     });
   }

@@ -46,17 +46,18 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 │  ▭ Sketch    [ Select ]  (optional — used by Add Point)              │
 │  ↗ Orient    [ Select ]  (vector for text angle — required)          │
 │  ⬚ Target Body  [ Select ]     (Cut only)                            │
-│  Active row: Angle dim ✓  Move (dims / free) ✓/✗                     │
+│  Active row: Angle dim ✓  Move ✓/✗  Scale→Ht ✓                      │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Operation / Distance / Direction / Live sketch preview              │
 │  Snap        [ 1 mm ▼ ]  [ 5° ▼ ]   (Alt = free)                     │
 │  Frame dims  dX [ 12 mm ]  dY [ 5 mm ]  Angle [ 0 deg ]             │
 │              ↕ two-way with Triad + sketch dimensions                │
+│              Ht also via triad unified scale                         │
 ├──────────────────────────────────────────────────────────────────────┤
 │  ☐ Batch sequence …                                                  │
 ├──────────────────────────────────────────────────────────────────────┤
 │  # │ Text │ Ht │ Angle │ Orient │ Flip │ Justify │ Align │ Font     │
-│  … Angle / dX / dY = same driving dims; edit here or via Triad …   │
+│  … Ht↔scale; Angle/dX/dY↔triad; edit here or via Triad …           │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Theme  [ Light ▼ ]                     [ Cancel ]  [ OK ]           │
 └──────────────────────────────────────────────────────────────────────┘
@@ -106,7 +107,7 @@ frame = TransformFrame.apply(
     angle_value="0 deg",
 )
 frame.ensure_visible(sketch)
-frame.bind_triad(triad_input)  # TriadCommandInput — translate + rotate, no scale
+frame.bind_triad(triad_input)  # TriadCommandInput — translate + rotate + unified scale→height
 # On triad inputChanged (host command):
 frame.on_triad_changed(triad)  # dims driven once/gesture; sketch.move(text, delta_matrix)
 # After mouseDragEnd debounce, before doExecutePreview:
@@ -178,54 +179,71 @@ Missing Orient → angle manipulator + OK blocked for engraving rows that requir
 
 ### Transform manipulators — `TriadCommandInput`
 
-Use Fusion’s stock **`TriadCommandInput`** for translation + rotation (hide scaling). Owned by the session **Command**; palette does not draw the triad.
+Use Fusion’s stock **`TriadCommandInput`** for translation, rotation, and **unified scale → text height**. Owned by the session **Command**; palette does not draw the triad.
 
 | Control | Triad usage | Fast path (`inputChanged`) |
 |---------|-------------|----------------------------|
 | **Translate** | X/Y (sketch plane); hide Z or lock to plane as needed | `sketch.move` text box (+ point) by delta matrix — **no rebuild** |
 | **Rotate** | Rotation about sketch normal (typically Z of triad aligned to sketch) | `sketch.move` text `rectangleLines` / point set by rotation matrix about point — **no rebuild** |
-| **Scale** | **Hidden** (`hideAllScaling`) | — |
+| **Scale** | **Unified scale only** (`isUnifiedScalingVisible`); hide per-axis / plane scales | Map factor → `SketchText.heightParameter` — **not** a geometric `sketch.move` scale |
+
+**Scale → height (required)**
+
+Text height is a single scalar. Use the triad’s **unified** scale handle (`unifiedScaleFactor` / `unifiedScaleFactorExpression`), not X/Y/Z or plane scales (those imply anisotropic stretch and are wrong for glyphs).
+
+| Step | Behavior |
+|------|----------|
+| Setup | `hideAllScaling()` then `isUnifiedScalingVisible = True` (or equivalent: hide axis/plane scales, show unified only) |
+| Gesture start | Cache `height0` = current `heightParameter.value` (cm); triad unified factor starts at `1.0` |
+| Tick | Branch on `lastChangeMade` (scale vs translate/rotate). If scale: `height = max(height0 * unifiedScaleFactor, min_height)`; optional linear-snap quantize; write `heightParameter.value` / expression; sync Ht column. **Do not** bake scale into the triad pose matrix applied via `sketch.move`. |
+| Settle | Debounce → auto-apply frame dims if translate/rotate; if scale changed height, keep parameter; reset `unifiedScaleFactor` to `1.0` with new `height0`; `doExecutePreview` for solids |
+| GUI Ht | Same `heightParameter` — two-way with triad scale (typed Ht authoritative; resets triad factor to 1.0) |
+
+Clamp: reject / clamp height ≤ 0 (status error). Center constraint + justify/align keep the box anchored on the point while height changes.
 
 **Rules**
 
 1. Place triad at active row’s sketch point; orient axes from sketch plane (+ Orient vector when set).
-2. On **`inputChanged`** for the triad: apply **snap** (unless Alt held) → compute delta from `transform` / `lastTransform` → `sketch.move` **existing** sketch text (+ point as needed). Immediate feedback; **do not** call `doExecutePreview` / create solids here.
-3. During triad drag: frame dims → **driven**; stay **visible**; no text recreate; no extrude/cut.
+2. On **`inputChanged`** for the triad: use `lastChangeMade` to branch.
+   - **Translate / rotate:** apply **snap** (unless Alt) → delta from `transform` / `lastTransform` → `sketch.move` existing sketch text (+ point). Dims → driven. No solids.
+   - **Unified scale:** map factor → `heightParameter`; sync Ht; no geometric scale-move; no solids.
+3. During triad translate/rotate drag: frame dims → **driven**; stay **visible**; no text recreate; no extrude/cut.
 4. On **`mouseDragEnd`**: start short debounce only — dims stay **driven** during the wait. Do **not** restore driving at drag-end itself.
-5. **Between debounce fire and `doExecutePreview`:** **auto-apply** Ref (and Orient angle) dims = convert driven → **driving** from measured pose (`isDriving = True`); sync GUI dX / dY / Angle; then call `doExecutePreview`. Solid preview always sees driving dims.
-6. Without Ref / when point locked: disable translate or hard status; rotate still available when Orient angle dim exists.
+5. **Between debounce fire and `doExecutePreview`:** **auto-apply** Ref (and Orient angle) dims = convert driven → **driving** from measured pose (`isDriving = True`); sync GUI dX / dY / Angle / Ht; reset unified scale factor to 1.0; then call `doExecutePreview`. Solid preview always sees driving dims + current height.
+6. Without Ref / when point locked: disable translate or hard status; rotate still available when Orient angle dim exists; **scale/height always available** for the active row’s text.
 7. Never permanently drop center constraint or frame dims.
-8. **Re-entrancy guard:** ignore overlapping triad/`doExecutePreview` work while a solid preview or sketch move is in flight (`_busy` / single-flight flag).
+8. **Re-entrancy guard:** ignore overlapping triad/`doExecutePreview` work while a solid preview or sketch move / height write is in flight (`_busy` / single-flight flag).
 
 #### Dimension inputs — Triad **or** GUI (two-way)
 
-Driving frame dimensions must be editable from **either** the triad **or** palette/table fields. Both write the same sketch dimension parameters.
+Driving frame dimensions **and text height** must be editable from **either** the triad **or** palette/table fields.
 
 | Dim | GUI control | Triad | Sketch |
 |-----|-------------|-------|--------|
 | **dX** (Ref horizontal) | Numeric input (active row / frame block); enabled when Ref dims exist | Translate X/Y handles | `dim_h.parameter` |
 | **dY** (Ref vertical) | Numeric input; enabled when Ref dims exist | Translate handles | `dim_v.parameter` |
 | **Angle** | Table Angle column + optional frame-block field; enabled when Orient dim exists | Rotate handle | angular `dimension.parameter` |
+| **Height** | Table **Ht** column | **Unified scale** handle | `SketchText.heightParameter` |
 
 **Sync rules**
 
-1. **GUI → model:** on commit/change of dX / dY / Angle field → set driving dim parameter (expressions OK, e.g. `12 mm`) → update triad `transform` to match → debounced `doExecutePreview` for solids. No full text recreate.
-2. **Triad → GUI:** on triad `inputChanged` / settle → push measured/snapped pose into dX / dY / Angle fields (suppress feedback loops with a `_syncingUi` flag).
+1. **GUI → model:** on commit/change of dX / dY / Angle / Ht → set driving dim or height parameter (expressions OK) → update triad pose / reset unified scale to 1.0 → debounced `doExecutePreview` for solids. No full text recreate for pose/height-only edits when the API allows parameter writes.
+2. **Triad → GUI:** on triad `inputChanged` / settle → push measured/snapped pose into dX / dY / Angle and scaled height into Ht (suppress feedback loops with a `_syncingUi` flag).
 3. **Missing Ref:** dX/dY inputs disabled (or hidden); translate may still free-move unconstrained points; fields show `—`.
 4. **Missing Orient:** Angle input disabled until Orient is set.
-5. Snap applies to **triad** ticks; typed GUI values are taken as authoritative (user intent) and are not force-snapped unless we add an optional “snap on blur” later — default: **no snap on typed entry**.
+5. Snap applies to **triad** translate/rotate ticks; height from unified scale may use the linear snap step as a height quantum when snap ≠ Off; typed GUI values are authoritative (not force-snapped) — default: **no snap on typed entry**.
 6. Re-entrancy: ignore GUI→model updates while applying triad→GUI sync, and vice versa.
 
-Dummy UI: dX / dY / Angle fields edit mock state and echo “would set dim / triad”.
+Dummy UI: dX / dY / Angle / Ht fields edit mock state; mock scale → Ht echo.
 
 #### Snap increments
 
 | UI | Behavior |
 |----|----------|
-| **Snap** dropdown | Linear snap for translate (e.g. `Off`, `0.1 mm`, `0.5 mm`, `1 mm`, `5 mm`) and/or angular snap for rotate (`Off`, `1°`, `5°`, `15°`, `45°`) — stock-like compact dropdown near triad / extrude block |
+| **Snap** dropdown | Linear snap for translate **and** height-from-scale (e.g. `Off`, `0.1 mm`, `0.5 mm`, `1 mm`, `5 mm`) and/or angular snap for rotate (`Off`, `1°`, `5°`, `15°`, `45°`) — stock-like compact dropdown near triad / extrude block |
 | Default | Sensible design-unit default (e.g. `1 mm` / `5°`); persist in `settings.json` |
-| **Alt bypass** | While **Alt** is held during triad drag, disable snapping (free continuous transform). Detect via mouse event modifiers on drag / `inputChanged` when available |
-| Apply | Quantize triad translation/rotation **before** `sketch.move` on the fast path |
+| **Alt bypass** | While **Alt** is held during triad drag, disable snapping (free continuous transform / free height scale). Detect via mouse event modifiers on drag / `inputChanged` when available |
+| Apply | Quantize triad translation/rotation **before** `sketch.move`; quantize height from unified scale before writing `heightParameter` |
 
 Dummy UI: Snap dropdown interactive; Alt noted in status only.
 
@@ -310,17 +328,23 @@ Keep **lightweight sketch updates** on every triad tick; run **solid engraving p
 
 | Stage | When | What runs | Must not do |
 |-------|------|-----------|-------------|
-| **A — Fast pose** | `inputChanged` on `TriadCommandInput` (each drag tick) | Snap (unless Alt); dims → driven (once/gesture); `sketch.move` **existing** sketch text by delta matrix; dims stay visible | `doExecutePreview`, create/delete text, create/delete extrude/cut, nested re-entry |
+| **A — Fast pose** | `inputChanged` on `TriadCommandInput` (each drag tick) | Snap (unless Alt); translate/rotate → dims driven + `sketch.move`; **unified scale → `heightParameter`** (not matrix scale); dims stay visible | `doExecutePreview`, geometric scale-move of glyphs, create/delete extrude/cut, nested re-entry |
 | **B — Solid preview** | `mouseDragEnd` → short debounce → **auto-apply driving dims** → `command.doExecutePreview()` | Convert driven Ref/Orient dims → driving from pose; then `executePreview` builds/updates **extrude or cut** | Run on every triad tick; call `doExecute`; preview while dims still driven |
 | **C — Final commit** | User OK → `execute` (or `doExecute` from palette) | Commit solids + sketch + timeline group | Fire during drag or as a substitute for preview |
 
 ```
 Triad drag tick (inputChanged)
   → if _busy: return                          # re-entrancy guard
-  → apply snap unless Alt held
-  → dims driven (first tick of gesture)
-  → delta from triad.transform / lastTransform
-  → sketch.move(existing text entities, delta)
+  → branch on lastChangeMade
+  → if translate/rotate:
+        apply snap unless Alt held
+        dims driven (first tick of gesture)
+        delta from triad.transform / lastTransform
+        sketch.move(existing text entities, delta)
+  → if unified scale:
+        height = height0 * unifiedScaleFactor (snap/clamp)
+        sketchText.heightParameter.value = height
+        sync Ht column; do not sketch.move with scale
   → (no doExecutePreview)
 
 mouseDragEnd
@@ -331,7 +355,8 @@ mouseDragEnd
         _busy = True
         # AUTO-APPLY (between debounce and execute preview):
         frame.apply_driving_from_pose()       # Ref H/V (+ angle) driven → driving
-        sync GUI dX / dY / Angle
+        sync GUI dX / dY / Angle / Ht
+        reset triad.unifiedScaleFactor = 1.0  # height already on heightParameter
         cmd.doExecutePreview()                # solid engraving preview (dims already driving)
         _busy = False
 
@@ -373,8 +398,8 @@ Cancel / destroy
 
 | Event | Stage | Action |
 |-------|-------|--------|
-| Triad tick | **A** | Snapped (or Alt-free) matrix-move existing sketch text; sync dX/dY/Angle fields; dims driven; no solids |
-| GUI dX / dY / Angle edit | Dim write + triad retarget + debounced **B** | Set dim parameters (already driving); move sketch to match; solid preview |
+| Triad tick | **A** | Translate/rotate: matrix-move + sync dX/dY/Angle; scale: write heightParameter + sync Ht; no solids |
+| GUI dX / dY / Angle / Ht edit | Dim/height write + triad retarget + debounced **B** | Set parameters; move or resize sketch text; solid preview |
 | `mouseDragEnd` | debounce → **auto-apply driving** → **B** | Driven → driving from pose; then `doExecutePreview` |
 | Point select / Add Point | Setup (+ optional B) | Create sketch text + frame; optional initial `doExecutePreview` after setup |
 | Text / font / height / flip / justify | Setup + debounced **B** | Update sketch text; then `doExecutePreview` |
@@ -595,8 +620,8 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 ### Command pattern
 
 1. Toolbar → start command + show palette + arm selection.
-2. Command hosts **`TriadCommandInput`** (translate + rotate; scaling hidden) + Snap dropdown.
-3. Active row → triad at point; `inputChanged` → snapped matrix-move (path A); re-entrancy guarded.
+2. Command hosts **`TriadCommandInput`** (translate + rotate + **unified scale → height**) + Snap dropdown.
+3. Active row → triad at point; `inputChanged` → snapped matrix-move or height write (path A); re-entrancy guarded.
 4. `mouseDragEnd` → debounce → **auto-apply Ref/Orient dims to driving** → `doExecutePreview` (path B).
 5. Definition changes → update sketch + debounced `doExecutePreview` (dims already driving).
 6. OK → `execute` final commit only (path C).
@@ -642,7 +667,9 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | **+ Add Point** | Appends a fake row; status mentions preselect + CG projection preview |
 | **Ref Pt** / **Apply Ref Dims** | Fake select + apply on mock unconstrained row or next Add Point |
 | Orient | Fake “Select” sets mock vector label on rows |
-| Manipulator status | `Angle dim ✓ (needs Orient)` / `Move ✓` / constrained Move locked |
+| Manipulator status | Click mocks debounce → auto-apply Ref dims to driving → preview; enables dX/dY/Angle |
+| Frame dims | dX/dY/Angle edit echoes GUI→driving; status mentions auto-apply window |
+| Ht / scale | Ht edit echoes “would set heightParameter”; status notes triad unified scale ↔ Ht |
 | Table | Working Text / Ht / Angle / Orient / Flip / Justify / Align / Font |
 | Font dropdown | Seeded list; text input `font-family` follows selection |
 | Batch | Prefix/suffix/start/digits/step rewrite mock row texts |
@@ -656,7 +683,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 ### Phase 2 — Triad fast path + settle preview
 - `sketch_transform_frame` + `TriadCommandInput`; matrix `sketch.move` on `inputChanged`.
 - Snap dropdown + Alt bypass; re-entrancy guards.
-- `mouseDragEnd` → debounce → `doExecutePreview` for solid preview.
+- `mouseDragEnd` → debounce → **auto-apply Ref/Orient dims to driving** → `doExecutePreview`.
 - `execute` = final commit only.
 
 ### Phase 3 — Cut + target body polish
@@ -679,9 +706,12 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] `mouseDragEnd` + debounce → auto-apply driving dims → `doExecutePreview` builds solid engraving preview
 - [ ] Ref (H/V) dims stay driven during debounce wait; convert to driving only after debounce, before preview
 - [ ] `execute` used for final commit only (not interactive preview)
-- [ ] Snap dropdown quantizes translate/rotate; Alt bypasses snap
+- [ ] Snap dropdown quantizes translate/rotate/height-from-scale; Alt bypasses snap
+- [ ] Triad **unified scale only** (no axis/plane scales); maps to `heightParameter`
+- [ ] Scale drag does **not** geometric-scale sketch text via `sketch.move`
+- [ ] Ht column ↔ triad unified scale two-way; factor resets to 1.0 after settle
 - [ ] dX / dY / Angle editable in GUI and via triad; two-way sync without feedback loops
-- [ ] Typed dim values update sketch dims + triad pose; triad drag updates the same GUI fields
+- [ ] Typed dim/height values update sketch + triad; triad drag updates the same GUI fields
 - [ ] Re-entrancy: overlapping move/preview ignored or coalesced; no nested preview
 - [ ] Angle column + triad rotate settle update angular dim; no SketchText.angle API
 - [ ] Orient associatively projected; dim to projected line; hard-fail if not
@@ -732,9 +762,10 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | **Text flip** | **Per-row H + V toggles; stock Fusion flip icons; default off** |
 | **Justify / Align** | **Per-row H (L/C/R) + V (T/M/B); stock Fusion align icons; default Center / Middle** |
 | Sketch creation | Use existing sketch of selected/Add Point target; create only when Add Point has no sketch |
-| **Preview** | **Triad ticks = sketch.move; mouseDragEnd+debounce → auto-apply driving dims → doExecutePreview solids; execute = commit only** |
-| **Snap** | **Dropdown increments; Alt bypasses** |
-| **Re-entrancy** | **Single-flight guards on pose move and solid preview** |
+| **Text height** | **Triad unified scale → `SketchText.heightParameter`; Ht column two-way; hide per-axis/plane scales** |
+| **Preview** | **Triad ticks = sketch.move or height write; mouseDragEnd+debounce → auto-apply driving dims → doExecutePreview solids; execute = commit only** |
+| **Snap** | **Dropdown increments (translate + height + angle); Alt bypasses** |
+| **Re-entrancy** | **Single-flight guards on pose move, height write, and solid preview** |
 | Default height | `3 mm` |
 | Default font | `Arial` |
 | Default distance | `1 mm` |
@@ -752,7 +783,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 3. Extrude Cut or New Body with optional target body for Cut.
 4. Batch sequential text with prefix/suffix.
 5. Font-aware text field + font dropdown + **angle dim**, **orient vector**, **flip**, **justify**, **align**.
-6. **Triad fast path** + **debounce → auto-apply driving → `doExecutePreview`** + **`execute` commit only**; snap + Alt; re-entrancy guards.
+6. **Triad fast path** (move/rotate + **unified scale→height**) + **debounce → auto-apply driving → `doExecutePreview`** + **`execute` commit only**; snap + Alt; re-entrancy guards.
 7. **Reusable `sketch_transform_frame`** for Ref/Orient dims + triad binding.
 8. **Add Point** with preselect CG ghost; frame on new or existing unconstrained points.
 9. Light / Dark / Auto themes; **Light default**.

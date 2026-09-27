@@ -10,10 +10,10 @@ Planning complete — see [docs/PLAN.md](docs/PLAN.md).
 
 ## Highlights
 
-- **`TriadCommandInput`**: lightweight `sketch.move` on `inputChanged`
+- **`TriadCommandInput`**: translate/rotate via `sketch.move`; **unified scale → text height**
 - **`mouseDragEnd` + debounce → auto-apply Ref dims to driving → `doExecutePreview`**
 - **Snap** dropdowns (linear + angular) with **Alt bypass**; re-entrancy guards
-- Frame **dX / dY / Angle** set via **triad or GUI** (two-way sync to sketch dims)
+- Frame **dX / dY / Angle** and **Ht** set via **triad or GUI** (two-way sync)
 - Reusable **`sketch_transform_frame`**: Ref H/V + Orient angle dims
 - Add Point with preselect + custom-graphics ghost
 - Themes: **Light (default)** / Dark / Auto
