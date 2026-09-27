@@ -41,26 +41,44 @@ class TextConstraintError(RuntimeError):
 
 Do not swallow Fusion exceptions into a generic toast; chain `detail` from the original error.
 
+### Justify + Align
+
+`setAsMultiLine(corner, diagonal, horizontalAlignment, verticalAlignment, characterSpacing)`:
+
+| UI Justify | `HorizontalAlignments` |
+|------------|------------------------|
+| Left | `LeftHorizontalAlignment` |
+| Center (default) | `CenterHorizontalAlignment` |
+| Right | `RightHorizontalAlignment` |
+
+| UI Align | `VerticalAlignments` |
+|----------|----------------------|
+| Top | `TopVerticalAlignment` |
+| Middle (default) | `MiddleVerticalAlignment` |
+| Bottom | `BottomVerticalAlignment` |
+
+These control text placement **inside** the text rectangle. The rectangle center stays constrained to the sketch point.
+
 ### Angle
 
-`SketchTextInput.setAsMultiLine(cornerOne, cornerTwo, hAlign, vAlign, angle)` — **angle is in radians**.
+Confirm on target Fusion build: some docs list the 5th `setAsMultiLine` argument as **characterSpacing** (percent), not angle. Prefer:
 
 ```python
+tin.setAsMultiLine(p0, p1, h_align, v_align, 0.0)  # spacing %
+# then set rotation via the current multiline angle API / property for this Fusion version
 angle_rad = design.unitsManager.evaluateExpression(angle_user_str, "rad")
-# or math.radians(degrees) when the palette sends a plain number
 ```
 
-Rotate about the text center (center alignment + center constraint to the sketch point). Rebuild text on angle change during preview rather than trying to animate in place.
+Probe once during Phase 2; document the winning path in code comments. Rotate about the text center (center constraint to the sketch point). Rebuild on angle change during preview.
 
 ### Flip
 
 ```python
 tin.isHorizontalFlip = flip_h  # bool
 tin.isVerticalFlip = flip_v
-# Also readable/writable on SketchText after add
 ```
 
-Same semantics as the Sketch Text dialog flips. Apply on `SketchTextInput` before `add` during preview/execute rebuilds. Center constraints remain mandatory after flip; hard-fail with reason if they cannot be applied.
+Same semantics as the Sketch Text dialog. Apply before `add`. Center constraints remain mandatory after flip/align rebuilds; hard-fail with reason if they cannot be applied.
 
 ## Live preview (`executePreview`)
 

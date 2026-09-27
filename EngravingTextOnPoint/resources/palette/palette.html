@@ -64,25 +64,20 @@
             <th class="col-ht">Ht</th>
             <th class="col-angle">Angle</th>
             <th class="col-flip">Flip</th>
+            <th class="col-justify">Justify</th>
+            <th class="col-align">Align</th>
             <th class="col-font">Font</th>
           </tr>
         </thead>
         <tbody id="text-tbody">
           <tr class="empty">
-            <td colspan="6">Select sketch points to add rows</td>
+            <td colspan="8">Select sketch points to add rows</td>
           </tr>
           <!--
-            Per-row Flip cell (Phase 1):
-            <td class="col-flip">
-              <button type="button" class="icon-btn" data-flip="h"
-                title="Flip Horizontal" aria-label="Flip Horizontal" aria-pressed="false">
-                <img src="../icons/flipH/16x16-normal.png" alt="" width="16" height="16" />
-              </button>
-              <button type="button" class="icon-btn" data-flip="v"
-                title="Flip Vertical" aria-label="Flip Vertical" aria-pressed="false">
-                <img src="../icons/flipV/16x16-normal.png" alt="" width="16" height="16" />
-              </button>
-            </td>
+            Per-row icon cells (Phase 1) — stock Fusion 16x16 PNGs:
+            Flip:    flipH / flipV toggles (aria-pressed)
+            Justify: justifyLeft|Center|Right radio group (default Center)
+            Align:   alignTop|Middle|Bottom radio group (default Middle)
           -->
         </tbody>
       </table>
