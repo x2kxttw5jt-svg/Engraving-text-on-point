@@ -154,9 +154,11 @@
     }
   }
 
-  function iconToggle(label, pressed, title) {
+  function iconToggle(label, pressed, title, dataKey) {
     return (
-      '<button type="button" class="icon-btn" aria-pressed="' +
+      '<button type="button" class="icon-btn format-btn" data-key="' +
+      dataKey +
+      '" aria-pressed="' +
       (pressed ? "true" : "false") +
       '" title="' +
       title +
@@ -166,15 +168,65 @@
     );
   }
 
-  function iconRadio(label, checked, title) {
+  function iconRadio(label, checked, title, dataKey, dataVal) {
     return (
-      '<button type="button" class="icon-btn" aria-checked="' +
+      '<button type="button" class="icon-btn format-btn" data-key="' +
+      dataKey +
+      '" data-val="' +
+      dataVal +
+      '" aria-checked="' +
       (checked ? "true" : "false") +
       '" role="radio" title="' +
       title +
       '">' +
       label +
       "</button>"
+    );
+  }
+
+  /** One column: Flip (H/V) + Justify (3) + Align (3). Active = darkened. */
+  function formatCellHtml(row) {
+    return (
+      '<span class="format-cell" aria-label="Flip justify align">' +
+      '<span class="icon-group" data-group="flip" title="Flip">' +
+      iconToggle("H", row.flipH, "Flip horizontal", "flipH") +
+      iconToggle("V", row.flipV, "Flip vertical", "flipV") +
+      "</span>" +
+      '<span class="icon-group" role="radiogroup" data-group="justify" title="Justify">' +
+      iconRadio("L", row.justify === "left", "Justify left", "justify", "left") +
+      iconRadio(
+        "C",
+        row.justify === "center",
+        "Justify center",
+        "justify",
+        "center"
+      ) +
+      iconRadio(
+        "R",
+        row.justify === "right",
+        "Justify right",
+        "justify",
+        "right"
+      ) +
+      "</span>" +
+      '<span class="icon-group" role="radiogroup" data-group="align" title="Align">' +
+      iconRadio("T", row.align === "top", "Align top", "align", "top") +
+      iconRadio(
+        "M",
+        row.align === "middle",
+        "Align middle",
+        "align",
+        "middle"
+      ) +
+      iconRadio(
+        "B",
+        row.align === "bottom",
+        "Align bottom",
+        "align",
+        "bottom"
+      ) +
+      "</span>" +
+      "</span>"
     );
   }
 
@@ -198,7 +250,7 @@
     if (!tbody) return;
     if (!rows.length) {
       tbody.innerHTML =
-        '<tr class="empty"><td colspan="9">Select sketch points to add rows</td></tr>';
+        '<tr class="empty"><td colspan="7">Select sketch points to add rows</td></tr>';
       return;
     }
     tbody.innerHTML = rows
@@ -229,20 +281,9 @@
           '<td class="col-orient"><span class="muted">' +
           row.orient +
           "</span></td>" +
-          '<td class="col-flip"><span class="icon-group">' +
-          iconToggle("H", row.flipH, "Flip horizontal") +
-          iconToggle("V", row.flipV, "Flip vertical") +
-          "</span></td>" +
-          '<td class="col-justify"><span class="icon-group" role="radiogroup">' +
-          iconRadio("L", row.justify === "left", "Justify left") +
-          iconRadio("C", row.justify === "center", "Justify center") +
-          iconRadio("R", row.justify === "right", "Justify right") +
-          "</span></td>" +
-          '<td class="col-align"><span class="icon-group" role="radiogroup">' +
-          iconRadio("T", row.align === "top", "Align top") +
-          iconRadio("M", row.align === "middle", "Align middle") +
-          iconRadio("B", row.align === "bottom", "Align bottom") +
-          "</span></td>" +
+          '<td class="col-format">' +
+          formatCellHtml(row) +
+          "</td>" +
           '<td class="col-font"><select class="row-font">' +
           fontOptions(row.font) +
           "</select></td>" +
@@ -259,23 +300,26 @@
       });
     });
 
-    tbody.querySelectorAll(".icon-btn").forEach(function (btn) {
+    tbody.querySelectorAll(".format-btn").forEach(function (btn) {
       btn.addEventListener("click", function (e) {
         e.stopPropagation();
-        var pressed = btn.getAttribute("aria-pressed");
-        if (pressed !== null) {
-          btn.setAttribute(
-            "aria-pressed",
-            pressed === "true" ? "false" : "true"
-          );
+        var tr = btn.closest("tr");
+        var id = tr && tr.getAttribute("data-id");
+        var row = rows.find(function (r) {
+          return r.id === id;
+        });
+        if (!row) return;
+        var key = btn.getAttribute("data-key");
+        if (btn.getAttribute("aria-pressed") !== null) {
+          row[key] = btn.getAttribute("aria-pressed") !== "true";
+          renderRows();
           return;
         }
-        var group = btn.parentElement;
-        if (!group) return;
-        group.querySelectorAll(".icon-btn").forEach(function (b) {
-          b.setAttribute("aria-checked", "false");
-        });
-        btn.setAttribute("aria-checked", "true");
+        var val = btn.getAttribute("data-val");
+        if (key && val) {
+          row[key] = val;
+          renderRows();
+        }
       });
     });
 

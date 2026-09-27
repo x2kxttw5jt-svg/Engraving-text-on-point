@@ -57,8 +57,8 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 ├──────────────────────────────────────────────────────────────────────┤
 │  ☐ Batch sequence …                                                  │
 ├──────────────────────────────────────────────────────────────────────┤
-│  # │ Text │ Ht │ Angle │ Orient │ Flip │ Justify │ Align │ Font     │
-│  … Ht↔scale; Angle/dX/dY↔triad; edit here or via Triad …           │
+│  # │ Text │ Ht │ Angle │ Orient │ Format │ Font                      │
+│  … Format = Flip H/V + Justify L/C/R + Align T/M/B (active=dark) … │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Theme  [ Light ▼ ]                     [ Cancel ]  [ OK ]           │
 └──────────────────────────────────────────────────────────────────────┘
@@ -278,9 +278,7 @@ Do **not** leave frame dims driven into solid preview. Do not toggle unrelated s
 | Height | Length input | Default `3 mm` |
 | **Angle** | Dimension value (degrees) | Same driving angular dim as triad rotate + frame Angle field; default `0` |
 | **Orient** | Vector picker / label | Selected orientation vector for that row (or “global”) |
-| **Flip** | Two icon toggles | H + V → `isHorizontalFlip` / `isVerticalFlip`; default off |
-| **Justify** | 3-way icon radio | Left / Center / Right → `HorizontalAlignments`; default **Center** |
-| **Align** | 3-way icon radio | Top / Middle / Bottom → `VerticalAlignments`; default **Middle** |
+| **Format** | One cell: Flip H/V + Justify (3) + Align (3) | Active justify/align/flip buttons **darkened**; defaults Center / Middle / flip off |
 | Font | `<select>` | Options styled in that font; drives Text input face |
 
 Optional header “apply to all” for angle / flip / justify / align.

@@ -65,15 +65,14 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 ## Table
 
 - Sticky header row; table may scroll horizontally in a narrow dock.
-- Columns: `#` | Text | Ht | **Angle** (dim value) | **Orient** (vector label) | Flip | Justify | Align | Font.
+- Columns: `#` | Text | Ht | **Angle** | **Orient** | **Format** | Font.
+- **Format** (one column): Flip H/V + Justify L/C/R (**3 buttons**) + Align T/M/B (**3 buttons**) in the same cell.
 - **Ht** is two-way with triad **unified scale** (same `heightParameter`); typed Ht resets triad scale factor to 1.0.
 - Text `<input>`: `style.fontFamily = selectedFont`.
-- Angle `<input>`: **angular dimension** value (not a SketchText angle — that API is retired); placeholder `0`; unit `deg`. **Hidden** until Orient is set.
-- Orient: short label of selected vector + per-row pick control (or “global”).
-- Flip: two 16×16 icon toggles (stock Fusion Flip H/V). `aria-pressed` + tooltips.
-- Justify: exclusive group of three icon buttons — Left / Center / Right (stock Fusion). `role="radiogroup"`; one `aria-checked` at a time. Default Center.
-- Align: exclusive group Top / Middle / Bottom (stock Fusion). Same radio pattern. Default Middle.
-- Active icon = accent border or depressed `--bg-row-hover` (match Fusion tool toggles).
+- Angle `<input>`: angular dimension value; **hidden** until Orient is set.
+- Orient: short label of selected vector (or “global”).
+- Justify / Align: exclusive 3-button groups; **active button darkened** (dark fill + light label).
+- Flip: H/V toggles; pressed state uses the same darkened look.
 - Font `<select>`: each `<option style="font-family: name">`.
 - No card wrappers; hairline row borders only.
 - Selection highlight uses `--bg-row-hover` / accent left bar (2px) optional.
