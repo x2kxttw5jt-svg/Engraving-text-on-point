@@ -299,14 +299,27 @@ select:focus {
 .col-font { width: 96px; min-width: 72px; }
 .col-resize { width: 10px; padding: 0 !important; }
 
-/* B → I → Font select, always vertical (never beside) */
+/* Font select on top; B | I side-by-side underneath */
 .font-stack {
   display: flex !important;
   flex-direction: column !important;
-  align-items: flex-start !important;
+  align-items: stretch !important;
   gap: 3px;
   padding: 4px 0;
   width: 100%;
+}
+
+.font-stack .row-font {
+  width: 100% !important;
+  min-width: 0;
+  display: block !important;
+}
+
+.font-style-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 3px;
 }
 
 .font-stack .style-btn {
@@ -322,12 +335,6 @@ select:focus {
 .font-stack .style-btn[data-key="italic"] {
   font-style: italic !important;
   font-weight: 600 !important;
-}
-
-.font-stack .row-font {
-  width: 100% !important;
-  min-width: 0;
-  display: block !important;
 }
 
 .data-table tbody tr.is-active {
@@ -1120,18 +1127,20 @@ select:focus {
   }
 
   function fontCellHtml(row) {
-    // Vertical stack only: B, then I, then Font select (no side-by-side).
+    // Font on top; B and I side-by-side underneath.
     return (
       '<div class="font-stack">' +
+      '<select class="row-font" title="Font">' +
+      fontOptions(row.font) +
+      "</select>" +
+      '<div class="font-style-row">' +
       '<button type="button" class="icon-btn style-btn" data-key="bold" aria-pressed="' +
       (row.bold ? "true" : "false") +
       '" title="Bold">B</button>' +
       '<button type="button" class="icon-btn style-btn" data-key="italic" aria-pressed="' +
       (row.italic ? "true" : "false") +
       '" title="Italic">I</button>' +
-      '<select class="row-font" title="Font">' +
-      fontOptions(row.font) +
-      "</select>" +
+      "</div>" +
       "</div>"
     );
   }
