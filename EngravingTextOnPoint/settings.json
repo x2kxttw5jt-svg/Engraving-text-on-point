@@ -1,7 +1,9 @@
 {
   "theme": "light",
+  "livePreview": true,
   "defaultHeight": "3 mm",
   "defaultDistance": "1 mm",
+  "defaultAngle": "0 deg",
   "defaultFont": "Arial",
   "batch": {
     "enabled": false,

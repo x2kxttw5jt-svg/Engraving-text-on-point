@@ -172,8 +172,9 @@ select:focus {
 }
 
 .col-idx { width: 28px; }
-.col-ht { width: 64px; }
-.col-font { width: 110px; }
+.col-ht { width: 56px; }
+.col-angle { width: 52px; }
+.col-font { width: 100px; }
 
 .data-table input,
 .data-table select {

@@ -18,6 +18,28 @@ VerticalAlignments.MiddleVerticalAlignment
 
 Constraint strategy: after `add`, constrain rectangle center to selected `SketchPoint` via mid-point / coincident constraints on `rectangleLines`.
 
+### Angle
+
+`SketchTextInput.setAsMultiLine(cornerOne, cornerTwo, hAlign, vAlign, angle)` — **angle is in radians**.
+
+```python
+angle_rad = design.unitsManager.evaluateExpression(angle_user_str, "rad")
+# or math.radians(degrees) when the palette sends a plain number
+```
+
+Rotate about the text center (center alignment + center constraint to the sketch point). Rebuild text on angle change during preview rather than trying to animate in place.
+
+## Live preview (`executePreview`)
+
+- Keep a long-lived **Command** while the palette is open.
+- Palette/`SelectionEvent` changes set a dirty flag and call into the command so Fusion invokes `CommandEventHandler.notify` on **preview**.
+- In preview: create sketch texts + extrudes; Fusion rolls them back before the next preview/execute unless committed.
+- On **destroy** / cancel: do not commit; clear any non-preview bookmarks the add-in holds (entity tokens, selection).
+- Debounce typing (~150 ms). Single-flight: ignore overlapping rebuild requests.
+- Do not rebuild on theme-only changes or pointer hover during selection.
+
+Optional fallback if command-preview + palette bridging is awkward on a given Fusion build: manually create/delete preview entities in a named timeline bookmark and delete on cancel — prefer official `executePreview` first.
+
 ## Extrude from text
 
 ```python
@@ -70,3 +92,5 @@ design.timeline.timelineGroups.add(startIndex, endIndex)
 2. Bounding box may be stale on some text creation paths — prefer constraints over bbox math when possible.
 3. Cut + `ThroughAll` has had API bugs; prefer distance or `ToEntity` for v1.
 4. Embedded CEF may not load all OS fonts into `<option>` preview — fall back to UI font for missing faces while still sending name to Fusion.
+5. Cut live preview can fail when the text does not yet intersect the target — degrade to text-only preview + status.
+6. Large multi-point previews: rebuild cost scales with N; if needed later, dirty only changed rows.

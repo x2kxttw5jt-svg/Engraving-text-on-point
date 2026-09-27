@@ -54,11 +54,17 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 ## Table
 
 - Sticky header row.
-- Columns: `#` (32px) | Text (flex) | Ht (72px) | Font (120px).
+- Columns: `#` (28px) | Text (flex) | Ht (56px) | **Angle (52px)** | Font (100px).
 - Text `<input>`: `style.fontFamily = selectedFont`.
+- Angle `<input>`: degrees; placeholder `0`; suffix label `°` in cell or unit in value (`0 deg`).
 - Font `<select>`: each `<option style="font-family: name">`.
 - No card wrappers; hairline row borders only.
 - Selection highlight uses `--bg-row-hover` / accent left bar (2px) optional.
+
+## Extrude block extras
+
+- **Live preview** checkbox (default checked), left-aligned under Direction.
+- When unchecked, status line: `Preview off — OK will create features`.
 
 ## Selection rows
 
@@ -75,5 +81,6 @@ Primary OK = accent fill, white text. Cancel = flat border. Height 28px. Right-a
 1. Row insert: 120ms fade/height.
 2. Batch toggle: 150ms grid expand.
 3. Theme switch: instant token swap (no long transitions).
+4. Preview itself is viewport geometry — no extra palette animation for preview ticks.
 
 Avoid decorative motion / glow.

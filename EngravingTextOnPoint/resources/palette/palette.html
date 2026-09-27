@@ -37,6 +37,11 @@
         <label for="distance">Distance</label>
         <input id="distance" type="text" value="1 mm" />
       </div>
+      <div class="field-row">
+        <label class="check">
+          <input type="checkbox" id="live-preview" checked /> Live preview
+        </label>
+      </div>
     </section>
 
     <section class="block" aria-label="Batch">
@@ -57,12 +62,13 @@
             <th class="col-idx">#</th>
             <th class="col-text">Text</th>
             <th class="col-ht">Ht</th>
+            <th class="col-angle">Angle</th>
             <th class="col-font">Font</th>
           </tr>
         </thead>
         <tbody id="text-tbody">
           <tr class="empty">
-            <td colspan="4">Select sketch points to add rows</td>
+            <td colspan="5">Select sketch points to add rows</td>
           </tr>
         </tbody>
       </table>

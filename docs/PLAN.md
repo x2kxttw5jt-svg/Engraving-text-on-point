@@ -2,29 +2,28 @@
 
 ## Goal
 
-A Fusion 360 Python add-in that lets the user pick sketch points, place centered sketch text on each point, then extrude that text as **Cut** or **New Body**, with an optional target body. The UI is a **stock-looking table palette** (light default, dark, auto) that supports per-row text/height/font and **batch sequential text** with prefix/suffix.
+A Fusion 360 Python add-in that lets the user pick sketch points, place centered sketch text on each point, then extrude that text as **Cut** or **New Body**, with an optional target body. The UI is a **stock-looking table palette** (light default, dark, auto) that supports per-row text/height/font/**angle** and **batch sequential text** with prefix/suffix. Changes show as a **live preview** in the design; Cancel/destroy removes all preview geometry.
 
 ---
 
 ## User flow
 
 ```
-Toolbar button → Palette opens
+Toolbar button → Command starts + Palette opens
   ↓
-[Point] selection (multi-select sketch points) → rows appear in table (one per point)
+[Point] selection (multi-select sketch points) → rows appear; live preview places text
   ↓
-Fill Text / Height / Font (or enable Batch mode)
+Edit Text / Height / Font / Angle (or Batch) → preview updates (debounced)
   ↓
-Choose Extrude: Cut | New Body | (optional Join later)
+Choose Extrude: Cut | New Body → preview extrude updates
   ↓
-If Cut: enable Target Body picker
+If Cut: enable Target Body picker → cut preview targets that body
   ↓
-Set Distance (+ optional direction)
+Set Distance / Direction → preview extent updates
   ↓
-OK → transaction: create text + center constraints + extrude per row
+OK → commit preview (or rebuild once in execute) + timeline group
+Cancel / close → delete all preview entities; no leftovers
 ```
-
-Cancel / palette close cleans selection handlers and does not leave orphan geometry.
 
 ---
 
@@ -32,33 +31,33 @@ Cancel / palette close cleans selection handlers and does not leave orphan geome
 
 ### Layout
 
-Dockable HTML palette (`adsk.core.Palettes`), width ~340–400px, height flexible.
+Dockable HTML palette (`adsk.core.Palettes`), width ~380–420px (angle column needs room), height flexible.
 
 ```
-┌─────────────────────────────────────────────┐
-│  Engraving Text on Point              [?] │  ← title bar (Fusion chrome)
-├─────────────────────────────────────────────┤
-│  ⊙ Point(s)     [ Select ]     3 selected   │  ← selection row + stock icon
-│  ⬚ Target Body  [ Select ]     (Cut only)   │
-├─────────────────────────────────────────────┤
-│  Operation   (•) Cut  ( ) New Body          │
-│  Distance    [ 1.0 mm ▼ ]                   │
-│  Direction   (•) Positive  ( ) Negative     │
-├─────────────────────────────────────────────┤
-│  ☐ Batch sequence                           │
-│    Prefix [PN-]  Start [1]  Digits [3]      │
-│    Suffix [-A]   Step  [1]                  │
-├─────────────────────────────────────────────┤
-│  # │ Text        │ Ht    │ Font             │
-│ ───┼─────────────┼───────┼──────────────────│
-│  1 │ PN-001-A    │ 3 mm  │ Arial ▼          │  ← text input styled as selected font
-│  2 │ PN-002-A    │ 3 mm  │ Arial ▼          │
-│  3 │ PN-003-A    │ 3 mm  │ Courier New ▼    │
-├─────────────────────────────────────────────┤
-│  Theme  [ Light ▼ ]   Light | Dark | Auto   │  ← Light = default
-├─────────────────────────────────────────────┤
-│              [ Cancel ]  [ OK ]             │
-└─────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│  Engraving Text on Point                       [?] │
+├──────────────────────────────────────────────────────┤
+│  ⊙ Point(s)     [ Select ]     3 selected            │
+│  ⬚ Target Body  [ Select ]     (Cut only)            │
+├──────────────────────────────────────────────────────┤
+│  Operation   (•) Cut  ( ) New Body                   │
+│  Distance    [ 1.0 mm ▼ ]                            │
+│  Direction   (•) Positive  ( ) Negative              │
+│  ☑ Live preview                                      │
+├──────────────────────────────────────────────────────┤
+│  ☐ Batch sequence                                    │
+│    Prefix [PN-]  Start [1]  Digits [3]               │
+│    Suffix [-A]   Step  [1]                           │
+├──────────────────────────────────────────────────────┤
+│  # │ Text     │ Ht   │ Angle │ Font                  │
+│ ───┼──────────┼──────┼───────┼───────────────────────│
+│  1 │ PN-001-A │ 3 mm │ 0 °   │ Arial ▼               │
+│  2 │ PN-002-A │ 3 mm │ 45 °  │ Arial ▼               │
+│  3 │ PN-003-A │ 3 mm │ 0 °   │ Courier New ▼         │
+├──────────────────────────────────────────────────────┤
+│  Theme  [ Light ▼ ]                                  │
+│                         [ Cancel ]  [ OK ]           │
+└──────────────────────────────────────────────────────┘
 ```
 
 ### Table columns
@@ -66,27 +65,30 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~340–400px, height flexibl
 | Column | Control | Notes |
 |--------|---------|--------|
 | `#` | Read-only index | Selection order |
-| Text | `<input type="text">` | When batch on: auto-filled `prefix + padded(seq) + suffix`, still editable override |
-| Height | Numeric + unit (mm default) | Synced to Fusion unit prefs where practical |
-| Font | `<select>` | Options rendered **in that font**; selected value also applies to the Text input `font-family` |
+| Text | `<input type="text">` | Batch-driven or override; `font-family` = selected font |
+| Height | Length input | Default `3 mm` |
+| **Angle** | Angle input (degrees) | Default `0`; applied as `setAsMultiLine(..., angle)`; per-row |
+| Font | `<select>` | Options styled in that font; drives Text input face |
+
+Optional header control: “Apply angle to all” when user wants one angle for every row (does not remove per-row edits afterward).
 
 ### Batch sequence behavior
 
 - Toggle **Batch sequence** on → Text column becomes driven by formula:
   - `display = prefix + str(start + i*step).zfill(digits) + suffix`
   - Example: `PN-` + `001` + `-A` → `PN-001-A`, `PN-002-A`, …
-- Changing prefix/suffix/start/digits/step re-writes all non-overridden rows.
+- Changing prefix/suffix/start/digits/step re-writes all non-overridden rows **and refreshes live preview**.
 - Per-row “override” flag: user edits Text → that row stops auto-updating until batch is toggled off/on or “Reset batch texts” is clicked.
+- Batch does **not** drive Angle (angles stay per-row unless “Apply angle to all”).
 - Iteration order = order points were selected (stable).
 
 ### Stock Fusion visual language
 
 - CSS variables matching Fusion palette chrome:
-  - Light (default): `#F5F5F5` / `#FFFFFF` surfaces, `#3C3C3C` text, `#0696D7` accent (Fusion blue), 1px `#D0D0D0` rules, 2–3px radius (not pill).
+  - Light (default): `#F5F5F5` / `#FFFFFF` surfaces, `#3C3C3C` text, `#0696D7` accent, 1px `#D0D0D0` rules, 2–3px radius (not pill).
   - Dark: `#333333` / `#3C3C3C` surfaces, `#F5F5F5` text, same accent.
-- Typography: system UI stack that Fusion uses (`Artifakt Element` when available, else Segoe UI / system-ui). **Do not** use Inter/Roboto as brand.
+- Typography: `Artifakt Element` when available, else Segoe UI / system-ui. **Do not** use Inter/Roboto as brand.
 - Controls: flat inputs, thin borders, compact 24–28px row height — no card chrome, no multi-layer shadows, no purple gradients.
-- Section labels uppercase/small or left-aligned field labels like Parameters / Extrude dialogs.
 
 ### Theme: Light | Dark | Auto
 
@@ -94,37 +96,74 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~340–400px, height flexibl
 |------|----------|
 | **Light** (default) | Force light tokens regardless of Fusion theme |
 | Dark | Force dark tokens |
-| Auto | Follow `app.preferences.generalPreferences.activeUserInterfaceTheme` (and listen / poll on palette show). Also respect `prefers-color-scheme` as secondary signal inside the web view |
+| Auto | Follow `activeUserInterfaceTheme`; `prefers-color-scheme` as secondary in the web view |
 
-Persist last theme choice in `adsk.core.Application` attribute / JSON under add-in folder (`settings.json`). Default file value = `"light"`.
+Persist in `settings.json`. Default `"theme": "light"`.
+
+---
+
+## Live preview
+
+### Requirements
+
+- As soon as ≥1 point is selected and row fields are valid, the viewport shows the engraving result for current options.
+- Editing Text / Height / Font / Angle / Distance / Direction / Operation / Target body updates the preview.
+- **Cancel**, palette close, command destroy, or un-selecting a point **deletes** that row’s preview entities. Nothing left in the timeline or sketches from cancelled sessions.
+- OK commits a clean final result (see Commit strategy).
+
+### Architecture
+
+Host a Fusion **Command** for the session (palette is the UI). Preview runs through the command’s **`executePreview`** path so Fusion handles rollback of preview features between ticks.
+
+```
+Palette change / selection change
+  → debounce (~120–200 ms for text typing; immediate for point add/remove)
+  → mark command inputs dirty / fire preview
+  → executePreview:
+        destroy prior preview set for this command tick (Fusion rolls back)
+        for each row: create sketch text (centered, angled) + constraints
+        for each row: extrude Cut | New Body (participantBodies if Cut)
+  → execute (OK):
+        same builder with commit=True (or accept last preview — prefer explicit rebuild)
+  → destroy / cancel:
+        no commit; all preview geometry gone
+```
+
+### Cadence / performance rules
+
+| Event | Preview action |
+|-------|----------------|
+| Command created / palette shown | Warm font list, unit prefs, empty preview |
+| Point added / removed | Rebuild preview for affected rows (full set OK for modest N) |
+| Text / height / font / angle edit | Debounced rebuild |
+| Distance / direction / operation / target | Rebuild extrude portion (full rebuild OK v1) |
+| Theme-only change | **No** geometry rebuild |
+| Mouse move during point pick (hover) | **No** rebuild — only on selection accept |
+
+Do **not** call heavy ensure/compute paths from hover handlers. Keep a single `PreviewSession` object holding row → entity tokens; clear on cancel/destroy.
+
+### Preview vs final
+
+- Preview and final use the **same builder** (`lib/text_on_point.py` + `lib/extrude_text.py`) with a `preview: bool` flag only for naming (`_Preview` suffix on features/sketches if needed) and for skipping timeline group until commit.
+- Prefer creating text in the **existing sketch** of each point for both preview and final so constraints stay associative.
+- Cut preview may be expensive; if Cut preview fails (no intersection yet), show sketch text only + status “Cut preview pending — adjust distance/target”.
+
+### Live preview toggle
+
+Checkbox **Live preview** (default **on**). When off: no geometry until OK (still validates inputs). Persist in `settings.json` as `"livePreview": true`.
 
 ---
 
 ## Icons
 
-Prefer **built-in Fusion resource paths** via command/definition icons when the API exposes shared resources; otherwise ship local 16/32/64 PNGs.
+Prefer built-in Fusion glyphs; else Photoshop 16/32/64 PNGs (see `resources/icons/README.md`).
 
-| Action | Preferred stock | Fallback (Photoshop) |
-|--------|-----------------|----------------------|
-| Command (toolbar) | Extrude / Text-related Fusion glyph if available from `APISamples` / `Resources` packs | Custom: sketch point + “T” overlay, Fusion blue accent, 16/32/64 |
-| Point select | Selection / SketchPoint style glyph | Point crosshair on light/dark variants |
-| Body select | Body / BRep body glyph | Solid body silhouette |
-| Cut operation | Extrude Cut glyph | Cutter + minus |
-| New Body | New Body / Extrude New Body glyph | Plus + body |
-
-Deliverables under `resources/icons/`:
-
-```
-resources/icons/
-  command/16x16.png  32x32.png  64x64.png
-  point/…
-  body/…
-  cut/…
-  newbody/…
-  README.md          ← source stock path OR “photoshopped from …” notes
-```
-
-Use 32-bit PNG with transparency; provide light and dark variants only if Fusion’s auto-swap needs `_dark` suffixes (match Fusion add-in icon naming conventions: `16x16-normal.png`, `16x16-dark.png` as required by target Fusion version).
+| Action | Preferred stock | Fallback |
+|--------|-----------------|----------|
+| Command | Extrude / Text | Point + “T”, Fusion blue |
+| Point select | SketchPoint | Crosshair |
+| Body select | BRep body | Body silhouette |
+| Cut / New Body | Extrude Cut / New Body | Cutter / plus+body |
 
 ---
 
@@ -132,46 +171,42 @@ Use 32-bit PNG with transparency; provide light and dark variants only if Fusion
 
 ### 1. Point selection
 
-- `SelectionCommandInput` or custom `SelectionEvent` filtered to `SketchPoint` (and optionally sketch origin / projected points).
-- Multi-select; each accepted point → one table row + token `{ sketchEntityToken, pointEntityToken, component }`.
-- Points must share a sketch **or** we group by parent sketch and process per-sketch (recommended: **allow multi-sketch**, process groups independently under one timeline group).
+- Multi-select `SketchPoint`; each → row + tokens `{ sketchEntityToken, pointEntityToken, component }`.
+- Allow multi-sketch; process per parent sketch under one timeline group on commit.
 
-### 2. Create centered sketch text on point
-
-Use modern multiline API (not retired `createInput`):
+### 2. Centered, angled sketch text
 
 ```python
-height_vi = adsk.core.ValueInput.createByReal(height_cm)  # or createInput2(text, height)
 tin = sketch.sketchTexts.createInput2(text, height_cm)
-# Anchor box centered on point — half-extents from estimated text width
 cx, cy = point.geometry.x, point.geometry.y
 half_w, half_h = estimate_half_extents(text, height_cm, font)
+angle_rad = math.radians(angle_deg)  # setAsMultiLine angle is radians
 tin.setAsMultiLine(
     adsk.core.Point3D.create(cx - half_w, cy - half_h, 0),
     adsk.core.Point3D.create(cx + half_w, cy + half_h, 0),
     adsk.core.HorizontalAlignments.CenterHorizontalAlignment,
     adsk.core.VerticalAlignments.MiddleVerticalAlignment,
-    0)  # angle
+    angle_rad)
 tin.fontName = font_name
 sk_text = sketch.sketchTexts.add(tin)
 ```
 
-**Center constraint to the sketch point**
+**Angle column**
 
-After add, use `MultiLineTextDefinition.rectangleLines` (replacement for retired `boundaryLines`):
+- Store degrees in the palette; convert to radians for API.
+- Accept expressions when possible (`"45 deg"`, `"0.785 rad"`) via `unitsManager`.
+- Default `0`. Range unrestricted in v1 (normalize display to −180…180 optional).
+- Changing angle updates `setAsMultiLine` angle on rebuild; constraints keep center on the point (rotate about center).
 
-1. Read the four rectangle lines from `sk_text.definition.rectangleLines`.
-2. Derive midpoints / use midPoint constraints, **or** create two construction lines through box mid-X and mid-Y and coincident to the target `SketchPoint`.
-3. Practical approach (proven in forum guidance):
-   - Keep references to the four `SketchLine`s returned at creation time.
-   - Add horizontal/vertical mid-point constraints so the rectangle center stays coincident with the selected point.
-   - Optionally `GeometricConstraint.coincidents` between a helper center point and the seed point.
+**Center constraint**
 
-Fallback if rectangle constraints fail on a Fusion build: position text box mathematically at the point (still centered alignment) and skip associative constraint — log warning.
+After add, use `MultiLineTextDefinition.rectangleLines`:
+
+1. Keep the four rectangle lines from the definition.
+2. Mid-point / coincident constraints so rectangle center stays on the selected `SketchPoint`.
+3. Fallback: position box mathematically at the point; log if constraints fail.
 
 ### 3. Extrude
-
-Pass `SketchText` directly to extrude (not profiles):
 
 ```python
 ext_in = extrudes.createInput(
@@ -179,29 +214,25 @@ ext_in = extrudes.createInput(
     adsk.fusion.FeatureOperations.CutFeatureOperation  # or NewBodyFeatureOperation
 )
 ext_in.setDistanceExtent(False, adsk.core.ValueInput.createByReal(dist_cm))
-# Cut: optional participant bodies
 if op == Cut and target_bodies:
     ext_in.participantBodies = target_bodies
 extrudes.add(ext_in)
 ```
 
-| Operation | `FeatureOperations` | Target body |
-|-----------|---------------------|-------------|
-| Cut | `CutFeatureOperation` | Optional `participantBodies`; if empty → all intersected |
-| New Body | `NewBodyFeatureOperation` | N/A (hide body picker) |
+| Operation | FeatureOperations | Target body |
+|-----------|-------------------|-------------|
+| Cut | `CutFeatureOperation` | Optional `participantBodies` |
+| New Body | `NewBodyFeatureOperation` | Hidden |
 
-All creates run inside one `design.timeline.timelineGroups.add(...)` named **Engraving Text on Point** for undo clarity. Prefer a single `Transaction` via command execute.
+Commit: one timeline group **Engraving Text on Point**.
 
 ### 4. Fonts
 
-- Populate dropdown from OS/Fusion-available fonts: try `TextFonts` / document text styles; seed with common engineering set (`Arial`, `Artifakt Element`, `Courier New`, `Times New Roman`, `Verdana`, …) and merge with discovered names.
-- Validate `fontName` before add; on failure fall back to `Arial` and toast in palette status line.
+Discover + seed common set; invalid → `Arial` + status toast.
 
 ### 5. Units
 
-- Store internal values in cm (Fusion API native).
-- Palette displays active design units (`design.unitsManager.defaultLengthUnits`).
-- Height and distance inputs accept expressions where possible (`"3 mm"`, `"0.12 in"`).
+Internal cm / radians. Palette shows design length units and degrees for angle.
 
 ---
 
@@ -209,89 +240,77 @@ All creates run inside one `design.timeline.timelineGroups.add(...)` named **Eng
 
 ```
 EngravingTextOnPoint/
-  EngravingTextOnPoint.py          # run/stop, command registration
+  EngravingTextOnPoint.py
   EngravingTextOnPoint.manifest
   commands/
-    engraving_text_command.py      # CommandCreated / InputChanged / Execute
-    selection_handlers.py          # Point + body filters
+    engraving_text_command.py      # created / preview / execute / destroy
+    selection_handlers.py
   lib/
-    text_on_point.py               # create text + center constraints
-    extrude_text.py                # cut / new body helpers
-    batch_sequence.py              # prefix/suffix/seq formatting
-    fonts.py                       # font discovery
-    settings.py                    # theme + defaults persistence
-    fusion_util.py                 # app/ui/design accessors, transactions
-  resources/
-    palette/                       # shipped with add-in (Fusion-relative paths)
-      palette.html
-      static/palette.css|js
-    icons/…
-  settings.json                    # { "theme": "light", ... }
+    text_on_point.py               # create text + angle + center constraints
+    extrude_text.py
+    preview_session.py             # preview cadence, teardown, debounce keys
+    batch_sequence.py
+    fonts.py
+    settings.py
+    fusion_util.py
+  resources/palette/…  resources/icons/…
+  settings.json
 docs/
   PLAN.md | UI_SPEC.md | API_NOTES.md
 ```
 
 ### Palette ↔ Python bridge
 
-| Direction | Action id | Payload |
-|-----------|-----------|---------|
-| JS → Python | `pointsChanged` | (selection driven from Python actually) |
-| JS → Python | `rowUpdated` | `{ id, text, height, font }` |
+| Direction | Action | Payload |
+|-----------|--------|---------|
+| JS → Python | `rowUpdated` | `{ id, text, height, angle, font }` |
 | JS → Python | `batchChanged` | `{ enabled, prefix, suffix, start, digits, step }` |
-| JS → Python | `optionsChanged` | `{ operation, distance, direction, theme }` |
+| JS → Python | `optionsChanged` | `{ operation, distance, direction, theme, livePreview }` |
 | JS → Python | `execute` / `cancel` | — |
-| Python → JS | `setRows` | `[{ id, text, height, font, pointLabel }]` |
-| Python → JS | `setFonts` | `[fontName, …]` |
-| Python → JS | `setTheme` | `{ mode, resolved }` |
-| Python → JS | `setStatus` | `{ level, message }` |
-| Python → JS | `setTargetEnabled` | `bool` |
+| Python → JS | `setRows` | `[{ id, text, height, angle, font, pointLabel }]` |
+| Python → JS | `setFonts` / `setTheme` / `setStatus` / `setTargetEnabled` | … |
 
-Selection stays in Python (Fusion selection API); palette is display/edit only for table + options.
+Any geometry-affecting message schedules a preview refresh (if live preview on).
 
 ### Command pattern
 
-Use a **command that hosts the palette** (or button that shows palette + separate OK that runs a hidden execute command). Recommended:
-
-1. Toolbar button → show palette + arm selection.
-2. Palette **OK** → `adsk.fusionSendData('execute')` → Python runs geometry in a proper command execute handler (supports undo).
-3. Palette **Cancel** / close → disarm selection, hide palette.
+1. Toolbar → start command + show palette + arm selection.
+2. Selection / palette edits → `executePreview` rebuild.
+3. OK → `execute` commit + timeline group + hide palette.
+4. Cancel / destroy → teardown; zero leftover entities.
 
 ---
 
 ## Edge cases & validation
 
-- No points selected → OK disabled + status.
-- Cut with no intersection → Fusion error → catch, messageBox / status, leave sketch text or roll back whole transaction (prefer **full rollback**).
-- Empty text row → skip or block OK (block).
-- Height ≤ 0 → block.
-- Mixed components → create features in each point’s native component.
-- Sketch not editable / parametrics locked → fail soft with status.
-- Batch digits overflow (e.g. start 998, digits 3, 5 rows) → allow wider numbers (no hard fail); zfill is minimum width only.
+- No points → OK disabled; preview empty.
+- Empty text / height ≤ 0 → block OK; clear that row’s preview.
+- Invalid angle expression → status error; keep last good preview.
+- Cut with no intersection → text-only preview + warning; OK still attempts and rolls back on hard failure.
+- Mixed components → features in each point’s component.
+- Live preview off → OK builds everything in `execute` only.
+- Debounce: rapid typing must not stack overlapping builds (single-flight flag in `PreviewSession`).
 
 ---
 
 ## Implementation phases
 
-### Phase 0 — Scaffold (this PR / next)
-- Manifest, empty command, palette shell with light-default CSS matching Fusion.
-- Theme switcher wired to CSS `data-theme`.
-- Icon placeholders + README for stock vs Photoshop sources.
+### Phase 0 — Scaffold (current)
+- Manifest, palette shell (incl. Angle column), light-default CSS, settings.
 
 ### Phase 1 — Selection + table
-- Multi sketch-point selection → rows.
-- Text / height / font columns; font preview on text input.
-- Batch prefix/suffix/sequence.
+- Multi point → rows; Text / Height / **Angle** / Font; batch; font preview on text input.
 
-### Phase 2 — Geometry
-- `createInput2` + center alignment + rectangle center constraints to point.
-- Extrude New Body path end-to-end.
+### Phase 2 — Geometry + live preview (New Body)
+- Builder: text + angle + center constraints + extrude New Body.
+- `PreviewSession` + `executePreview`; cancel teardown.
+- Live preview checkbox.
 
 ### Phase 3 — Cut + target body
-- Body selection input, `participantBodies`, distance/direction.
-- Timeline group + undo.
+- Body selection, `participantBodies`, distance/direction in preview and commit.
 
 ### Phase 4 — Polish
-- Auto theme sync, settings persistence, icon finalization, error UX, README install steps.
+- Auto theme, settings persistence, icons, error UX, README install.
 
 ---
 
@@ -299,28 +318,30 @@ Use a **command that hosts the palette** (or button that shows palette + separat
 
 - [ ] Light theme default on first launch
 - [ ] Dark and Auto follow / override correctly
-- [ ] Single point → centered text → New Body extrude
-- [ ] Multi-point batch `A-001` … sequence order matches selection
-- [ ] Font dropdown preview + text input uses selected face
-- [ ] Cut with explicit target body only cuts that body
-- [ ] Cut with no target uses Fusion default participation
-- [ ] Cancel leaves no new features
-- [ ] Undo reverses entire engraving group
-- [ ] Works in light and dark Fusion UI chrome
+- [ ] Angle column: `0`, `45`, `-90` rotate about point center in preview and commit
+- [ ] Live preview updates on text/height/font/angle/distance edits (debounced)
+- [ ] Cancel / close leaves no sketch text or extrudes
+- [ ] Live preview off → no geometry until OK
+- [ ] Single point → centered text → New Body
+- [ ] Multi-point batch sequence order matches selection
+- [ ] Font dropdown + text input face
+- [ ] Cut with / without explicit target body
+- [ ] Undo reverses entire engraving group after OK
 
 ---
 
-## Open decisions (defaults proposed)
+## Decisions
 
-| Topic | Proposal |
+| Topic | Decision |
 |-------|----------|
-| Join operation | Defer; ship Cut + New Body only |
-| Text angle | 0° only in v1; optional angle column later |
-| Sketch creation | Always use **existing** sketch of selected point (do not create new sketch) |
-| Preview | No live BRep preview in v1 (place on OK); optional ghost text later |
+| Join operation | Defer; Cut + New Body only |
+| **Text angle** | **Per-row Angle column (degrees); default 0** |
+| Sketch creation | Always use **existing** sketch of selected point |
+| **Preview** | **Live preview on by default via executePreview; teardown on cancel** |
 | Default height | `3 mm` |
 | Default font | `Arial` |
 | Default distance | `1 mm` |
+| Default angle | `0 deg` |
 | Default theme | `light` |
 
 ---
@@ -328,8 +349,9 @@ Use a **command that hosts the palette** (or button that shows palette + separat
 ## Success criteria
 
 1. Stock-like table palette with Fusion icons where possible.
-2. Text entity centered and constrained to each selected sketch point.
+2. Text centered and constrained to each selected sketch point, at the row’s angle.
 3. Extrude Cut or New Body with optional target body for Cut.
 4. Batch sequential text with prefix/suffix.
-5. Font-aware text field + font dropdown.
-6. Light / Dark / Auto themes; **Light default**.
+5. Font-aware text field + font dropdown + **angle column**.
+6. **Live preview** with clean cancel/destroy teardown.
+7. Light / Dark / Auto themes; **Light default**.

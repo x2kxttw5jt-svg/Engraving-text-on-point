@@ -6,6 +6,8 @@
   const themeSelect = document.getElementById("theme");
   const batchEnabled = document.getElementById("batch-enabled");
   const batchGrid = document.getElementById("batch-grid");
+  const livePreview = document.getElementById("live-preview");
+  const statusEl = document.getElementById("status");
   const opRadios = document.querySelectorAll('input[name="op"]');
   const targetRow = document.getElementById("target-row");
 
@@ -42,6 +44,16 @@
     r.addEventListener("change", syncTargetEnabled);
   });
   syncTargetEnabled();
+
+  function syncPreviewStatus() {
+    if (!statusEl) return;
+    statusEl.textContent = livePreview.checked
+      ? ""
+      : "Preview off — OK will create features";
+  }
+
+  livePreview.addEventListener("change", syncPreviewStatus);
+  syncPreviewStatus();
 
   window.fusionJavaScriptHandler = {
     handle: function (action, data) {
