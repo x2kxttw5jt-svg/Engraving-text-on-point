@@ -278,7 +278,7 @@ Do **not** leave frame dims driven into solid preview. Do not toggle unrelated s
 | Height | Length input | Default `3 mm` |
 | **Angle** | Dimension value (degrees) | Same driving angular dim as triad rotate + frame Angle field; default `0` |
 | **Orient** | Vector picker / label | Selected orientation vector for that row (or “global”) |
-| **Format** | One cell: Flip H/V + Justify (3) + Align (3) | Active justify/align/flip buttons **darkened**; defaults Center / Middle / flip off |
+| **Format** | Stacked cell: Flip → Justify (3) → Align (3) | Fusion-style icons; active = **accent border**; defaults Center / Middle / flip off |
 | Font | `<select>` | Options styled in that font; drives Text input face |
 
 Optional header “apply to all” for angle / flip / justify / align.
@@ -486,10 +486,14 @@ sk_text = sketch.sketchTexts.add(tin)
 5. **Never** call retired `SketchText.angle` / `SketchTextInput.angle`.
 6. Hard-fail stages come from the frame: `orient vector missing`, `associative project failed`, `projected line unavailable`, `angular dimension failed`.
 
-**Format column** (Flip + Justify + Align in one cell)
+**Format column** (Flip + Justify + Align stacked in one cell)
 
-- Single column; cell holds Flip H/V + Justify L/C/R (**3 buttons**) + Align T/M/B (**3 buttons**).
-- Active / selected buttons use a **darkened pressed** style (dark fill, light glyph) — not a light accent-only outline.
+- Layout (Fusion Sketch Text feel):
+  1. Flip H | Flip V
+  2. Justify L | C | R
+  3. Align T | M | B
+- Icons: stock Fusion Sketch Text family when available; dummy SVG stand-ins in `palette/static/icons/`.
+- Active / selected = **accent blue border** + light hover fill (match Extrude/Sketch Text toggles).
 - Defaults: Center / Middle / flip off.
 - Maps to `HorizontalAlignments` / `VerticalAlignments` + `isHorizontalFlip` / `isVerticalFlip`.
 - Live preview updates immediately; center constraint remains mandatory after rebuild.

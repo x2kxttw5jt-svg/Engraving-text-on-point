@@ -66,13 +66,16 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 
 - Sticky header row; table may scroll horizontally in a narrow dock.
 - Columns: `#` | Text | Ht | **Angle** | **Orient** | **Format** | Font.
-- **Format** (one column): Flip H/V + Justify L/C/R (**3 buttons**) + Align T/M/B (**3 buttons**) stacked vertically in the same cell.
+- **Format** (one column), stacked like Fusion Sketch Text:
+  1. Flip H | Flip V (mirrored-triangle icons)
+  2. Justify L | C | R (text-line icons)
+  3. Align T | M | B (block + guideline icons)
+- **Active** control: thin **accent blue border** + subtle row-hover fill (not a heavy dark fill).
+- Dummy uses SVG stand-ins under `resources/palette/static/icons/`; prefer stock Fusion PNGs when packaging.
 - **Ht** is two-way with triad **unified scale** (same `heightParameter`); typed Ht resets triad scale factor to 1.0.
 - Text `<input>`: `style.fontFamily = selectedFont`.
 - Angle `<input>`: angular dimension value; **hidden** until Orient is set.
 - Orient: short label of selected vector (or “global”).
-- Justify / Align: exclusive 3-button groups; **active button darkened** (dark fill + light label).
-- Flip: H/V toggles; pressed state uses the same darkened look.
 - Font `<select>`: each `<option style="font-family: name">`.
 - No card wrappers; hairline row borders only.
 - Selection highlight uses `--bg-row-hover` / accent left bar (2px) optional.

@@ -154,7 +154,27 @@
     }
   }
 
-  function iconToggle(label, pressed, title, dataKey) {
+  // Fusion Sketch Text–style glyphs (dummy stand-ins; swap for stock PNGs later).
+  var ICONS = {
+    flipH:
+      '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3 L8 13 L2 13 Z" fill="#0696D7"/><path d="M14 3 L8 13 L14 13 Z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>',
+    flipV:
+      '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2 L13 8 L3 14 Z" fill="#0696D7"/><path d="M13 2 L13 14 L3 8 Z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>',
+    justifyLeft:
+      '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><path stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M3 3.5 H13 M3 6.5 H9 M3 9.5 H12 M3 12.5 H8" fill="none"/></svg>',
+    justifyCenter:
+      '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><path stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M3 3.5 H13 M5 6.5 H11 M3.5 9.5 H12.5 M6 12.5 H10" fill="none"/></svg>',
+    justifyRight:
+      '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><path stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M3 3.5 H13 M7 6.5 H13 M4 9.5 H13 M8 12.5 H13" fill="none"/></svg>',
+    alignTop:
+      '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><path stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M2.5 3 H13.5"/><rect x="4" y="5" width="3.2" height="8" rx="0.4" fill="currentColor"/><rect x="8.8" y="5" width="3.2" height="5.5" rx="0.4" fill="currentColor"/></svg>',
+    alignMiddle:
+      '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><path stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M2.5 8 H13.5"/><rect x="4" y="3.5" width="3.2" height="9" rx="0.4" fill="currentColor"/><rect x="8.8" y="5" width="3.2" height="6" rx="0.4" fill="currentColor"/></svg>',
+    alignBottom:
+      '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><path stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M2.5 13 H13.5"/><rect x="4" y="3" width="3.2" height="8" rx="0.4" fill="currentColor"/><rect x="8.8" y="5.5" width="3.2" height="5.5" rx="0.4" fill="currentColor"/></svg>',
+  };
+
+  function iconToggle(iconKey, pressed, title, dataKey) {
     return (
       '<button type="button" class="icon-btn format-btn" data-key="' +
       dataKey +
@@ -163,12 +183,12 @@
       '" title="' +
       title +
       '">' +
-      label +
+      ICONS[iconKey] +
       "</button>"
     );
   }
 
-  function iconRadio(label, checked, title, dataKey, dataVal) {
+  function iconRadio(iconKey, checked, title, dataKey, dataVal) {
     return (
       '<button type="button" class="icon-btn format-btn" data-key="' +
       dataKey +
@@ -179,52 +199,66 @@
       '" role="radio" title="' +
       title +
       '">' +
-      label +
+      ICONS[iconKey] +
       "</button>"
     );
   }
 
-  /** One column: Flip (H/V) + Justify (3) + Align (3). Active = darkened. */
+  /**
+   * Format cell — Fusion Sketch Text feel:
+   *   row 1: Flip H | Flip V
+   *   row 2: Justify L | C | R
+   *   row 3: Align T | M | B
+   * Active = accent blue border (not greyed).
+   */
   function formatCellHtml(row) {
     return (
       '<span class="format-cell" aria-label="Flip justify align">' +
-      '<span class="icon-group" data-group="flip" title="Flip">' +
-      iconToggle("H", row.flipH, "Flip horizontal", "flipH") +
-      iconToggle("V", row.flipV, "Flip vertical", "flipV") +
+      '<span class="icon-group icon-group-flip" data-group="flip" title="Flip">' +
+      iconToggle("flipH", row.flipH, "Flip horizontal", "flipH") +
+      iconToggle("flipV", row.flipV, "Flip vertical", "flipV") +
       "</span>" +
-      '<span class="icon-group" role="radiogroup" data-group="justify" title="Justify">' +
-      iconRadio("L", row.justify === "left", "Justify left", "justify", "left") +
+      '<span class="format-align-stack" title="Justify / Align">' +
+      '<span class="icon-group" role="radiogroup" data-group="justify">' +
       iconRadio(
-        "C",
+        "justifyLeft",
+        row.justify === "left",
+        "Justify left",
+        "justify",
+        "left"
+      ) +
+      iconRadio(
+        "justifyCenter",
         row.justify === "center",
         "Justify center",
         "justify",
         "center"
       ) +
       iconRadio(
-        "R",
+        "justifyRight",
         row.justify === "right",
         "Justify right",
         "justify",
         "right"
       ) +
       "</span>" +
-      '<span class="icon-group" role="radiogroup" data-group="align" title="Align">' +
-      iconRadio("T", row.align === "top", "Align top", "align", "top") +
+      '<span class="icon-group" role="radiogroup" data-group="align">' +
+      iconRadio("alignTop", row.align === "top", "Align top", "align", "top") +
       iconRadio(
-        "M",
+        "alignMiddle",
         row.align === "middle",
         "Align middle",
         "align",
         "middle"
       ) +
       iconRadio(
-        "B",
+        "alignBottom",
         row.align === "bottom",
         "Align bottom",
         "align",
         "bottom"
       ) +
+      "</span>" +
       "</span>" +
       "</span>"
     );
