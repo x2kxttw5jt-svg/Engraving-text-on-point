@@ -11,6 +11,7 @@ Match Fusion’s native docked palettes (Parameters-adjacent density, Extrude-di
 - `Point(s)` Select + **`+ Add Point`** button (stock-style + or point icon).
 - Optional `Sketch` Select (muted helper text: used by Add Point).
 - Status strip under selection: `Angle manipulator ✓` and `Move ✓` or `Move locked — point is constrained`.
+- During Add Point mode, status: `Click to place point — ghost shows projected location` (viewport uses custom graphics + preselect; not drawn in the HTML dummy).
 
 ## Tokens
 
