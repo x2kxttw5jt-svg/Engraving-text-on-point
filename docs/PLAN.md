@@ -486,22 +486,13 @@ sk_text = sketch.sketchTexts.add(tin)
 5. **Never** call retired `SketchText.angle` / `SketchTextInput.angle`.
 6. Hard-fail stages come from the frame: `orient vector missing`, `associative project failed`, `projected line unavailable`, `angular dimension failed`.
 
-**Justify + Align columns**
+**Format column** (Flip + Justify + Align in one cell)
 
-- Two exclusive icon groups per row (radio behavior): Justify L/C/R, Align T/M/B.
-- Stock Fusion SketchText alignment icons; pressed state on the active choice.
-- Defaults: **Center** + **Middle** (matches center-on-point framing).
-- Maps to `adsk.core.HorizontalAlignments` / `VerticalAlignments` in `setAsMultiLine`.
-- Live preview updates immediately; center constraint to the sketch point remains mandatory after rebuild.
-
-**Flip column**
-
-- Two per-row toggle buttons with **stock Fusion flip icons** (horizontal / vertical).
-- Active (pressed) state when that flip is on — match Fusion toolbar toggle chrome (accent border or depressed fill).
-- Tooltips: `Flip Horizontal`, `Flip Vertical`.
-- API: `SketchTextInput.isHorizontalFlip` / `isVerticalFlip` (also on `SketchText` after create).
-- Defaults: both `false`. Center constraints still required after flip; flip must not break associativity — if constraints fail after flip rebuild, hard-fail with reason.
-- Live preview updates immediately on toggle.
+- Single column; cell holds Flip H/V + Justify L/C/R (**3 buttons**) + Align T/M/B (**3 buttons**).
+- Active / selected buttons use a **darkened pressed** style (dark fill, light glyph) — not a light accent-only outline.
+- Defaults: Center / Middle / flip off.
+- Maps to `HorizontalAlignments` / `VerticalAlignments` + `isHorizontalFlip` / `isVerticalFlip`.
+- Live preview updates immediately; center constraint remains mandatory after rebuild.
 
 **Angle column + angle manipulator**
 
