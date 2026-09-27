@@ -21,10 +21,8 @@
   const targetRow = document.getElementById("target-row");
   const btnApplyRef = document.getElementById("btn-apply-ref");
   const btnOk = document.getElementById("btn-ok");
-  const frameDimsRow = document.getElementById("frame-dims-row");
-  const dimDxWrap = document.getElementById("dim-dx-wrap");
-  const dimDyWrap = document.getElementById("dim-dy-wrap");
-  const dimAngleWrap = document.getElementById("dim-angle-wrap");
+  const thDx = document.getElementById("th-dx");
+  const thDy = document.getElementById("th-dy");
   const thAngle = document.getElementById("th-angle");
   const tbody = document.getElementById("text-tbody");
   const opDropdown = document.getElementById("op-dropdown");
@@ -61,12 +59,14 @@
     el.hidden = !!hidden;
   }
 
-  function syncFrameDimsVisibility() {
-    setHidden(dimDxWrap, !mockRefDims);
-    setHidden(dimDyWrap, !mockRefDims);
-    setHidden(dimAngleWrap, !mockOrient);
-    setHidden(frameDimsRow, !(mockRefDims || mockOrient));
+  /** Placement lives in the table: dX/dY when Ref dims exist; Angle when Orient set. */
+  function syncPlacementVisibility() {
+    setHidden(thDx, !mockRefDims);
+    setHidden(thDy, !mockRefDims);
     setHidden(thAngle, !mockOrient);
+    document.querySelectorAll(".cell-dx, .cell-dy").forEach(function (td) {
+      setHidden(td, !mockRefDims);
+    });
     document.querySelectorAll(".cell-angle").forEach(function (td) {
       setHidden(td, !mockOrient);
     });
@@ -284,7 +284,7 @@
     if (!tbody) return;
     if (!rows.length) {
       tbody.innerHTML =
-        '<tr class="empty"><td colspan="7">Select sketch points to add rows</td></tr>';
+        '<tr class="empty"><td colspan="9">Select sketch points to add rows</td></tr>';
       return;
     }
     tbody.innerHTML = rows
@@ -310,11 +310,21 @@
           '<td class="col-ht"><input type="text" class="row-ht" value="' +
           row.height +
           '" /></td>' +
+          '<td class="col-dx cell-dx"' +
+          (mockRefDims ? "" : " hidden") +
+          '><input type="text" class="row-dx" value="' +
+          escapeHtml(row.dx) +
+          '" title="Horizontal offset from Ref" /></td>' +
+          '<td class="col-dy cell-dy"' +
+          (mockRefDims ? "" : " hidden") +
+          '><input type="text" class="row-dy" value="' +
+          escapeHtml(row.dy) +
+          '" title="Vertical offset from Ref" /></td>' +
           '<td class="col-angle cell-angle"' +
           (mockOrient ? "" : " hidden") +
           '><input type="text" class="row-angle" value="' +
-          row.angle +
-          '" /></td>' +
+          escapeHtml(row.angle) +
+          '" title="Rotation vs Orient" /></td>' +
           '<td class="col-format">' +
           formatCellHtml(row) +
           "</td>" +
@@ -383,6 +393,41 @@
         if (!row) return;
         row.font = sel.value;
         applyTextPreview(tr, row);
+      });
+    });
+
+    bindPlacementInputs();
+  }
+
+  function rowFromEl(el) {
+    var tr = el && el.closest("tr");
+    var id = tr && tr.getAttribute("data-id");
+    return rows.find(function (r) {
+      return r.id === id;
+    });
+  }
+
+  function bindPlacementInputs() {
+    [
+      { sel: ".row-dx", key: "dx", label: "dX" },
+      { sel: ".row-dy", key: "dy", label: "dY" },
+      { sel: ".row-angle", key: "angle", label: "Angle" },
+      { sel: ".row-ht", key: "height", label: "Ht" },
+    ].forEach(function (spec) {
+      tbody.querySelectorAll(spec.sel).forEach(function (inp) {
+        inp.addEventListener("change", function () {
+          var row = rowFromEl(inp);
+          if (!row) return;
+          row[spec.key] = inp.value;
+          if (statusEl) {
+            statusEl.textContent =
+              "Would set " +
+              spec.label +
+              " from table and sync triad — dummy UI (" +
+              inp.value +
+              ")";
+          }
+        });
       });
     });
   }
@@ -470,6 +515,8 @@
         id: id,
         text: "PN-001",
         height: "3 mm",
+        dx: "0 mm",
+        dy: "0 mm",
         angle: "0 deg",
         flipH: false,
         flipV: false,
@@ -495,17 +542,13 @@
 
     if (orientLabel) orientLabel.textContent = "XY construction (all rows)";
     if (refLabel) refLabel.textContent = "Origin (sample)";
-    var dx = document.getElementById("dim-dx");
-    var dy = document.getElementById("dim-dy");
-    var ang = document.getElementById("dim-angle");
-    if (dx) dx.value = "12 mm";
-    if (dy) dy.value = "5 mm";
-    if (ang) ang.value = "0 deg";
 
     rows = [];
     addRow({
       text: "PN-001",
       height: "3 mm",
+      dx: "12 mm",
+      dy: "5 mm",
       angle: "0 deg",
       justify: "center",
       align: "middle",
@@ -516,6 +559,8 @@
     addRow({
       text: "PN-002",
       height: "4 mm",
+      dx: "28 mm",
+      dy: "5 mm",
       angle: "15 deg",
       flipH: true,
       justify: "left",
@@ -527,6 +572,8 @@
     addRow({
       text: "REV A",
       height: "2.5 mm",
+      dx: "12 mm",
+      dy: "18 mm",
       angle: "-5 deg",
       flipV: true,
       justify: "center",
@@ -536,6 +583,8 @@
       font: "Courier New",
     });
     activeRowId = rows[0].id;
+    syncApplyRefVisibility();
+    syncPlacementVisibility();
     renderRows();
 
     if (manipStatus) {
@@ -560,7 +609,8 @@
           : "New or existing free pts";
       }
       syncApplyRefVisibility();
-      syncFrameDimsVisibility();
+      syncPlacementVisibility();
+      renderRows();
       if (statusEl) {
         statusEl.textContent = mockRef
           ? "Ref set — Apply Ref Dims shown — dummy UI"
@@ -573,51 +623,36 @@
     btnApplyRef.addEventListener("click", function () {
       if (!mockRef) return;
       mockRefDims = true;
-      var dx = document.getElementById("dim-dx");
-      var dy = document.getElementById("dim-dy");
-      if (dx && dy) {
-        dx.value = "10 mm";
-        dy.value = "5 mm";
-      }
-      syncFrameDimsVisibility();
+      rows.forEach(function (row, i) {
+        if (!row.dx || row.dx === "0 mm") row.dx = 10 + i * 8 + " mm";
+        if (!row.dy || row.dy === "0 mm") row.dy = "5 mm";
+      });
+      syncPlacementVisibility();
+      renderRows();
       if (statusEl) {
         statusEl.textContent =
-          "dX/dY shown — editable via GUI or triad translate — dummy UI";
+          "dX/dY columns shown in table — editable per row or via triad — dummy UI";
       }
     });
   }
 
-  ["dim-dx", "dim-dy", "dim-angle"].forEach(function (id) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener("change", function () {
-      if (statusEl) {
-        statusEl.textContent =
-          "Would set frame dim from GUI and sync triad — dummy UI (" +
-          id +
-          "=" +
-          el.value +
-          ")";
-      }
-    });
-  });
-
   function mockTriadSettled(dx, dy, angle) {
-    var dxEl = document.getElementById("dim-dx");
-    var dyEl = document.getElementById("dim-dy");
-    var angEl = document.getElementById("dim-angle");
-    if (mockRef && dxEl && dyEl) {
+    var row = rows.find(function (r) {
+      return r.id === activeRowId;
+    });
+    if (mockRef && row) {
       mockRefDims = true;
-      dxEl.value = dx;
-      dyEl.value = dy;
+      row.dx = dx;
+      row.dy = dy;
     }
-    if (mockOrient && angEl) {
-      angEl.value = angle;
+    if (mockOrient && row) {
+      row.angle = angle;
     }
-    syncFrameDimsVisibility();
+    syncPlacementVisibility();
+    renderRows();
     if (statusEl) {
       statusEl.textContent =
-        "Would auto-apply Ref dims to driving (after debounce), sync GUI, reset scale factor, then doExecutePreview — dummy UI (dX=" +
+        "Would auto-apply Ref dims to driving (after debounce), sync table dX/dY/Angle, reset scale factor, then doExecutePreview — dummy UI (dX=" +
         dx +
         ", dY=" +
         dy +
@@ -631,9 +666,10 @@
     btnOrient.addEventListener("click", function () {
       mockOrient = true;
       if (orientLabel) orientLabel.textContent = "Mock vector (all rows)";
-      var ang = document.getElementById("dim-angle");
-      if (ang) ang.value = "0 deg";
-      syncFrameDimsVisibility();
+      rows.forEach(function (row) {
+        if (!row.angle) row.angle = "0 deg";
+      });
+      syncPlacementVisibility();
       renderRows();
       if (manipStatus) {
         manipStatus.textContent =
@@ -641,7 +677,7 @@
       }
       if (statusEl) {
         statusEl.textContent =
-          "Global Orient applies to every table row — Angle shown — dummy UI";
+          "Global Orient applies to every table row — Angle column shown — dummy UI";
       }
     });
   }
@@ -729,7 +765,7 @@
   seedSampleRows();
   setOperation("cut");
   syncApplyRefVisibility();
-  syncFrameDimsVisibility();
+  syncPlacementVisibility();
   syncOkVisibility();
   if (statusEl) {
     statusEl.textContent =

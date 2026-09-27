@@ -66,7 +66,7 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 
 - Sticky header row; table may scroll horizontally in a narrow dock, but **Text wraps** when the palette is compressed so content stays readable.
 - **Rows are resizable** — drag the right-edge handle (or the Text field’s vertical resize) to grow/shrink row height; Text textarea autosizes with content.
-- Columns: `#` | Text | Ht | **Angle** | **Format** | Font. (no Orient column — Orient is global above the table)
+- Columns: `#` | Text | Ht | **dX** | **dY** | **Angle** | **Format** | Font. (no Orient column — Orient is global above the table)
 - **Format** (one column), stacked like Fusion Sketch Text:
   1. Flip H | Flip V (mirrored-triangle icons)
   2. Justify L | C | R (text-line icons)
@@ -75,6 +75,8 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - Dummy uses SVG stand-ins under `resources/palette/static/icons/`; prefer stock Fusion PNGs when packaging.
 - **Ht** is two-way with triad **unified scale** (same `heightParameter`); typed Ht resets triad scale factor to 1.0.
 - Text `<input>`: `style.fontFamily = selectedFont`.
+- **Placement in the table** (not a header row): per-row `dX` / `dY` (offsets from Ref) and `Angle` (vs global Orient) — same driving sketch dimensions as the triad.
+- `dX` / `dY` columns: **hidden** until Ref dims are applied.
 - Angle `<input>`: per-row angular dimension value vs the **global** Orient; **hidden** until Orient is set.
 - **Font** cell: **Bold (B)** + **Italic (I)** stacked vertically, grouped with the font `<select>`. Active B/I use accent blue border.
 - Font `<select>` + B/I: the row **Text** field updates live the same way — `font-family`, bold weight, and italic style.
@@ -88,8 +90,6 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - **Direction** — `Positive` / `Negative` / `Symmetric` along sketch normal (supports positive Join / Intersect / New Body).
 - **Live solid preview** checkbox (default checked): controls **extrude/cut solid preview** after triad `mouseDragEnd` + debounce → auto-apply driving dims → `doExecutePreview`. Sketch text / dims / triad pose still update live regardless.
 - **Snap** dropdowns: linear + angular increments; label hint `Alt = free`.
-- **Placement** row (active selection): `dX` / `dY` = offsets from the **Ref** point; `Angle` = rotation vs the **Orient** vector — same driving sketch dimensions as the triad. **Hidden** until the matching dim exists. Whole row hidden when none apply. (Formerly labeled “Frame”.)
-- Table **Angle** column is the same parameter as the frame Angle field (keep in sync); **hidden** until Orient is set.
 - When solid preview unchecked: triad / sketch still update; skip settle `doExecutePreview`; OK commits solids.
 
 ## Selection rows
@@ -102,8 +102,8 @@ Icon button (16×16) + label + count badge (plain text, not pill chrome).
 |---------|------------|
 | **Apply Ref Dims** | Ref point selected |
 | **Target Body** | Operation = Join, Cut, or Intersect |
-| Frame **dX** / **dY** | Ref H/V dims applied |
-| Frame **Angle** + table Angle column | Orient set |
+| Table **dX** / **dY** columns | Ref H/V dims applied |
+| Table **Angle** column | Orient set |
 | **OK** | ≥1 point / table row |
 
 ## Buttons

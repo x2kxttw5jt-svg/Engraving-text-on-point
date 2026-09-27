@@ -111,12 +111,6 @@
         </select>
         <span class="muted">Alt = free</span>
       </div>
-      <div class="field-row" id="frame-dims-row" aria-label="Placement dimensions from Ref and Orient" hidden>
-        <label title="Sketch dimensions that place the active text vs Ref point and Orient">Placement</label>
-        <label class="dim-field" id="dim-dx-wrap" hidden>dX <input id="dim-dx" type="text" value="10 mm" title="Horizontal offset from Ref point; syncs with triad" /></label>
-        <label class="dim-field" id="dim-dy-wrap" hidden>dY <input id="dim-dy" type="text" value="5 mm" title="Vertical offset from Ref point; syncs with triad" /></label>
-        <label class="dim-field" id="dim-angle-wrap" hidden>Angle <input id="dim-angle" type="text" value="0 deg" title="Rotation vs Orient vector; syncs with triad" /></label>
-      </div>
     </section>
 
     <section class="block" aria-label="Batch">
@@ -137,7 +131,9 @@
             <th class="col-idx">#</th>
             <th class="col-text">Text</th>
             <th class="col-ht">Ht</th>
-            <th class="col-angle" id="th-angle" hidden>Angle</th>
+            <th class="col-dx" id="th-dx" title="Horizontal offset from Ref; syncs with triad" hidden>dX</th>
+            <th class="col-dy" id="th-dy" title="Vertical offset from Ref; syncs with triad" hidden>dY</th>
+            <th class="col-angle" id="th-angle" title="Rotation vs Orient; syncs with triad" hidden>Angle</th>
             <th class="col-format" title="Flip · Justify · Align">Format</th>
             <th class="col-font" title="Font + Bold / Italic">Font</th>
             <th class="col-resize" aria-label="Resize"></th>
@@ -145,7 +141,7 @@
         </thead>
         <tbody id="text-tbody">
           <tr class="empty">
-            <td colspan="7">Select sketch points to add rows</td>
+            <td colspan="9">Select sketch points to add rows</td>
           </tr>
           <!--
             Format column (Fusion Sketch Text feel), stacked:

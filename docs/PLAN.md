@@ -51,14 +51,12 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 │  Operation   [✂ Cut ▼]  (Join · Cut · Intersect · New Body)          │
 │  Depth       [ 1 mm ]   Direction [ Positive ▼ ]                     │
 │  Live solid preview · Snap [ 1 mm ▼ ] [ 5° ▼ ]  (Alt = free)        │
-│  Placement   dX [ 12 mm ]  dY [ 5 mm ]  Angle [ 0 deg ]             │
-│              (offsets from Ref + rotation vs Orient; ↔ triad)        │
-│              Ht also via triad unified scale                         │
 ├──────────────────────────────────────────────────────────────────────┤
 │  ☐ Batch sequence …                                                  │
 ├──────────────────────────────────────────────────────────────────────┤
-│  # │ Text │ Ht │ Angle │ Format │ Font                               │
-│  … Angle vs global Orient; Format = Flip + Justify + Align …       │
+│  # │ Text │ Ht │ dX │ dY │ Angle │ Format │ Font                     │
+│  … Placement (dX/dY from Ref, Angle vs Orient) lives in the table … │
+│  … Ht also via triad unified scale; Format = Flip + Justify + Align │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Theme  [ Light ▼ ]                     [ Cancel ]  [ OK ]           │
 └──────────────────────────────────────────────────────────────────────┘
@@ -221,9 +219,9 @@ Driving frame dimensions **and text height** must be editable from **either** th
 
 | Dim | GUI control | Triad | Sketch |
 |-----|-------------|-------|--------|
-| **dX** (Ref horizontal) | Numeric input; **shown** when Ref dims exist | Translate X/Y handles | `dim_h.parameter` |
-| **dY** (Ref vertical) | Numeric input; **shown** when Ref dims exist | Translate handles | `dim_v.parameter` |
-| **Angle** | Table Angle column + frame field; **shown** when Orient dim exists | Rotate handle | angular `dimension.parameter` |
+| **dX** (Ref horizontal) | Table **dX** column; **shown** when Ref dims exist | Translate X/Y handles | `dim_h.parameter` |
+| **dY** (Ref vertical) | Table **dY** column; **shown** when Ref dims exist | Translate handles | `dim_v.parameter` |
+| **Angle** | Table **Angle** column; **shown** when Orient dim exists | Rotate handle | angular `dimension.parameter` |
 | **Height** | Table **Ht** column | **Unified scale** handle | `SketchText.heightParameter` |
 
 **Sync rules**
@@ -231,7 +229,7 @@ Driving frame dimensions **and text height** must be editable from **either** th
 1. **GUI → model:** on commit/change of dX / dY / Angle / Ht → set driving dim or height parameter (expressions OK) → update triad pose / reset unified scale to 1.0 → debounced `doExecutePreview` for solids. No full text recreate for pose/height-only edits when the API allows parameter writes.
 2. **Triad → GUI:** on triad `inputChanged` / settle → push measured/snapped pose into dX / dY / Angle and scaled height into Ht (suppress feedback loops with a `_syncingUi` flag).
 3. **Missing Ref:** dX/dY inputs **hidden** (not greyed); translate may still free-move unconstrained points.
-4. **Missing Orient:** Angle input + table Angle column **hidden** until Orient is set.
+4. **Missing Orient:** table Angle column **hidden** until Orient is set.
 5. Snap applies to **triad** translate/rotate ticks; height from unified scale may use the linear snap step as a height quantum when snap ≠ Off; typed GUI values are authoritative (not force-snapped) — default: **no snap on typed entry**.
 6. Re-entrancy: ignore GUI→model updates while applying triad→GUI sync, and vice versa.
 
@@ -276,7 +274,7 @@ Do **not** leave frame dims driven into solid preview. Do not toggle unrelated s
 | `#` | Read-only index | Selection order |
 | Text | `<input type="text">` | Batch-driven or override; `font-family` = selected font |
 | Height | Length input | Default `3 mm` |
-| **Angle** | Dimension value (degrees) | vs **global** Orient; same dim as triad rotate + frame Angle; default `0` |
+| **Angle** | Dimension value (degrees) | vs **global** Orient; same dim as triad rotate; default `0` |
 | **Format** | Stacked cell: Flip → Justify (3) → Align (3) | Fusion-style icons; active = **accent border**; defaults Center / Middle / flip off |
 | **Font** | **B** + **I** toggles + `<select>` | Style via `textStyle` (bold/italic); font name drives face; Text preview follows |
 
@@ -673,15 +671,15 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | **+ Add Point** | Appends a fake row; status mentions preselect + CG projection preview |
 | **Ref Pt** / **Apply Ref Dims** | Fake select; Apply Ref Dims **hidden** until Ref set; apply reveals dX/dY |
 | Orient | Fake “Select” sets **global** vector; Angle column appears for all rows |
-| Manipulator status | Click mocks debounce → auto-apply Ref dims to driving → preview; enables dX/dY/Angle |
-| Frame dims | dX/dY/Angle edit echoes GUI→driving; status mentions auto-apply window |
+| Manipulator status | Click mocks debounce → auto-apply Ref dims to driving → preview; syncs table dX/dY/Angle |
+| Placement columns | Per-row dX/dY/Angle in the table; edit echoes GUI→driving; status mentions auto-apply window |
 | Ht / scale | Ht edit echoes “would set heightParameter”; status notes triad unified scale ↔ Ht |
 | Table | Seeded with **3 sample point rows** on open for visual review; Add Point appends more |
 | Font dropdown | Seeded list; text input `font-family` follows selection |
 | Batch | Prefix/suffix/start/digits/step rewrite mock row texts |
 | Operation dropdown | Icon + name: Join / Cut / Intersect / New Body (no New Component) |
 | Depth / Direction | Depth length + Positive / Negative / Symmetric; boolean ops show Target Body |
-| Conditional chrome | Apply Ref Dims / Frame dX·dY·Angle / Angle column / OK stay **hidden** until conditions met |
+| Conditional chrome | Apply Ref Dims / table dX·dY / Angle column / OK stay **hidden** until conditions met |
 | Icons | Stock Fusion PNGs in place (or labeled placeholders until extracted) |
 | OK / Cancel | Status only — **no model changes** |
 | Bridge | Optional JS↔Python echo; geometry/manipulators no-op |

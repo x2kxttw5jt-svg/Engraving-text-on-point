@@ -344,8 +344,10 @@ textarea:focus {
 }
 
 .col-idx { width: 28px; }
-.col-text { width: 36%; min-width: 72px; }
-.col-ht { width: 52px; }
+.col-text { width: 28%; min-width: 64px; }
+.col-ht { width: 48px; }
+.col-dx,
+.col-dy { width: 52px; }
 .col-angle { width: 52px; }
 .col-format { width: 84px; }
 .col-font { width: 96px; min-width: 72px; }
@@ -505,6 +507,8 @@ textarea:focus {
   .col-format { width: 72px; }
   .col-font { width: 88px; }
   .col-ht,
+  .col-dx,
+  .col-dy,
   .col-angle { width: 44px; }
   .field-row > label:first-of-type,
   .field-row > label:not(.radio):not(.check):not(.dim-field):not(.inline-label) {
