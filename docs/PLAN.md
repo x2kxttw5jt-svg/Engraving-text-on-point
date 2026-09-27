@@ -204,7 +204,26 @@ After add, use `MultiLineTextDefinition.rectangleLines`:
 
 1. Keep the four rectangle lines from the definition.
 2. Mid-point / coincident constraints so rectangle center stays on the selected `SketchPoint`.
-3. **No soft fallback.** If `rectangleLines` is missing, constraint creation throws, or the center is not associatively tied to the point → **hard fail** that row (and abort the whole OK transaction). Roll back any geometry created for that attempt; show a clear status/messageBox (`Failed to constrain text to point`). Preview: drop that rebuild and surface the error; do not leave unconstrained text in the sketch.
+3. **No soft fallback.** If `rectangleLines` is missing, constraint creation throws, or the center is not associatively tied to the point → **hard fail** that row (and abort the whole OK transaction). Roll back any geometry created for that attempt. **Always report why** it failed (see Error reporting below). Preview: drop that rebuild and surface the error; do not leave unconstrained text in the sketch.
+
+**Error reporting (constraint failures)**
+
+Surface a concrete reason — not only “Failed to constrain text to point”. Include:
+
+| Field | Example |
+|-------|---------|
+| Row / point | `Row 2` / sketch point name or index |
+| Stage | e.g. `rectangleLines unavailable`, `midPoint constraint`, `coincident to sketch point`, `verify associativity` |
+| API / exception detail | Fusion `RuntimeError` / return code / message when present |
+| Hint (optional) | Short next step if known (`Sketch locked`, `Point from different sketch`, …) |
+
+Formats:
+
+- Palette status (preview):  
+  `Constraint failed — Row 2: rectangleLines unavailable (MultiLineTextDefinition returned empty).`
+- OK `messageBox` / log: same text, plus full traceback in Text Commands / add-in log when an exception was thrown.
+
+Raise a dedicated error type (e.g. `TextConstraintError(stage, detail, row_id)`) from `text_on_point.py` so preview and execute share one message path.
 
 ### 3. Extrude
 

@@ -20,6 +20,27 @@ Constraint strategy: after `add`, constrain rectangle center to selected `Sketch
 
 **Hard fail if constraints cannot be applied** — do not leave text positioned only by coordinates. Delete/roll back the attempted text (and any dependent preview extrude), raise/return an error to the command, and surface it in the palette status (and messageBox on OK). Associativity with the sketch point is mandatory so moving the point moves the text.
 
+**Always include the failure reason in the user-visible message.** Wrap each constraint step and classify failures, for example:
+
+```python
+class TextConstraintError(RuntimeError):
+    def __init__(self, stage: str, detail: str, row_id=None):
+        self.stage = stage
+        self.detail = detail
+        self.row_id = row_id
+        where = f"Row {row_id}: " if row_id is not None else ""
+        super().__init__(f"Constraint failed — {where}{stage} ({detail})")
+
+# stages to emit explicitly:
+# - "rectangleLines unavailable"
+# - "midPoint constraint"
+# - "coincident to sketch point"
+# - "verify associativity"
+# detail = str(exception) or a precise local check message
+```
+
+Do not swallow Fusion exceptions into a generic toast; chain `detail` from the original error.
+
 ### Angle
 
 `SketchTextInput.setAsMultiLine(cornerOne, cornerTwo, hAlign, vAlign, angle)` — **angle is in radians**.
