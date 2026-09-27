@@ -1,37 +1,48 @@
-/* Fusion command-dialog look: soft grays, shade separation, vibrant icons. */
+/*
+ * Stock Fusion command-dialog look (Light Gray / Classic-adjacent):
+ * - One flat panel gray (no card borders, no zebra section bands)
+ * - Label column LEFT · control column RIGHT
+ * - BoolValueInput: label left, square checkbox right (not “☐ Label”)
+ * - Flat buttons / inputs; vibrant tool icons kept
+ */
 :root,
 [data-theme="light"] {
-  --bg: #e8e8e8;
-  --bg-panel: #ececec;
-  --bg-band: #e2e2e2;
-  --bg-input: #f7f7f7;
-  --bg-row-hover: #d9eef8;
-  --bg-header: #dedede;
+  --bg-panel: #e8e8e8;
+  --bg-input: #ffffff;
+  --bg-header: #dcdcdc;
+  --bg-row-hover: #d4ebf7;
+  --bg-band: #e0e0e0;
   --bg-selected: #0696d7;
   --text: #3c3c3c;
-  --text-muted: #6a6a6a;
-  --hairline: rgba(0, 0, 0, 0.12);
+  --text-muted: #6e6e6e;
+  --hairline: rgba(0, 0, 0, 0.14);
   --accent: #0696d7;
   --accent-hover: #0076a5;
-  --input-edge: rgba(0, 0, 0, 0.22);
-  --row-height: 28px;
+  --input-edge: #8c8c8c;
+  --btn-face: #f0f0f0;
+  --btn-face-hover: #f7f7f7;
+  --check-face: #ffffff;
+  --label-w: 118px;
+  --row-height: 26px;
   --font-ui: "Artifakt Element", "Segoe UI", system-ui, sans-serif;
 }
 
 [data-theme="dark"] {
-  --bg: #2b2b2b;
-  --bg-panel: #333333;
-  --bg-band: #3a3a3a;
-  --bg-input: #2f2f2f;
+  --bg-panel: #2d2d2d;
+  --bg-input: #3a3a3a;
+  --bg-header: #383838;
   --bg-row-hover: #2a4a5a;
-  --bg-header: #3c3c3c;
+  --bg-band: #353535;
   --bg-selected: #0696d7;
-  --text: #f0f0f0;
-  --text-muted: #b0b0b0;
+  --text: #ececec;
+  --text-muted: #a8a8a8;
   --hairline: rgba(255, 255, 255, 0.12);
   --accent: #0696d7;
   --accent-hover: #3db5e8;
-  --input-edge: rgba(255, 255, 255, 0.18);
+  --input-edge: #6a6a6a;
+  --btn-face: #3f3f3f;
+  --btn-face-hover: #4a4a4a;
+  --check-face: #2f2f2f;
 }
 
 * { box-sizing: border-box; }
@@ -40,17 +51,12 @@ html, body {
   margin: 0;
   padding: 0;
   color: var(--text);
-  font: 12px/1.35 var(--font-ui);
-  background: linear-gradient(180deg, #f0f0f0 0%, var(--bg) 48px, var(--bg) 100%);
-}
-
-[data-theme="dark"] html,
-[data-theme="dark"] body {
-  background: linear-gradient(180deg, #3a3a3a 0%, var(--bg) 48px, var(--bg) 100%);
+  font: 12px/1.3 var(--font-ui);
+  background: var(--bg-panel);
 }
 
 .palette {
-  padding: 6px 8px 10px;
+  padding: 8px 10px 10px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -58,88 +64,113 @@ html, body {
   background: var(--bg-panel);
 }
 
-/* Sections: shade bands + hairlines — not bordered cards */
+/* Continuous panel — hairline between logical groups only */
 .block {
   background: transparent;
   border: none;
   border-bottom: 1px solid var(--hairline);
-  padding: 8px 6px 10px;
+  padding: 8px 2px 10px;
 }
 
-.block:nth-child(even) {
-  background: var(--bg-band);
-}
+.block:last-of-type { border-bottom: none; }
 
 .table-block {
-  background: var(--bg-band);
   overflow-x: auto;
   max-width: 100%;
+  padding-top: 6px;
 }
 
 .footer {
-  border-bottom: none;
-  background: var(--bg-panel) !important;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
   padding-top: 10px;
+  border-bottom: none;
 }
 
-/* Label left / controls right — Fusion dialog rhythm */
+.footer .footer-theme {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.footer .footer-theme .control { max-width: 120px; }
+
+/* —— Fusion command input row: label | control —— */
 .field-row {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
+  gap: 10px;
   min-height: var(--row-height);
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
 
 .field-row:last-child { margin-bottom: 0; }
 
-.field-row > label:first-of-type,
-.field-row > label:not(.radio):not(.check):not(.dim-field):not(.inline-label) {
-  min-width: 88px;
-  flex: 0 0 88px;
+.field-row > label {
+  flex: 0 0 var(--label-w);
+  width: var(--label-w);
+  min-width: var(--label-w);
   color: var(--text);
+  line-height: var(--row-height);
+  user-select: none;
 }
 
-.field-row > .btn,
-.field-row > .op-dropdown,
-.field-row > input,
-.field-row > select,
-.field-row > .muted,
-.field-row > .check {
-  margin-left: 0;
+.field-row > .control {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
 }
 
-.icon-slot {
-  display: none; /* Fusion dialogs usually omit decorative spacer icons */
+.control-cluster {
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.muted { color: var(--text-muted); }
+.control-cluster > input[type="text"],
+.control-cluster > input[type="number"],
+.control-cluster > select {
+  width: auto;
+  min-width: 72px;
+  flex: 0 1 110px;
+}
 
+.control > input[type="text"],
+.control > input[type="number"],
+.control > select,
+.control > .op-dropdown {
+  width: 100%;
+  max-width: 240px;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.info-line {
+  margin: 6px 0 0;
+  padding: 0 0 0 var(--label-w);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+/* Inputs — flat, square, Fusion-ish */
 input[type="text"],
 input[type="number"],
 select,
 textarea {
-  height: 24px;
+  height: 22px;
   border: 1px solid var(--input-edge);
   background: var(--bg-input);
   color: var(--text);
   padding: 0 6px;
   font: inherit;
-  border-radius: 1px;
+  border-radius: 0;
   min-width: 0;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
-}
-
-[data-theme="dark"] input[type="text"],
-[data-theme="dark"] input[type="number"],
-[data-theme="dark"] select,
-[data-theme="dark"] textarea {
-  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.25);
+  box-shadow: none;
 }
 
 input:focus,
@@ -147,60 +178,88 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* Fusion BoolValueInput checkbox (square, right-aligned in control column) */
+.fusion-check {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 14px;
+  border: 1px solid var(--input-edge);
+  border-radius: 0;
+  background: var(--check-face);
+  cursor: pointer;
+  position: relative;
+  box-shadow: none;
+  vertical-align: middle;
+}
+
+.fusion-check:hover {
+  border-color: var(--accent);
+}
+
+.fusion-check:focus {
+  outline: none;
   box-shadow: 0 0 0 1px var(--accent);
+  border-color: var(--accent);
+}
+
+.fusion-check:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.fusion-check:checked::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 .btn {
-  height: 24px;
+  height: 22px;
   padding: 0 10px;
   border: 1px solid var(--input-edge);
-  background: linear-gradient(180deg, #f6f6f6, #e6e6e6);
+  background: var(--btn-face);
   color: var(--text);
-  border-radius: 1px;
+  border-radius: 0;
   cursor: pointer;
   font: inherit;
-}
-
-[data-theme="dark"] .btn {
-  background: linear-gradient(180deg, #4a4a4a, #3a3a3a);
+  box-shadow: none;
 }
 
 .btn:hover:not(:disabled) {
+  background: var(--btn-face-hover);
   border-color: var(--accent);
 }
 
 .btn:disabled { opacity: 0.45; cursor: default; }
 
 .btn-primary {
-  background: linear-gradient(180deg, #1aa3e0, var(--accent));
+  background: var(--accent);
   border-color: #0578ad;
   color: #fff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #2bb0e8, var(--accent-hover));
+  background: var(--accent-hover);
 }
 
-.radio, .check {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0 !important;
-  color: var(--text) !important;
-}
-
-.inline-label {
-  min-width: 0 !important;
-  margin-left: 4px;
-  color: var(--text-muted);
-}
-
-/* Operation dropdown */
+/* Operation dropdown — Extrude-style */
 .op-dropdown {
   position: relative;
-  flex: 1;
-  min-width: 140px;
-  max-width: 220px;
+  width: 100%;
+  max-width: 240px;
 }
 
 .op-trigger {
@@ -208,16 +267,16 @@ textarea:focus {
   align-items: center;
   gap: 8px;
   width: 100%;
-  height: 26px;
-  padding: 0 8px;
+  height: 22px;
+  padding: 0 6px;
   border: 1px solid var(--input-edge);
   background: var(--bg-input);
   color: var(--text);
-  border-radius: 1px;
+  border-radius: 0;
   cursor: pointer;
   font: inherit;
   text-align: left;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow: none;
 }
 
 .op-trigger:hover,
@@ -237,18 +296,16 @@ textarea:focus {
   margin: 0;
   padding: 2px 0;
   list-style: none;
-  background: #f4f4f4;
+  background: var(--bg-input);
   border: 1px solid var(--input-edge);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
-
-[data-theme="dark"] .op-menu { background: #3c3c3c; }
 
 .op-menu [role="option"] {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 28px;
+  height: 26px;
   padding: 0 8px;
   cursor: pointer;
   color: var(--text);
@@ -268,7 +325,7 @@ textarea:focus {
   background-position: center;
 }
 
-/* Vibrant Extrude-style op glyphs */
+/* Vibrant Extrude-style op glyphs (keep rich) */
 .op-icon-join,
 .op-trigger[data-op="join"] .op-icon {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Crect x='2' y='4' width='8' height='8' rx='1' fill='%230696d7'/%3E%3Crect x='6' y='4' width='8' height='8' rx='1' fill='%233db5e8'/%3E%3C/svg%3E");
@@ -286,18 +343,9 @@ textarea:focus {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cellipse cx='8' cy='11' rx='5' ry='2.5' fill='%23b0b0b0'/%3E%3Crect x='3' y='5' width='10' height='6' fill='%23d0d0d0'/%3E%3Cellipse cx='8' cy='5' rx='5' ry='2.5' fill='%23efefef' stroke='%23999'/%3E%3Ccircle cx='12.5' cy='3.5' r='2.3' fill='%23f1c40f'/%3E%3C/svg%3E");
 }
 
-.batch-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-.batch-grid label {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  color: var(--text-muted);
+.batch-fields {
+  margin-top: 4px;
+  padding-top: 2px;
 }
 
 .data-table {
@@ -310,7 +358,7 @@ textarea:focus {
 .data-table th,
 .data-table td {
   border-bottom: 1px solid var(--hairline);
-  padding: 4px;
+  padding: 3px 4px;
   min-height: var(--row-height);
   height: auto;
   text-align: left;
@@ -329,7 +377,6 @@ textarea:focus {
 }
 
 .data-table tbody tr { position: relative; min-height: 40px; }
-.data-table tbody tr:nth-child(even) { background: rgba(0, 0, 0, 0.03); }
 .data-table tbody tr:hover { background: var(--bg-row-hover); }
 
 .data-table tbody tr.is-active {
@@ -350,10 +397,9 @@ textarea:focus {
 .col-dy { width: 52px; }
 .col-angle { width: 52px; }
 
-/* Already-constrained sketch point: XY placement visible but not editable */
 .cell-dx.is-xy-locked,
 .cell-dy.is-xy-locked {
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .cell-dx.is-xy-locked input,
@@ -364,13 +410,13 @@ input.row-dy:disabled {
   color: var(--text-muted);
   background: var(--bg-band);
   cursor: not-allowed;
-  box-shadow: none;
 }
 
 [data-theme="dark"] .cell-dx.is-xy-locked,
 [data-theme="dark"] .cell-dy.is-xy-locked {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.05);
 }
+
 .col-format { width: 84px; }
 .col-font { width: 96px; min-width: 72px; }
 .col-resize { width: 10px; padding: 0 !important; }
@@ -440,7 +486,7 @@ input.row-dy:disabled {
   padding: 3px;
   border: 1px solid transparent;
   background: transparent;
-  border-radius: 1px;
+  border-radius: 0;
   cursor: pointer;
   color: #2f2f2f;
   display: inline-flex;
@@ -461,7 +507,6 @@ input.row-dy:disabled {
   background: rgba(6, 150, 215, 0.12);
 }
 
-/* Active = Fusion accent outline + light blue wash (keeps vibrant glyph colors) */
 .icon-btn[aria-pressed="true"],
 .icon-btn[aria-checked="true"] {
   border-color: var(--accent);
@@ -481,7 +526,7 @@ input.row-dy:disabled {
 
 .data-table textarea.row-text {
   display: block;
-  min-height: 24px;
+  min-height: 22px;
   height: auto;
   resize: vertical;
   overflow: hidden;
@@ -489,7 +534,7 @@ input.row-dy:disabled {
   overflow-wrap: anywhere;
   word-break: break-word;
   line-height: 1.35;
-  padding: 4px 6px;
+  padding: 3px 5px;
   font-family: inherit;
   font-weight: 400;
   font-style: normal;
@@ -526,35 +571,24 @@ input.row-dy:disabled {
 }
 
 @media (max-width: 420px) {
+  :root, [data-theme="light"], [data-theme="dark"] {
+    --label-w: 96px;
+  }
   .col-format { width: 72px; }
   .col-font { width: 88px; }
   .col-ht,
   .col-dx,
   .col-dy,
   .col-angle { width: 44px; }
-  .field-row > label:first-of-type,
-  .field-row > label:not(.radio):not(.check):not(.dim-field):not(.inline-label) {
-    min-width: 72px;
-    flex-basis: 72px;
-  }
+  .info-line { padding-left: 0; }
 }
 
 .actions { display: flex; gap: 6px; }
-
-.dim-field {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--text-muted);
-  min-width: 0 !important;
-}
-
-.dim-field input { width: 64px; }
 
 .status {
   margin: 0;
   min-height: 1.2em;
   font-size: 11px;
-  padding: 4px 6px 8px;
+  padding: 4px 2px 6px;
   color: var(--text-muted);
 }

@@ -2,7 +2,7 @@
 
 ## Design intent
 
-Match Fusion’s native docked palettes (Parameters-adjacent density, Extrude-dialog field rhythm). One composition: toolbar of options above a data table — not a dashboard of cards.
+Match Fusion’s native command dialogs (Extrude / Sketch Text density). One flat gray panel; **label column left · control column right**. Bool options use Fusion `BoolValueInput` rhythm: **name on the left, square checkbox on the right** — never web-style “☐ Label” with helper text inline. One composition: options above a data table — not a dashboard of cards.
 
 **Dummy UI first:** implement this spec as a fully clickable mock (fake rows, no Fusion geometry) and sign off visuals/interactions before wiring selection, manipulators, constraints, or extrude.
 
@@ -89,7 +89,7 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - **Operation** — Fusion Extrude–style dropdown: **icon + name** per option. Options: **Join**, **Cut**, **Intersect**, **New Body**. **Exclude New Component.** Prefer stock Extrude command icons when packaged; dummy uses SVG stand-ins.
 - **Depth** — length input (default `1 mm`); engraving cut depth or positive extrude distance.
 - **Direction** — `Positive` / `Negative` / `Symmetric` along sketch normal (supports positive Join / Intersect / New Body).
-- **Live solid preview** checkbox (default checked): controls **extrude/cut solid preview** after triad `mouseDragEnd` + debounce → auto-apply driving dims → `doExecutePreview`. Sketch text / dims / triad pose still update live regardless.
+- **Live solid preview** (default checked): Fusion bool row — label left, checkbox right. Controls **extrude/cut solid preview** after triad settle → auto-apply → `doExecutePreview`. Details in tooltip only (no parenthetical chrome). Sketch / triad still update live regardless.
 - **Snap** dropdowns: linear + angular increments; label hint `Alt = free`.
 - When solid preview unchecked: triad / sketch still update; skip settle `doExecutePreview`; OK commits solids.
 

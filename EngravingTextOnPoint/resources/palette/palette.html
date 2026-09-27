@@ -8,119 +8,157 @@
 </head>
 <body>
   <!--
-    Wireframe shell for the stock-like Fusion palette.
-    Behavior and Fusion bridge land in Phase 1 (see docs/PLAN.md).
+    Stock-like Fusion command dialog shell.
+    Bool rows: label LEFT, checkbox RIGHT (addBoolValueInput rhythm).
+    Behavior / Fusion bridge land in Phase 1 (see docs/PLAN.md).
   -->
   <div class="palette">
     <section class="block" aria-label="Selection">
       <div class="field-row">
-        <span class="icon-slot" title="Sketch point"></span>
-        <label>Point(s)</label>
-        <button type="button" class="btn" id="btn-points">Select</button>
-        <button type="button" class="btn" id="btn-add-point" title="Add point at click">+ Add Point</button>
-        <span class="muted" id="points-count">0 selected</span>
+        <label for="btn-points">Point(s)</label>
+        <div class="control control-cluster">
+          <button type="button" class="btn" id="btn-points">Select</button>
+          <button type="button" class="btn" id="btn-add-point" title="Add point at click">+ Add Point</button>
+          <span class="muted" id="points-count">0 selected</span>
+        </div>
       </div>
       <div class="field-row">
-        <span class="icon-slot" title="Reference point"></span>
-        <label>Ref Pt</label>
-        <button type="button" class="btn" id="btn-ref">Select</button>
-        <button type="button" class="btn" id="btn-apply-ref" title="Apply to active unconstrained point" hidden>Apply Ref Dims</button>
-        <span class="muted" id="ref-label">New or existing free pts</span>
+        <label for="btn-ref">Ref Pt</label>
+        <div class="control control-cluster">
+          <button type="button" class="btn" id="btn-ref">Select</button>
+          <button type="button" class="btn" id="btn-apply-ref" title="Apply to active unconstrained point" hidden>Apply Ref Dims</button>
+          <span class="muted" id="ref-label">New or existing free pts</span>
+        </div>
       </div>
       <div class="field-row">
-        <span class="icon-slot" title="Sketch"></span>
-        <label>Sketch</label>
-        <button type="button" class="btn" id="btn-sketch">Select</button>
-        <span class="muted" id="sketch-label">Optional for Add Point</span>
+        <label for="btn-sketch">Sketch</label>
+        <div class="control control-cluster">
+          <button type="button" class="btn" id="btn-sketch">Select</button>
+          <span class="muted" id="sketch-label">Optional for Add Point</span>
+        </div>
       </div>
       <div class="field-row">
-        <span class="icon-slot" title="Orientation vector"></span>
-        <label>Orient</label>
-        <button type="button" class="btn" id="btn-orient">Select</button>
-        <span class="muted" id="orient-label">Applies to all rows</span>
+        <label for="btn-orient">Orient</label>
+        <div class="control control-cluster">
+          <button type="button" class="btn" id="btn-orient">Select</button>
+          <span class="muted" id="orient-label">Applies to all rows</span>
+        </div>
       </div>
       <div class="field-row" id="target-row" hidden>
-        <span class="icon-slot" title="Target body"></span>
-        <label>Target Body</label>
-        <button type="button" class="btn" id="btn-body">Select</button>
-        <span class="muted" id="body-label">Join / Cut / Intersect</span>
+        <label for="btn-body">Target Body</label>
+        <div class="control control-cluster">
+          <button type="button" class="btn" id="btn-body">Select</button>
+          <span class="muted" id="body-label">Join / Cut / Intersect</span>
+        </div>
       </div>
-      <p class="muted" id="manip-status" role="status">
-        Manipulators: Angle dim (needs Orient) · Move · Scale→Ht
+      <p class="info-line" id="manip-status" role="status">
+        Angle dim (needs Orient) · Move · Scale→Ht
       </p>
     </section>
 
     <section class="block" aria-label="Extrude">
       <div class="field-row">
         <label for="op-trigger">Operation</label>
-        <div class="op-dropdown" id="op-dropdown">
-          <button type="button" class="op-trigger" id="op-trigger" aria-haspopup="listbox" aria-expanded="false" title="Extrude operation">
-            <span class="op-icon" id="op-trigger-icon" aria-hidden="true"></span>
-            <span class="op-label" id="op-trigger-label">Cut</span>
-            <span class="op-caret" aria-hidden="true">▾</span>
-          </button>
-          <ul class="op-menu" id="op-menu" role="listbox" hidden>
-            <!-- Join / Cut / Intersect / New Body — stock Extrude icons in Phase 1; New Component excluded -->
-            <li role="option" data-op="join" tabindex="-1">
-              <span class="op-icon op-icon-join" aria-hidden="true"></span><span>Join</span>
-            </li>
-            <li role="option" data-op="cut" tabindex="-1" aria-selected="true">
-              <span class="op-icon op-icon-cut" aria-hidden="true"></span><span>Cut</span>
-            </li>
-            <li role="option" data-op="intersect" tabindex="-1">
-              <span class="op-icon op-icon-intersect" aria-hidden="true"></span><span>Intersect</span>
-            </li>
-            <li role="option" data-op="newBody" tabindex="-1">
-              <span class="op-icon op-icon-newbody" aria-hidden="true"></span><span>New Body</span>
-            </li>
-          </ul>
-          <input type="hidden" id="operation" name="operation" value="cut" />
+        <div class="control">
+          <div class="op-dropdown" id="op-dropdown">
+            <button type="button" class="op-trigger" id="op-trigger" aria-haspopup="listbox" aria-expanded="false" title="Extrude operation">
+              <span class="op-icon" id="op-trigger-icon" aria-hidden="true"></span>
+              <span class="op-label" id="op-trigger-label">Cut</span>
+              <span class="op-caret" aria-hidden="true">▾</span>
+            </button>
+            <ul class="op-menu" id="op-menu" role="listbox" hidden>
+              <li role="option" data-op="join" tabindex="-1">
+                <span class="op-icon op-icon-join" aria-hidden="true"></span><span>Join</span>
+              </li>
+              <li role="option" data-op="cut" tabindex="-1" aria-selected="true">
+                <span class="op-icon op-icon-cut" aria-hidden="true"></span><span>Cut</span>
+              </li>
+              <li role="option" data-op="intersect" tabindex="-1">
+                <span class="op-icon op-icon-intersect" aria-hidden="true"></span><span>Intersect</span>
+              </li>
+              <li role="option" data-op="newBody" tabindex="-1">
+                <span class="op-icon op-icon-newbody" aria-hidden="true"></span><span>New Body</span>
+              </li>
+            </ul>
+            <input type="hidden" id="operation" name="operation" value="cut" />
+          </div>
         </div>
       </div>
       <div class="field-row">
         <label for="depth">Depth</label>
-        <input id="depth" type="text" value="1 mm" title="Engraving / extrude depth" />
-        <label for="direction" class="inline-label">Direction</label>
-        <select id="direction" title="Positive or negative along sketch normal">
-          <option value="positive" selected>Positive</option>
-          <option value="negative">Negative</option>
-          <option value="symmetric">Symmetric</option>
-        </select>
+        <div class="control">
+          <input id="depth" type="text" value="1 mm" title="Engraving / extrude depth" />
+        </div>
       </div>
       <div class="field-row">
-        <label class="check">
-          <input type="checkbox" id="solid-preview" checked /> Live solid preview
-        </label>
-        <span class="muted">(extrude/cut after drag settles)</span>
+        <label for="direction">Direction</label>
+        <div class="control">
+          <select id="direction" title="Positive or negative along sketch normal">
+            <option value="positive" selected>Positive</option>
+            <option value="negative">Negative</option>
+            <option value="symmetric">Symmetric</option>
+          </select>
+        </div>
+      </div>
+      <!-- Fusion BoolValueInput: name left, checkbox right — not “☐ label” -->
+      <div class="field-row">
+        <label for="solid-preview">Live solid preview</label>
+        <div class="control">
+          <input type="checkbox" id="solid-preview" class="fusion-check" checked
+            title="Extrude/cut preview after drag settles; sketch still updates live" />
+        </div>
       </div>
       <div class="field-row">
         <label for="snap-linear">Snap</label>
-        <select id="snap-linear" title="Linear snap; hold Alt to bypass">
-          <option value="off">Off</option>
-          <option value="0.1 mm">0.1 mm</option>
-          <option value="0.5 mm">0.5 mm</option>
-          <option value="1 mm" selected>1 mm</option>
-          <option value="5 mm">5 mm</option>
-        </select>
-        <select id="snap-angular" title="Angular snap; hold Alt to bypass">
-          <option value="off">Off</option>
-          <option value="1 deg">1°</option>
-          <option value="5 deg" selected>5°</option>
-          <option value="15 deg">15°</option>
-          <option value="45 deg">45°</option>
-        </select>
-        <span class="muted">Alt = free</span>
+        <div class="control control-cluster">
+          <select id="snap-linear" title="Linear snap; hold Alt to bypass">
+            <option value="off">Off</option>
+            <option value="0.1 mm">0.1 mm</option>
+            <option value="0.5 mm">0.5 mm</option>
+            <option value="1 mm" selected>1 mm</option>
+            <option value="5 mm">5 mm</option>
+          </select>
+          <select id="snap-angular" title="Angular snap; hold Alt to bypass">
+            <option value="off">Off</option>
+            <option value="1 deg">1°</option>
+            <option value="5 deg" selected>5°</option>
+            <option value="15 deg">15°</option>
+            <option value="45 deg">45°</option>
+          </select>
+          <span class="muted" title="Hold Alt while dragging to bypass snap">Alt = free</span>
+        </div>
       </div>
     </section>
 
     <section class="block" aria-label="Batch">
-      <label class="check"><input type="checkbox" id="batch-enabled" /> Batch sequence</label>
-      <div class="batch-grid" id="batch-grid" hidden>
-        <label>Prefix <input id="batch-prefix" type="text" value="" /></label>
-        <label>Suffix <input id="batch-suffix" type="text" value="" /></label>
-        <label>Start <input id="batch-start" type="number" value="1" /></label>
-        <label>Digits <input id="batch-digits" type="number" value="3" min="1" /></label>
-        <label>Step <input id="batch-step" type="number" value="1" /></label>
+      <div class="field-row">
+        <label for="batch-enabled">Batch sequence</label>
+        <div class="control">
+          <input type="checkbox" id="batch-enabled" class="fusion-check"
+            title="Fill table text with prefix / number / suffix sequence" />
+        </div>
+      </div>
+      <div id="batch-grid" class="batch-fields" hidden>
+        <div class="field-row">
+          <label for="batch-prefix">Prefix</label>
+          <div class="control"><input id="batch-prefix" type="text" value="" /></div>
+        </div>
+        <div class="field-row">
+          <label for="batch-suffix">Suffix</label>
+          <div class="control"><input id="batch-suffix" type="text" value="" /></div>
+        </div>
+        <div class="field-row">
+          <label for="batch-start">Start</label>
+          <div class="control"><input id="batch-start" type="number" value="1" /></div>
+        </div>
+        <div class="field-row">
+          <label for="batch-digits">Digits</label>
+          <div class="control"><input id="batch-digits" type="number" value="3" min="1" /></div>
+        </div>
+        <div class="field-row">
+          <label for="batch-step">Step</label>
+          <div class="control"><input id="batch-step" type="number" value="1" /></div>
+        </div>
       </div>
     </section>
 
@@ -143,25 +181,20 @@
           <tr class="empty">
             <td colspan="9">Select sketch points to add rows</td>
           </tr>
-          <!--
-            Format column (Fusion Sketch Text feel), stacked:
-              Flip H | Flip V
-              Justify L | C | R
-              Align T | M | B
-            Active = accent blue border. Dummy SVG glyphs in static/icons/.
-          -->
         </tbody>
       </table>
     </section>
 
     <section class="block footer">
-      <div class="field-row">
+      <div class="field-row footer-theme">
         <label for="theme">Theme</label>
-        <select id="theme">
-          <option value="light" selected>Light</option>
-          <option value="dark">Dark</option>
-          <option value="auto">Auto</option>
-        </select>
+        <div class="control">
+          <select id="theme">
+            <option value="light" selected>Light</option>
+            <option value="dark">Dark</option>
+            <option value="auto">Auto</option>
+          </select>
+        </div>
       </div>
       <div class="actions">
         <button type="button" class="btn" id="btn-cancel">Cancel</button>
