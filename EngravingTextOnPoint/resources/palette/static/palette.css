@@ -72,6 +72,19 @@ body {
   background: var(--bg-panel);
   font-size: var(--fs);
   line-height: 1.3;
+  /* Fusion dialogs: no text highlight on chrome — only inside fields */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.palette input[type="text"],
+.palette input[type="number"],
+.palette textarea,
+.palette select {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 
 /* Continuous panel — hairline between logical groups only */
