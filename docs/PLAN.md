@@ -54,8 +54,8 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 ├──────────────────────────────────────────────────────────────────────┤
 │  ☐ Batch sequence …                                                  │
 ├──────────────────────────────────────────────────────────────────────┤
-│  # │ Text │ Ht │ Place │ Format │ Font                               │
-│  … Place cell: Pos X / Pos Y (Ref) + A angle (Orient); Ht via scale …│
+│  # │ Text │ Ht │ Position │ Format │ Font                            │
+│  … Position: Pos X / Pos Y (Ref) + A angle (Orient); Ht via scale … │
 │  … Format = Flip + Justify + Align …                               │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Theme  [ Light ▼ ]                     [ Cancel ]  [ OK ]           │
@@ -219,8 +219,8 @@ Driving frame dimensions **and text height** must be editable from **either** th
 
 | Dim | GUI control | Triad | Sketch |
 |-----|-------------|-------|--------|
-| **dX** (Ref horizontal) | Table **dX** column; **shown** when Ref dims exist; **greyed / disabled** if point already constrained | Translate X/Y handles (free points only) | `dim_h.parameter` |
-| **dY** (Ref vertical) | Table **dY** column; **shown** when Ref dims exist; **greyed / disabled** if point already constrained | Translate handles (free points only) | `dim_v.parameter` |
+| **Pos X** (Ref horizontal) | Table Position **Pos X**; **shown** when Ref dims exist; **greyed / disabled** if point already constrained | Translate X/Y handles (free points only) | `dim_h.parameter` |
+| **Pos Y** (Ref vertical) | Table Position **Pos Y**; **shown** when Ref dims exist; **greyed / disabled** if point already constrained | Translate handles (free points only) | `dim_v.parameter` |
 | **Angle** | Table **Angle** column; **shown** when Orient dim exists | Rotate handle | angular `dimension.parameter` |
 | **Height** | Table **Ht** column | **Unified scale** handle | `SketchText.heightParameter` |
 
@@ -669,7 +669,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Open palette | Toolbar command shows docked palette only |
 | Point(s) / Sketch / Target Body | Buttons add/remove **fake rows** / fake sketch/body labels |
 | **+ Add Point** | Appends a fake row; status mentions preselect + CG projection preview |
-| **Ref Pt** | Fake select **auto-applies** dX/dY to free rows and reveals columns (no Apply button) |
+| **Ref Pt** | Fake select **auto-applies** Pos X/Y to free rows and reveals Position column (no Apply button) |
 | Orient | Fake “Select” sets **global** vector; Angle column appears for all rows |
 | Manipulator status | Click mocks debounce → auto-apply Ref dims to driving → preview; syncs table dX/dY/Angle |
 | Placement columns | Per-row dX/dY/Angle in the table; constrained points grey out dX/dY; edit echoes GUI→driving |
