@@ -593,9 +593,9 @@ select:focus {
       </div>
       <div class="field-row">
         <label class="check">
-          <input type="checkbox" id="live-preview" checked /> Live sketch preview
+          <input type="checkbox" id="solid-preview" checked /> Live solid preview
         </label>
-        <span class="muted">(solid preview after drag)</span>
+        <span class="muted">(extrude/cut after drag settles)</span>
       </div>
       <div class="field-row">
         <label for="snap-linear">Snap</label>
@@ -691,7 +691,7 @@ select:focus {
   const themeSelect = document.getElementById("theme");
   const batchEnabled = document.getElementById("batch-enabled");
   const batchGrid = document.getElementById("batch-grid");
-  const livePreview = document.getElementById("live-preview");
+  const solidPreview = document.getElementById("solid-preview");
   const statusEl = document.getElementById("status");
   const manipStatus = document.getElementById("manip-status");
   const btnAddPoint = document.getElementById("btn-add-point");
@@ -1398,12 +1398,14 @@ select:focus {
 
   function syncPreviewStatus() {
     if (!statusEl || rows.length) return;
-    statusEl.textContent = livePreview.checked
+    statusEl.textContent = solidPreview && solidPreview.checked
       ? ""
-      : "Preview off — OK will create features";
+      : "Solid preview off — sketch still updates; OK will create solids";
   }
 
-  livePreview.addEventListener("change", syncPreviewStatus);
+  if (solidPreview) {
+    solidPreview.addEventListener("change", syncPreviewStatus);
+  }
 
   // Seed sample points so the table/chrome are reviewable on open.
   seedSampleRows();

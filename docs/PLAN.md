@@ -50,7 +50,7 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 ├──────────────────────────────────────────────────────────────────────┤
 │  Operation   [✂ Cut ▼]  (Join · Cut · Intersect · New Body)          │
 │  Depth       [ 1 mm ]   Direction [ Positive ▼ ]                     │
-│  Live sketch preview · Snap [ 1 mm ▼ ] [ 5° ▼ ]  (Alt = free)       │
+│  Live solid preview · Snap [ 1 mm ▼ ] [ 5° ▼ ]  (Alt = free)        │
 │  Frame dims  dX [ 12 mm ]  dY [ 5 mm ]  Angle [ 0 deg ]             │
 │              ↕ two-way with Triad + sketch dimensions                │
 │              Ht also via triad unified scale                         │
@@ -616,7 +616,7 @@ Engraving code may depend on `sketch_transform_frame`. The frame package must **
 | JS → Python | `rowUpdated` | `{ id, text, height, angle, font, bold, italic, flipH, flipV, justify, align }` |
 | JS → Python | `orientChanged` | `{ entityToken }` — **global**; applies to every row |
 | JS → Python | `batchChanged` | `{ enabled, prefix, suffix, start, digits, step }` |
-| JS → Python | `optionsChanged` | `{ operation, depth, direction, theme, livePreview }` |
+| JS → Python | `optionsChanged` | `{ operation, depth, direction, theme, solidPreview }` |
 | JS → Python | `execute` / `cancel` | — |
 | Python → JS | `setRows` | `[{ id, text, height, angle, font, bold, italic, flipH, flipV, justify, align, pointLabel }]` |
 | Python → JS | `setOrient` / `setFonts` / `setTheme` / `setStatus` / `setTargetEnabled` | `setOrient` → header label; no per-row Orient column |

@@ -9,7 +9,7 @@
   const themeSelect = document.getElementById("theme");
   const batchEnabled = document.getElementById("batch-enabled");
   const batchGrid = document.getElementById("batch-grid");
-  const livePreview = document.getElementById("live-preview");
+  const solidPreview = document.getElementById("solid-preview");
   const statusEl = document.getElementById("status");
   const manipStatus = document.getElementById("manip-status");
   const btnAddPoint = document.getElementById("btn-add-point");
@@ -716,12 +716,14 @@
 
   function syncPreviewStatus() {
     if (!statusEl || rows.length) return;
-    statusEl.textContent = livePreview.checked
+    statusEl.textContent = solidPreview && solidPreview.checked
       ? ""
-      : "Preview off — OK will create features";
+      : "Solid preview off — sketch still updates; OK will create solids";
   }
 
-  livePreview.addEventListener("change", syncPreviewStatus);
+  if (solidPreview) {
+    solidPreview.addEventListener("change", syncPreviewStatus);
+  }
 
   // Seed sample points so the table/chrome are reviewable on open.
   seedSampleRows();

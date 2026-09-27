@@ -86,11 +86,11 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 - **Operation** — Fusion Extrude–style dropdown: **icon + name** per option. Options: **Join**, **Cut**, **Intersect**, **New Body**. **Exclude New Component.** Prefer stock Extrude command icons when packaged; dummy uses SVG stand-ins.
 - **Depth** — length input (default `1 mm`); engraving cut depth or positive extrude distance.
 - **Direction** — `Positive` / `Negative` / `Symmetric` along sketch normal (supports positive Join / Intersect / New Body).
-- **Live sketch preview** checkbox (default checked): sketch text + dims update live; **solid** preview runs after triad `mouseDragEnd` + debounce → auto-apply driving dims → `doExecutePreview`.
+- **Live solid preview** checkbox (default checked): controls **extrude/cut solid preview** after triad `mouseDragEnd` + debounce → auto-apply driving dims → `doExecutePreview`. Sketch text / dims / triad pose still update live regardless.
 - **Snap** dropdowns: linear + angular increments; label hint `Alt = free`.
 - **Frame dims** row (active selection): `dX`, `dY`, `Angle` text inputs — same driving dimensions as the triad. **Hidden** until the matching dim exists (dX/dY after Ref dims applied; Angle after Orient set). Whole Frame row hidden when none apply.
 - Table **Angle** column is the same parameter as the frame Angle field (keep in sync); **hidden** until Orient is set.
-- When live sketch preview unchecked: still allow triad pose; skip settle `doExecutePreview` if desired; OK commits.
+- When solid preview unchecked: triad / sketch still update; skip settle `doExecutePreview`; OK commits solids.
 
 ## Selection rows
 
