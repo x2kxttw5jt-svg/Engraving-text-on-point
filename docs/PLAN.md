@@ -9,20 +9,24 @@ A Fusion 360 Python add-in that lets the user pick sketch points, place centered
 ## User flow
 
 ```
-Toolbar button → Command starts + Palette opens
+Toolbar button → Command starts + Palette opens (+ manipulator command inputs armed)
   ↓
-[Point] selection (multi-select sketch points) → rows appear; live preview places text
+Select existing sketch points  —or—  [Add Point] at a click location
   ↓
-Edit Text / Height / Font / Angle / Flip / Justify / Align (or Batch) → preview updates (debounced)
+Add Point: use selected sketch if any; else create sketch (on picked plane/face or XY) + point
+  ↓
+Rows appear; live preview places text; active row shows Fusion transform manipulators
+  ↓
+Manipulator: set angle (always); move point if unconstrained
+  ↓
+Edit Text / Ht / Font / Flip / Justify / Align / Angle field (or Batch) → preview updates
   ↓
 Choose Extrude: Cut | New Body → preview extrude updates
   ↓
-If Cut: enable Target Body picker → cut preview targets that body
+If Cut: enable Target Body picker
   ↓
-Set Distance / Direction → preview extent updates
-  ↓
-OK → commit preview (or rebuild once in execute) + timeline group
-Cancel / close → delete all preview entities; no leftovers
+OK → commit + timeline group
+Cancel / close → teardown preview; leave user-created Add Point geometry? (see decisions)
 ```
 
 ---
@@ -37,27 +41,58 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 ┌──────────────────────────────────────────────────────────────────────┐
 │  Engraving Text on Point                                       [?] │
 ├──────────────────────────────────────────────────────────────────────┤
-│  ⊙ Point(s)     [ Select ]     3 selected                            │
+│  ⊙ Point(s)  [ Select ]  [ + Add Point ]   3 selected                │
+│  ▭ Sketch    [ Select ]  (optional — used by Add Point)              │
 │  ⬚ Target Body  [ Select ]     (Cut only)                            │
+│  Active row manipulators: Angle ✓  Move ✓/✗ (see status)             │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Operation   (•) Cut  ( ) New Body                                   │
 │  Distance    [ 1.0 mm ▼ ]                                            │
 │  Direction   (•) Positive  ( ) Negative                              │
 │  ☑ Live preview                                                      │
 ├──────────────────────────────────────────────────────────────────────┤
-│  ☐ Batch sequence                                                    │
-│    Prefix [PN-]  Start [1]  Digits [3]  Suffix [-A]  Step [1]        │
+│  ☐ Batch sequence …                                                  │
 ├──────────────────────────────────────────────────────────────────────┤
 │  # │ Text │ Ht │ Angle │ Flip │ Justify │ Align │ Font              │
-│ ───┼──────┼────┼───────┼──────┼─────────┼───────┼───────────────────│
-│  1 │ …    │ 3  │ 0 °   │ ↔ ↕  │ [L][C][R]│ [T][M][B]│ Arial ▼       │
-│  2 │ …    │ 3  │ 45 °  │ ↔ ↕  │ [L][C][R]│ [T][M][B]│ Arial ▼       │
+│  … table …                                                           │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Theme  [ Light ▼ ]                     [ Cancel ]  [ OK ]           │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
 Icon groups use **stock Fusion glyphs** from the Sketch Text dialog family (Flip H/V, Align Left/Center/Right, Align Top/Middle/Bottom) — not custom art.
+
+### Add Point
+
+| Step | Behavior |
+|------|----------|
+| Click **+ Add Point** | Enter point-placement mode (click in viewport) |
+| Sketch already selected | Add `SketchPoint` at the clicked location in that sketch (`modelToSketchSpace` → `sketchPoints.add`) |
+| No sketch selected | Prompt/accept a planar face or construction plane click; **create a new sketch** on it (default: root `xYConstructionPlane` if only empty space / no plane pick). Then add the point at the click |
+| After create | New point is selected, a table row is added, live preview + manipulators focus that row |
+
+Dummy UI: **+ Add Point** appends a fake row / fake sketch label only.
+
+### Built-in Fusion transform manipulators
+
+Use Fusion’s **native command-input manipulators** (not a custom triad):
+
+| Handle | Command input | Role |
+|--------|---------------|------|
+| **Rotation** | `AngleValueCommandInput` + `setManipulator(origin, xDir, yDir)` | Sets the active row’s **text angle**; syncs the Angle column |
+| **Translation** | `DistanceValueCommandInput` manipulators in sketch X/Y (or equivalent stock move handles) | Moves the **sketch point** when allowed |
+
+**Rules**
+
+1. Manipulators appear at the **active row’s** sketch point (row click / last selected). Origin = point in root/component space; plane = sketch X/Y.
+2. **Angle manipulator** — always enabled when a row is active. Dragging updates `angle` → rebuilds preview text; Angle column stays in sync (two-way with the numeric field).
+3. **Move manipulator** — enabled only if the sketch point is **unconstrained** (can be moved without violating constraints / fixed-projected geometry).
+   - Detect via point constraint state / attempted `SketchPoint.move` / `Sketch.move` probe; if blocked → disable move handles and status:  
+     `Move locked — point is constrained (…reason…)`.
+   - When unconstrained: dragging moves the point; text follows because it is center-constrained to the point.
+4. Prefer stock Fusion manipulator visuals from these command inputs — same look as native Move/Rotate tools.
+5. Palette HTML does not draw the triad; the active **Command** owns the manipulators. Selecting a table row tells Python which point gets `setManipulator`.
+6. If move fails mid-drag → hard status with reason; do not leave text unconstrained.
 
 ### Table columns
 
@@ -116,6 +151,7 @@ Persist in `settings.json`. Default `"theme": "light"`.
 
 - As soon as ≥1 point is selected and row fields are valid, the viewport shows the engraving result for current options.
 - Editing Text / Height / Font / Angle / Flip / Justify / Align / Distance / Direction / Operation / Target body updates the preview.
+- Manipulator angle/move and **Add Point** also refresh preview (move is immediate).
 - **Cancel**, palette close, command destroy, or un-selecting a point **deletes** that row’s preview entities. Nothing left in the timeline or sketches from cancelled sessions.
 - OK commits a clean final result (see Commit strategy).
 
@@ -142,8 +178,10 @@ Palette change / selection change
 | Event | Preview action |
 |-------|----------------|
 | Command created / palette shown | Warm font list, unit prefs, empty preview |
-| Point added / removed | Rebuild preview for affected rows (full set OK for modest N) |
+| Point added / removed / Add Point | Rebuild preview for affected rows (full set OK for modest N) |
 | Text / height / font / angle edit | Debounced rebuild |
+| Angle manipulator drag | Rebuild on input changed (Fusion cadence) |
+| Move manipulator (unconstrained point) | Move point; text follows constraints; light preview refresh |
 | Flip H / V toggle | Immediate rebuild (cheap boolean) |
 | Justify / Align change | Immediate rebuild |
 | Distance / direction / operation / target | Rebuild extrude portion (full rebuild OK v1) |
@@ -185,10 +223,15 @@ Ship under `resources/icons/flipH|flipV|justifyLeft|justifyCenter|justifyRight|a
 
 ## Geometry & API design
 
-### 1. Point selection
+### 1. Point selection + Add Point
 
-- Multi-select `SketchPoint`; each → row + tokens `{ sketchEntityToken, pointEntityToken, component }`.
+- Multi-select `SketchPoint`; each → row + tokens `{ sketchEntityToken, pointEntityToken, component, isUnconstrained }`.
 - Allow multi-sketch; process per parent sketch under one timeline group on commit.
+- **Add Point** flow:
+  1. Optional sketch selection input (`Sketches` filter).
+  2. Click placement: if sketch selected → `pt = sketch.modelToSketchSpace(clickModelPt)` → `sketch.sketchPoints.add(pt)`.
+  3. Else → resolve planar entity from click (face / construction plane); `sketches.add(plane)`; then add point. Fallback plane: `rootComp.xYConstructionPlane`.
+  4. Push new point into selection/rows; focus manipulators on it.
 
 ### 2. Centered, angled sketch text
 
@@ -229,12 +272,19 @@ sk_text = sketch.sketchTexts.add(tin)
 - Defaults: both `false`. Center constraints still required after flip; flip must not break associativity — if constraints fail after flip rebuild, hard-fail with reason.
 - Live preview updates immediately on toggle.
 
-**Angle column**
+**Angle column + angle manipulator**
 
 - Store degrees in the palette; convert to radians for API.
 - Accept expressions when possible (`"45 deg"`, `"0.785 rad"`) via `unitsManager`.
 - Default `0`. Range unrestricted in v1 (normalize display to −180…180 optional).
-- Changing angle updates `setAsMultiLine` angle on rebuild; constraints keep center on the point (rotate about center).
+- Changing angle (field **or** `AngleValueCommandInput` manipulator) updates text rotation on rebuild; constraints keep center on the point (rotate about center).
+- Field ↔ manipulator stay synchronized.
+
+**Move manipulator (unconstrained points only)**
+
+- When `isUnconstrained`: show stock distance/move manipulators; apply `SketchPoint.move` / `sketch.move` in sketch space.
+- When constrained: hide/disable move manipulators; angle still works; status explains why move is locked.
+- Never break the text↔point center constraint to “force” a move.
 
 **Center constraint (required — hard fail)**
 
@@ -332,9 +382,11 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 ### Command pattern
 
 1. Toolbar → start command + show palette + arm selection.
-2. Selection / palette edits → `executePreview` rebuild.
-3. OK → `execute` commit + timeline group + hide palette.
-4. Cancel / destroy → teardown; zero leftover entities.
+2. Command hosts **hidden/auxiliary** `AngleValueCommandInput` + move `DistanceValueCommandInput`(s) so Fusion draws stock manipulators in the viewport.
+3. Active table row → `setManipulator` at that point; enable move only if unconstrained.
+4. Selection / palette / manipulator changes → `executePreview` rebuild (or point move + light refresh).
+5. OK → `execute` commit + timeline group + hide palette.
+6. Cancel / destroy → teardown preview entities; zero leftover **preview** geometry.
 
 ---
 
@@ -370,23 +422,27 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Area | Dummy behavior |
 |------|----------------|
 | Open palette | Toolbar command shows docked palette only |
-| Point(s) / Target Body | Buttons add/remove **fake rows** / fake body label (no Fusion selection API yet) |
+| Point(s) / Sketch / Target Body | Buttons add/remove **fake rows** / fake sketch/body labels |
+| **+ Add Point** | Appends a fake row; status `Would add point to sketch…` |
+| Manipulator status | Mock line: `Angle ✓  Move ✓` / toggle a demo “constrained” row that shows Move locked |
 | Table | Working Text / Ht / Angle / Flip / Justify / Align / Font controls |
 | Font dropdown | Seeded list; text input `font-family` follows selection |
 | Batch | Prefix/suffix/start/digits/step rewrite mock row texts |
 | Operation / Distance / Live preview / Theme | Fully interactive; Cut enables Target Body row visually |
 | Icons | Stock Fusion PNGs in place (or labeled placeholders until extracted) |
-| OK / Cancel | Status messages only (`Would create N texts…` / clear mock state) — **no model changes** |
-| Bridge | Optional JS↔Python echo for theme/status; geometry actions no-op |
+| OK / Cancel | Status only — **no model changes** |
+| Bridge | Optional JS↔Python echo; geometry/manipulators no-op |
 
-**Exit criteria for Phase 1:** UI matches `UI_SPEC.md` in light/dark/auto, table + batch feel stock, Ryan can click through the full flow with dummy data and sign off before Phase 2.
+**Exit criteria for Phase 1:** UI matches `UI_SPEC.md` in light/dark/auto, table + batch + Add Point chrome feel stock, Ryan signs off before Phase 2.
 
-### Phase 2 — Selection + real table binding
-- Replace mock point/body buttons with Fusion `SketchPoint` / `BRepBody` selection.
-- Rows driven by real selection tokens; keep the same palette chrome.
+### Phase 2 — Selection + Add Point + manipulators (no extrude yet)
+- Real `SketchPoint` / sketch / body selection.
+- **Add Point** creates sketch if needed + point at click.
+- Wire stock **Angle** + **Move** manipulators; move only if unconstrained; sync Angle column.
+- Optional: show preview text without extrude for placement feedback.
 
 ### Phase 3 — Geometry + live preview (New Body)
-- Builder: text + angle + flip + justify + align + center constraints + extrude New Body.
+- Full builder: text + angle + flip + justify + align + center constraints + extrude New Body.
 - `PreviewSession` + `executePreview`; cancel teardown; hard-fail constraints with reason.
 
 ### Phase 4 — Cut + target body
@@ -401,7 +457,11 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 
 - [ ] Light theme default on first launch
 - [ ] Dark and Auto follow / override correctly
-- [ ] Angle column: `0`, `45`, `-90` rotate about point center in preview and commit
+- [ ] Angle column and **angle manipulator** stay in sync; rotate about point center
+- [ ] Move manipulator enabled only when point unconstrained; moves point; text follows
+- [ ] Move manipulator disabled + reason when point constrained
+- [ ] Add Point into selected sketch at click location
+- [ ] Add Point with no sketch selected creates sketch (plane/XY) then point
 - [ ] Flip H / Flip V toggles use stock Fusion icons; preview and commit match
 - [ ] Justify L/C/R and Align T/M/B use stock Fusion icons; preview and commit match
 - [ ] Non-center justify/align still keeps rectangle center constrained to the point
@@ -424,10 +484,12 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Topic | Decision |
 |-------|----------|
 | Join operation | Defer; Cut + New Body only |
-| **Text angle** | **Per-row Angle column (degrees); default 0** |
+| **Text angle** | **Angle column + stock Fusion angle manipulator; default 0** |
+| **Position** | **Stock Fusion move manipulators; only if sketch point is unconstrained** |
+| **Add Point** | **Button: point at click in selected sketch; else create sketch then point** |
 | **Text flip** | **Per-row H + V toggles; stock Fusion flip icons; default off** |
 | **Justify / Align** | **Per-row H (L/C/R) + V (T/M/B); stock Fusion align icons; default Center / Middle** |
-| Sketch creation | Always use **existing** sketch of selected point |
+| Sketch creation | Use existing sketch of selected/Add Point target; create only when Add Point has no sketch |
 | **Preview** | **Live preview on by default via executePreview; teardown on cancel** |
 | Default height | `3 mm` |
 | Default font | `Arial` |
@@ -446,5 +508,9 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 3. Extrude Cut or New Body with optional target body for Cut.
 4. Batch sequential text with prefix/suffix.
 5. Font-aware text field + font dropdown + **angle**, **flip**, **justify**, and **align** (stock Fusion icons).
-6. **Live preview** with clean cancel/destroy teardown.
-7. Light / Dark / Auto themes; **Light default**.
+6. **Stock Fusion transform manipulators** for angle + unconstrained point move.
+7. **Add Point** into selected sketch or newly created sketch.
+8. **Live preview** with clean cancel/destroy teardown.
+9. Light / Dark / Auto themes; **Light default**.
+
+**Cancel vs Add Point:** Preview text/extrudes are always removed on cancel. Points/sketches created via **Add Point** during the session **remain** (user-authored geometry), unless we add an explicit “remove points I added” option later.

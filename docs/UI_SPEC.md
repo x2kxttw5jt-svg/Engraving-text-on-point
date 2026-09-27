@@ -4,7 +4,13 @@
 
 Match Fusion’s native docked palettes (Parameters-adjacent density, Extrude-dialog field rhythm). One composition: toolbar of options above a data table — not a dashboard of cards.
 
-**Dummy UI first:** implement this spec as a fully clickable mock (fake rows, no Fusion geometry) and sign off visuals/interactions before wiring selection, constraints, or extrude.
+**Dummy UI first:** implement this spec as a fully clickable mock (fake rows, no Fusion geometry) and sign off visuals/interactions before wiring selection, manipulators, constraints, or extrude.
+
+## Selection / Add Point row
+
+- `Point(s)` Select + **`+ Add Point`** button (stock-style + or point icon).
+- Optional `Sketch` Select (muted helper text: used by Add Point).
+- Status strip under selection: `Angle manipulator ✓` and `Move ✓` or `Move locked — point is constrained`.
 
 ## Tokens
 
