@@ -26,6 +26,12 @@
         <button type="button" class="btn" id="btn-sketch" disabled>Select</button>
         <span class="muted" id="sketch-label">Optional for Add Point</span>
       </div>
+      <div class="field-row">
+        <span class="icon-slot" title="Orientation vector"></span>
+        <label>Orient</label>
+        <button type="button" class="btn" id="btn-orient">Select</button>
+        <span class="muted" id="orient-label">Required for angle</span>
+      </div>
       <div class="field-row" id="target-row">
         <span class="icon-slot" title="Target body"></span>
         <label>Target Body</label>
@@ -33,7 +39,7 @@
         <span class="muted" id="body-label">Cut only</span>
       </div>
       <p class="muted" id="manip-status" role="status">
-        Manipulators: Angle ✓ · Move (active row)
+        Manipulators: Angle dim (needs Orient) · Move (active row)
       </p>
     </section>
 
@@ -73,6 +79,7 @@
             <th class="col-text">Text</th>
             <th class="col-ht">Ht</th>
             <th class="col-angle">Angle</th>
+            <th class="col-orient">Orient</th>
             <th class="col-flip">Flip</th>
             <th class="col-justify">Justify</th>
             <th class="col-align">Align</th>
@@ -81,7 +88,7 @@
         </thead>
         <tbody id="text-tbody">
           <tr class="empty">
-            <td colspan="8">Select sketch points to add rows</td>
+            <td colspan="9">Select sketch points to add rows</td>
           </tr>
           <!--
             Per-row icon cells (Phase 1) — stock Fusion 16x16 PNGs:

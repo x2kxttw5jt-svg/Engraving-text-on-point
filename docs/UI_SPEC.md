@@ -10,8 +10,9 @@ Match Fusion’s native docked palettes (Parameters-adjacent density, Extrude-di
 
 - `Point(s)` Select + **`+ Add Point`** button (stock-style + or point icon).
 - Optional `Sketch` Select (muted helper text: used by Add Point).
-- Status strip under selection: `Angle manipulator ✓` and `Move ✓` or `Move locked — point is constrained`.
-- During Add Point mode, status: `Click to place point — ghost shows projected location` (viewport uses custom graphics + preselect; not drawn in the HTML dummy).
+- **`Orient` Select** — required direction vector for text angle (sketch line / axis / edge).
+- Status strip: `Angle dim ✓` (or `Select orientation vector`) and `Move ✓` / `Move locked — point is constrained`.
+- During Add Point mode, status: `Click to place point — ghost shows projected location`.
 
 ## Tokens
 
@@ -63,9 +64,10 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 ## Table
 
 - Sticky header row; table may scroll horizontally in a narrow dock.
-- Columns: `#` (28px) | Text (flex min 72px) | Ht (52px) | **Angle (48px)** | **Flip (44px)** | **Justify (66px)** | **Align (66px)** | Font (92px).
+- Columns: `#` | Text | Ht | **Angle** (dim value) | **Orient** (vector label) | Flip | Justify | Align | Font.
 - Text `<input>`: `style.fontFamily = selectedFont`.
-- Angle `<input>`: degrees; placeholder `0`; suffix label `°` in cell or unit in value (`0 deg`).
+- Angle `<input>`: driving angular-dimension value; placeholder `0`; unit `deg`. Disabled until Orient is set.
+- Orient: short label of selected vector + per-row pick control (or “global”).
 - Flip: two 16×16 icon toggles (stock Fusion Flip H/V). `aria-pressed` + tooltips.
 - Justify: exclusive group of three icon buttons — Left / Center / Right (stock Fusion). `role="radiogroup"`; one `aria-checked` at a time. Default Center.
 - Align: exclusive group Top / Middle / Bottom (stock Fusion). Same radio pattern. Default Middle.

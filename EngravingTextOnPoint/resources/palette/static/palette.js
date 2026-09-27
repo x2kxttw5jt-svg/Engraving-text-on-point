@@ -10,11 +10,29 @@
   const statusEl = document.getElementById("status");
   const manipStatus = document.getElementById("manip-status");
   const btnAddPoint = document.getElementById("btn-add-point");
+  const btnOrient = document.getElementById("btn-orient");
+  const orientLabel = document.getElementById("orient-label");
   const pointsCount = document.getElementById("points-count");
   const opRadios = document.querySelectorAll('input[name="op"]');
   const targetRow = document.getElementById("target-row");
 
   let mockRowCount = 0;
+  let mockOrient = false;
+
+  if (btnOrient) {
+    btnOrient.addEventListener("click", function () {
+      mockOrient = true;
+      if (orientLabel) orientLabel.textContent = "Mock vector";
+      if (manipStatus) {
+        manipStatus.textContent =
+          "Manipulators: Angle dim ✓ · Move ✓ (unconstrained mock point)";
+      }
+      if (statusEl) {
+        statusEl.textContent =
+          "Angle edits driving angular dimension vs Orient vector — dummy UI";
+      }
+    });
+  }
 
   // Dummy UI: Add Point appends a fake selection count only.
   if (btnAddPoint) {

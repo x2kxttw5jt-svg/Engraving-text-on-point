@@ -176,6 +176,7 @@ select:focus {
 .col-idx { width: 28px; }
 .col-ht { width: 52px; }
 .col-angle { width: 48px; }
+.col-orient { width: 64px; }
 .col-flip,
 .col-justify,
 .col-align { white-space: nowrap; }

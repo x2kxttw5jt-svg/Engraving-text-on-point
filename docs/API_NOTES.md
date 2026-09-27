@@ -59,17 +59,30 @@ Do not swallow Fusion exceptions into a generic toast; chain `detail` from the o
 
 These control text placement **inside** the text rectangle. The rectangle center stays constrained to the sketch point.
 
-### Angle
+### Angle = driving angular dimension + orientation vector
 
-Confirm on target Fusion build: some docs list the 5th `setAsMultiLine` argument as **characterSpacing** (percent), not angle. Prefer:
+Do **not** use retired `SketchText.angle` / `SketchTextInput.angle`. Orientation is associative:
 
 ```python
-tin.setAsMultiLine(p0, p1, h_align, v_align, 0.0)  # spacing %
-# then set rotation via the current multiline angle API / property for this Fusion version
-angle_rad = design.unitsManager.evaluateExpression(angle_user_str, "rad")
+# 1) Orientation vector in the text sketch (project if needed)
+proj = sketch.project2(selected_edge_or_line, True)  # or use existing SketchLine
+orient_line = ...  # SketchLine along vector
+
+# 2) Text frame edge from MultiLineTextDefinition.rectangleLines
+text_edge = pick_baseline_edge(sk_text.definition.rectangleLines)
+
+# 3) Driving angular dimension (controls rotation)
+dim = sketch.sketchDimensions.addAngularDimension(
+    text_edge, orient_line, dim_text_point, True)
+dim.parameter.expression = "0 deg"  # or row angle
+
+# 4) Angle manipulator / Angle column → update dim.parameter only
+#    Text rotates via constraints; do not recreate SketchText for angle-only edits
 ```
 
-Probe once during Phase 2; document the winning path in code comments. Rotate about the text center (center constraint to the sketch point). Rebuild on angle change during preview.
+- User **must** select an orientation vector before angle is meaningful.
+- `setAsMultiLine` 5th arg is **characterSpacing** (%), not angle.
+- Hard-fail with reason if vector missing, `project2` fails, or `addAngularDimension` fails.
 
 ### Flip
 
@@ -148,18 +161,19 @@ Host on the active Command (palette alone cannot draw them):
 
 ```python
 angle_in = inputs.addAngleValueCommandInput(id_angle, "Angle", adsk.core.ValueInput.createByString("0 deg"))
-angle_in.setManipulator(origin, x_dir, y_dir)  # sketch plane at active point
+# x_dir = orientation vector in sketch plane (0°); y_dir = rotated 90° in plane
+angle_in.setManipulator(origin, x_dir, y_dir)
+# on change: active_row.angular_dimension.parameter.value = angle_in.value
 
-# Move: DistanceValueCommandInput per sketch axis (or documented transform inputs)
 dist_x = inputs.addDistanceValueCommandInput(...)
 dist_x.setManipulator(origin, sketch_x_dir)
-# enable move inputs only when point is unconstrained
+# enable move only when point unconstrained; enable angle only when Orient is set
 ```
 
-- Sync `angle_in.value` ↔ palette Angle column / row model.
-- Unconstrained move: `SketchPoint.move(vec)` or `sketch.move(collection, matrix)` in sketch space; respects constraints (API fails if blocked — surface reason).
-- Constrained point: `isEnabled = False` on move inputs; keep angle enabled.
-- Reposition manipulators whenever the active row or point location changes.
+- Sync `angle_in` ↔ Angle column ↔ **angular dimension parameter**.
+- Angle-only edits should not delete/recreate `SketchText`.
+- Unconstrained move: `SketchPoint.move` / `sketch.move`; surface reason if blocked.
+- Retarget manipulators when active row or Orient vector changes.
 
 ## Palette
 
