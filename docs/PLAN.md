@@ -2,7 +2,7 @@
 
 ## Goal
 
-A Fusion 360 Python add-in that lets the user pick sketch points, place centered sketch text on each point, then extrude that text as **Cut** or **New Body**, with an optional target body. The UI is a **stock-looking table palette** (light default, dark, auto) that supports per-row text/height/font/**angle** and **batch sequential text** with prefix/suffix. Changes show as a **live preview** in the design; Cancel/destroy removes all preview geometry.
+A Fusion 360 Python add-in that lets the user pick sketch points, place centered sketch text on each point, then extrude that text as **Cut** or **New Body**, with an optional target body. The UI is a **stock-looking table palette** (light default, dark, auto) that supports per-row text/height/font/**angle**/**flip** and **batch sequential text** with prefix/suffix. Changes show as a **live preview** in the design; Cancel/destroy removes all preview geometry.
 
 ---
 
@@ -13,7 +13,7 @@ Toolbar button → Command starts + Palette opens
   ↓
 [Point] selection (multi-select sketch points) → rows appear; live preview places text
   ↓
-Edit Text / Height / Font / Angle (or Batch) → preview updates (debounced)
+Edit Text / Height / Font / Angle / Flip (or Batch) → preview updates (debounced)
   ↓
 Choose Extrude: Cut | New Body → preview extrude updates
   ↓
@@ -31,34 +31,36 @@ Cancel / close → delete all preview entities; no leftovers
 
 ### Layout
 
-Dockable HTML palette (`adsk.core.Palettes`), width ~380–420px (angle column needs room), height flexible.
+Dockable HTML palette (`adsk.core.Palettes`), width ~400–440px (angle + flip columns), height flexible.
 
 ```
-┌──────────────────────────────────────────────────────┐
-│  Engraving Text on Point                       [?] │
-├──────────────────────────────────────────────────────┤
-│  ⊙ Point(s)     [ Select ]     3 selected            │
-│  ⬚ Target Body  [ Select ]     (Cut only)            │
-├──────────────────────────────────────────────────────┤
-│  Operation   (•) Cut  ( ) New Body                   │
-│  Distance    [ 1.0 mm ▼ ]                            │
-│  Direction   (•) Positive  ( ) Negative              │
-│  ☑ Live preview                                      │
-├──────────────────────────────────────────────────────┤
-│  ☐ Batch sequence                                    │
-│    Prefix [PN-]  Start [1]  Digits [3]               │
-│    Suffix [-A]   Step  [1]                           │
-├──────────────────────────────────────────────────────┤
-│  # │ Text     │ Ht   │ Angle │ Font                  │
-│ ───┼──────────┼──────┼───────┼───────────────────────│
-│  1 │ PN-001-A │ 3 mm │ 0 °   │ Arial ▼               │
-│  2 │ PN-002-A │ 3 mm │ 45 °  │ Arial ▼               │
-│  3 │ PN-003-A │ 3 mm │ 0 °   │ Courier New ▼         │
-├──────────────────────────────────────────────────────┤
-│  Theme  [ Light ▼ ]                                  │
-│                         [ Cancel ]  [ OK ]           │
-└──────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│  Engraving Text on Point                             [?] │
+├────────────────────────────────────────────────────────────┤
+│  ⊙ Point(s)     [ Select ]     3 selected                  │
+│  ⬚ Target Body  [ Select ]     (Cut only)                  │
+├────────────────────────────────────────────────────────────┤
+│  Operation   (•) Cut  ( ) New Body                         │
+│  Distance    [ 1.0 mm ▼ ]                                  │
+│  Direction   (•) Positive  ( ) Negative                    │
+│  ☑ Live preview                                            │
+├────────────────────────────────────────────────────────────┤
+│  ☐ Batch sequence                                          │
+│    Prefix [PN-]  Start [1]  Digits [3]                     │
+│    Suffix [-A]   Step  [1]                                 │
+├────────────────────────────────────────────────────────────┤
+│  # │ Text   │ Ht   │ Angle │ Flip    │ Font               │
+│ ───┼────────┼──────┼───────┼─────────┼────────────────────│
+│  1 │ PN-001 │ 3 mm │ 0 °   │ [↔][↕]  │ Arial ▼            │
+│  2 │ PN-002 │ 3 mm │ 45 °  │ [↔][↕]  │ Arial ▼            │
+│  3 │ PN-003 │ 3 mm │ 0 °   │ [↔][↕]  │ Courier New ▼      │
+├────────────────────────────────────────────────────────────┤
+│  Theme  [ Light ▼ ]                                        │
+│                               [ Cancel ]  [ OK ]           │
+└────────────────────────────────────────────────────────────┘
 ```
+
+`[↔]` / `[↕]` = toggle icon buttons using **stock Fusion Flip Horizontal / Flip Vertical** glyphs (same family as Sketch Text dialog), not custom art.
 
 ### Table columns
 
@@ -68,9 +70,10 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~380–420px (angle column n
 | Text | `<input type="text">` | Batch-driven or override; `font-family` = selected font |
 | Height | Length input | Default `3 mm` |
 | **Angle** | Angle input (degrees) | Default `0`; applied as `setAsMultiLine(..., angle)`; per-row |
+| **Flip** | Two icon toggles | Horizontal + Vertical; maps to `isHorizontalFlip` / `isVerticalFlip`; default both off |
 | Font | `<select>` | Options styled in that font; drives Text input face |
 
-Optional header control: “Apply angle to all” when user wants one angle for every row (does not remove per-row edits afterward).
+Optional header controls: “Apply angle to all” / “Flip H all” / “Flip V all” (apply current pattern to every row; does not lock out later per-row edits).
 
 ### Batch sequence behavior
 
@@ -79,7 +82,7 @@ Optional header control: “Apply angle to all” when user wants one angle for 
   - Example: `PN-` + `001` + `-A` → `PN-001-A`, `PN-002-A`, …
 - Changing prefix/suffix/start/digits/step re-writes all non-overridden rows **and refreshes live preview**.
 - Per-row “override” flag: user edits Text → that row stops auto-updating until batch is toggled off/on or “Reset batch texts” is clicked.
-- Batch does **not** drive Angle (angles stay per-row unless “Apply angle to all”).
+- Batch does **not** drive Angle or Flip (stay per-row unless “apply to all”).
 - Iteration order = order points were selected (stable).
 
 ### Stock Fusion visual language
@@ -107,7 +110,7 @@ Persist in `settings.json`. Default `"theme": "light"`.
 ### Requirements
 
 - As soon as ≥1 point is selected and row fields are valid, the viewport shows the engraving result for current options.
-- Editing Text / Height / Font / Angle / Distance / Direction / Operation / Target body updates the preview.
+- Editing Text / Height / Font / Angle / Flip / Distance / Direction / Operation / Target body updates the preview.
 - **Cancel**, palette close, command destroy, or un-selecting a point **deletes** that row’s preview entities. Nothing left in the timeline or sketches from cancelled sessions.
 - OK commits a clean final result (see Commit strategy).
 
@@ -136,6 +139,7 @@ Palette change / selection change
 | Command created / palette shown | Warm font list, unit prefs, empty preview |
 | Point added / removed | Rebuild preview for affected rows (full set OK for modest N) |
 | Text / height / font / angle edit | Debounced rebuild |
+| Flip H / V toggle | Immediate rebuild (cheap boolean) |
 | Distance / direction / operation / target | Rebuild extrude portion (full rebuild OK v1) |
 | Theme-only change | **No** geometry rebuild |
 | Mouse move during point pick (hover) | **No** rebuild — only on selection accept |
@@ -164,6 +168,10 @@ Prefer built-in Fusion glyphs; else Photoshop 16/32/64 PNGs (see `resources/icon
 | Point select | SketchPoint | Crosshair |
 | Body select | BRep body | Body silhouette |
 | Cut / New Body | Extrude Cut / New Body | Cutter / plus+body |
+| **Flip Horizontal** | **Stock Fusion Flip Horizontal** (Sketch Text / modify flip glyph) | Only if stock extract unavailable — Photoshop mirror of stock, do not invent a new metaphor |
+| **Flip Vertical** | **Stock Fusion Flip Vertical** | Same rule |
+
+Ship extracted stock PNGs under `resources/icons/flipH/` and `resources/icons/flipV/` (16×16 for table buttons; include light/dark variants if Fusion provides them). Document the Fusion install source path in `resources/icons/README.md`.
 
 ---
 
@@ -188,8 +196,19 @@ tin.setAsMultiLine(
     adsk.core.VerticalAlignments.MiddleVerticalAlignment,
     angle_rad)
 tin.fontName = font_name
+tin.isHorizontalFlip = flip_h   # per-row toggle
+tin.isVerticalFlip = flip_v
 sk_text = sketch.sketchTexts.add(tin)
 ```
+
+**Flip column**
+
+- Two per-row toggle buttons with **stock Fusion flip icons** (horizontal / vertical).
+- Active (pressed) state when that flip is on — match Fusion toolbar toggle chrome (accent border or depressed fill).
+- Tooltips: `Flip Horizontal`, `Flip Vertical`.
+- API: `SketchTextInput.isHorizontalFlip` / `isVerticalFlip` (also on `SketchText` after create).
+- Defaults: both `false`. Center constraints still required after flip; flip must not break associativity — if constraints fail after flip rebuild, hard-fail with reason.
+- Live preview updates immediately on toggle.
 
 **Angle column**
 
@@ -282,11 +301,11 @@ docs/
 
 | Direction | Action | Payload |
 |-----------|--------|---------|
-| JS → Python | `rowUpdated` | `{ id, text, height, angle, font }` |
+| JS → Python | `rowUpdated` | `{ id, text, height, angle, font, flipH, flipV }` |
 | JS → Python | `batchChanged` | `{ enabled, prefix, suffix, start, digits, step }` |
 | JS → Python | `optionsChanged` | `{ operation, distance, direction, theme, livePreview }` |
 | JS → Python | `execute` / `cancel` | — |
-| Python → JS | `setRows` | `[{ id, text, height, angle, font, pointLabel }]` |
+| Python → JS | `setRows` | `[{ id, text, height, angle, font, flipH, flipV, pointLabel }]` |
 | Python → JS | `setFonts` / `setTheme` / `setStatus` / `setTargetEnabled` | … |
 
 Any geometry-affecting message schedules a preview refresh (if live preview on).
@@ -305,7 +324,7 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 - No points → OK disabled; preview empty.
 - Empty text / height ≤ 0 → block OK; clear that row’s preview.
 - Invalid angle expression → status error; keep last good preview.
-- **Center constraint failure → hard fail** (no unconstrained placement). Preview shows error + no text for that tick; OK aborts and rolls back the full transaction.
+- **Center constraint failure → hard fail** (no unconstrained placement). Preview/OK show **why** (stage + API detail + row); OK aborts and rolls back the full transaction.
 - Cut with no intersection → text-only preview + warning; OK still attempts and rolls back on hard failure.
 - Mixed components → features in each point’s component.
 - Live preview off → OK builds everything in `execute` only.
@@ -316,13 +335,15 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 ## Implementation phases
 
 ### Phase 0 — Scaffold (current)
-- Manifest, palette shell (incl. Angle column), light-default CSS, settings.
+- Manifest, palette shell (incl. Angle + Flip columns), light-default CSS, settings.
+- Flip icon slots wired for stock Fusion glyphs.
 
 ### Phase 1 — Selection + table
-- Multi point → rows; Text / Height / **Angle** / Font; batch; font preview on text input.
+- Multi point → rows; Text / Height / **Angle** / **Flip H·V** / Font; batch; font preview on text input.
+- Stock flip icons in toggle buttons.
 
 ### Phase 2 — Geometry + live preview (New Body)
-- Builder: text + angle + center constraints + extrude New Body.
+- Builder: text + angle + flip + center constraints + extrude New Body.
 - `PreviewSession` + `executePreview`; cancel teardown.
 - Live preview checkbox.
 
@@ -339,8 +360,10 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 - [ ] Light theme default on first launch
 - [ ] Dark and Auto follow / override correctly
 - [ ] Angle column: `0`, `45`, `-90` rotate about point center in preview and commit
+- [ ] Flip H / Flip V toggles use stock Fusion icons; preview and commit match
+- [ ] Flip + angle together; center constraint still holds (point drag moves text)
 - [ ] Moving the sketch point after OK moves the text (constraints hold)
-- [ ] Simulated / real constraint failure → hard fail, no leftover unconstrained text
+- [ ] Simulated / real constraint failure → hard fail, no leftover unconstrained text, status/message includes failure reason (stage + detail)
 - [ ] Live preview updates on text/height/font/angle/distance edits (debounced)
 - [ ] Cancel / close leaves no sketch text or extrudes
 - [ ] Live preview off → no geometry until OK
@@ -358,12 +381,14 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 |-------|----------|
 | Join operation | Defer; Cut + New Body only |
 | **Text angle** | **Per-row Angle column (degrees); default 0** |
+| **Text flip** | **Per-row H + V toggles; stock Fusion flip icons; default off** |
 | Sketch creation | Always use **existing** sketch of selected point |
 | **Preview** | **Live preview on by default via executePreview; teardown on cancel** |
 | Default height | `3 mm` |
 | Default font | `Arial` |
 | Default distance | `1 mm` |
 | Default angle | `0 deg` |
+| Default flip H/V | `false` / `false` |
 | Default theme | `light` |
 
 ---
@@ -371,9 +396,9 @@ Any geometry-affecting message schedules a preview refresh (if live preview on).
 ## Success criteria
 
 1. Stock-like table palette with Fusion icons where possible.
-2. Text centered and **associatively constrained** to each selected sketch point, at the row’s angle; constraint failure is a **hard fail** (no unconstrained fallback).
+2. Text centered and **associatively constrained** to each selected sketch point, at the row’s angle; constraint failure is a **hard fail** that **reports why** (no unconstrained fallback).
 3. Extrude Cut or New Body with optional target body for Cut.
 4. Batch sequential text with prefix/suffix.
-5. Font-aware text field + font dropdown + **angle column**.
+5. Font-aware text field + font dropdown + **angle column** + **flip toggles (stock Fusion icons)**.
 6. **Live preview** with clean cancel/destroy teardown.
 7. Light / Dark / Auto themes; **Light default**.
