@@ -71,7 +71,7 @@ These control text placement **inside** the text rectangle. The rectangle center
 
 Autodesk’s guidance for multiline text: control orientation by constraining / transforming `MultiLineTextDefinition.rectangleLines` (the four box edges). `MultiLineTextDefinition.rotate` is a one-shot box rotate, **not** a parametric angle — we do **not** use it for user angle edits.
 
-**Our approach (parametric):** associatively project the Orient vector → driving `addAngularDimension` between a text `rectangleLines` edge and that projected line. The palette “Angle” field is that **dimension parameter**, not a SketchText property.
+**Our approach (parametric):** associatively project **one global** Orient vector → driving `addAngularDimension` between each text `rectangleLines` edge and that projected line. The palette “Angle” field is that **dimension parameter**, not a SketchText property. Orient is chosen once in the header (no per-row Orient column).
 
 ```text
 ❌ sketchText.angle = …

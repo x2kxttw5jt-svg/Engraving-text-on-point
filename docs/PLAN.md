@@ -276,8 +276,7 @@ Do **not** leave frame dims driven into solid preview. Do not toggle unrelated s
 | `#` | Read-only index | Selection order |
 | Text | `<input type="text">` | Batch-driven or override; `font-family` = selected font |
 | Height | Length input | Default `3 mm` |
-| **Angle** | Dimension value (degrees) | Same driving angular dim as triad rotate + frame Angle field; default `0` |
-| ~~Orient~~ | — | **Removed** — use header **Orient** Select (global for all rows) |
+| **Angle** | Dimension value (degrees) | vs **global** Orient; same dim as triad rotate + frame Angle; default `0` |
 | **Format** | Stacked cell: Flip → Justify (3) → Align (3) | Fusion-style icons; active = **accent border**; defaults Center / Middle / flip off |
 | **Font** | **B** + **I** toggles + `<select>` | Style via `textStyle` (bold/italic); font name drives face; Text preview follows |
 
@@ -615,12 +614,12 @@ Engraving code may depend on `sketch_transform_frame`. The frame package must **
 | Direction | Action | Payload |
 |-----------|--------|---------|
 | JS → Python | `rowUpdated` | `{ id, text, height, angle, font, bold, italic, flipH, flipV, justify, align }` |
-| JS → Python | `orientChanged` | `{ id\|global, entityToken }` |
+| JS → Python | `orientChanged` | `{ entityToken }` — **global**; applies to every row |
 | JS → Python | `batchChanged` | `{ enabled, prefix, suffix, start, digits, step }` |
 | JS → Python | `optionsChanged` | `{ operation, depth, direction, theme, livePreview }` |
 | JS → Python | `execute` / `cancel` | — |
-| Python → JS | `setRows` | `[{ id, text, height, angle, orientLabel, font, bold, italic, flipH, flipV, justify, align, pointLabel }]` |
-| Python → JS | `setFonts` / `setTheme` / `setStatus` / `setTargetEnabled` | … |
+| Python → JS | `setRows` | `[{ id, text, height, angle, font, bold, italic, flipH, flipV, justify, align, pointLabel }]` |
+| Python → JS | `setOrient` / `setFonts` / `setTheme` / `setStatus` / `setTargetEnabled` | `setOrient` → header label; no per-row Orient column |
 
 Any geometry-affecting message schedules a preview refresh (if live preview on).
 
@@ -673,7 +672,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Point(s) / Sketch / Target Body | Buttons add/remove **fake rows** / fake sketch/body labels |
 | **+ Add Point** | Appends a fake row; status mentions preselect + CG projection preview |
 | **Ref Pt** / **Apply Ref Dims** | Fake select; Apply Ref Dims **hidden** until Ref set; apply reveals dX/dY |
-| Orient | Fake “Select” sets mock vector label on rows |
+| Orient | Fake “Select” sets **global** vector; Angle column appears for all rows |
 | Manipulator status | Click mocks debounce → auto-apply Ref dims to driving → preview; enables dX/dY/Angle |
 | Frame dims | dX/dY/Angle edit echoes GUI→driving; status mentions auto-apply window |
 | Ht / scale | Ht edit echoes “would set heightParameter”; status notes triad unified scale ↔ Ht |

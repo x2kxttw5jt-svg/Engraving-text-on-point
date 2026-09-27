@@ -428,7 +428,7 @@
     mockRef = true;
     mockRefDims = true;
 
-    if (orientLabel) orientLabel.textContent = "XY construction";
+    if (orientLabel) orientLabel.textContent = "XY construction (all rows)";
     if (refLabel) refLabel.textContent = "Origin (sample)";
     var dx = document.getElementById("dim-dx");
     var dy = document.getElementById("dim-dy");
