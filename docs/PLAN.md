@@ -55,7 +55,7 @@ Dockable HTML palette (`adsk.core.Palettes`), width ~460–520px (align/justify 
 │  ☐ Batch sequence …                                                  │
 ├──────────────────────────────────────────────────────────────────────┤
 │  # │ Text │ Ht │ Place │ Format │ Font                               │
-│  … Place cell stacks X/Y (Ref) + ∠ (Orient); Ht via triad scale …  │
+│  … Place cell: X|Y (Ref) + A angle (Orient); Ht via triad scale …  │
 │  … Format = Flip + Justify + Align …                               │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Theme  [ Light ▼ ]                     [ Cancel ]  [ OK ]           │
