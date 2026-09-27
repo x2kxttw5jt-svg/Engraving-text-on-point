@@ -274,7 +274,7 @@ select:focus {
 .col-ht { width: 52px; }
 .col-angle { width: 48px; }
 .col-orient { width: 64px; }
-.col-format { width: 176px; white-space: nowrap; }
+.col-format { width: 78px; vertical-align: top; }
 .col-font { width: 92px; }
 
 .data-table tbody tr.is-active {
@@ -283,9 +283,16 @@ select:focus {
 }
 
 .format-cell {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  padding: 2px 0;
+}
+
+.format-cell .icon-group {
+  justify-content: center;
+  width: 100%;
 }
 
 .icon-btn {

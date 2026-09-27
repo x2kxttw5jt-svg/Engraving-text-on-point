@@ -66,7 +66,7 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 
 - Sticky header row; table may scroll horizontally in a narrow dock.
 - Columns: `#` | Text | Ht | **Angle** | **Orient** | **Format** | Font.
-- **Format** (one column): Flip H/V + Justify L/C/R (**3 buttons**) + Align T/M/B (**3 buttons**) in the same cell.
+- **Format** (one column): Flip H/V + Justify L/C/R (**3 buttons**) + Align T/M/B (**3 buttons**) stacked vertically in the same cell.
 - **Ht** is two-way with triad **unified scale** (same `heightParameter`); typed Ht resets triad scale factor to 1.0.
 - Text `<input>`: `style.fontFamily = selectedFont`.
 - Angle `<input>`: angular dimension value; **hidden** until Orient is set.
