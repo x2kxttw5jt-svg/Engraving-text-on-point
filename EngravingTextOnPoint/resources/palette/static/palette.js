@@ -230,8 +230,7 @@
       : row.xyConstrained
         ? "Move locked — point is constrained"
         : "Move ✓";
-    manipStatus.textContent =
-      angleBit + " · " + moveBit + " · Scale→Ht ✓ · Depth arrow ✓";
+    manipStatus.textContent = angleBit + " · " + moveBit + " · Scale→Ht ✓";
   }
 
   // Fusion Sketch Text–style glyphs (dummy stand-ins; swap for stock PNGs later).
@@ -745,7 +744,6 @@
         "Sample points loaded for UI review — dummy UI (not Fusion geometry)";
     }
     syncSelectBtnState();
-    syncDepthArrowLook();
   }
 
   if (btnRef) {
@@ -957,7 +955,6 @@
         "Angle dim (needs Orientation) · Move · Scale→Ht";
     }
     syncSelectBtnState();
-    syncDepthArrowLook();
     syncPlacementVisibility();
     syncCommitVisibility();
     syncTargetVisibility();
@@ -1060,63 +1057,22 @@
 
   var depthInput = document.getElementById("depth");
   var directionInput = document.getElementById("direction");
-  var btnDepthArrow = document.getElementById("btn-depth-arrow");
-
-  function syncDepthArrowLook() {
-    if (!btnDepthArrow || !directionInput) return;
-    btnDepthArrow.classList.toggle("is-negative", directionInput.value === "negative");
-    btnDepthArrow.classList.toggle("is-symmetric", directionInput.value === "symmetric");
-  }
-
-  function parseLengthMm(text) {
-    var n = parseFloat(String(text || "").replace(",", "."));
-    return isNaN(n) ? 1 : n;
-  }
-
-  function formatMm(n) {
-    var t = Math.round(n * 1000) / 1000;
-    return String(t) + " mm";
-  }
-
-  function mockDepthArrow(source) {
-    var depth = depthInput ? depthInput.value : "1 mm";
-    var dir = directionInput ? directionInput.value : "positive";
-    syncDepthArrowLook();
-    if (statusEl) {
-      statusEl.textContent =
-        "Would drag stock blue depth arrow (" +
-        source +
-        ") — Depth " +
-        depth +
-        ", " +
-        dir +
-        " along sketch normal; sketch text stays on plane — dummy UI";
-    }
-  }
-
   if (depthInput) {
     depthInput.addEventListener("change", function () {
-      mockDepthArrow("field");
+      if (statusEl) {
+        statusEl.textContent =
+          "Depth " + depthInput.value + " — viewport blue arrow later; sketch text stays on plane — dummy UI";
+      }
     });
   }
   if (directionInput) {
     directionInput.addEventListener("change", function () {
-      mockDepthArrow("direction");
-    });
-  }
-  if (btnDepthArrow && depthInput) {
-    btnDepthArrow.addEventListener("click", function () {
-      var snapEl = document.getElementById("snap-linear");
-      var step = 1;
-      if (snapEl && snapEl.value !== "off") {
-        step = parseLengthMm(snapEl.value) || 1;
+      if (statusEl) {
+        statusEl.textContent =
+          "Direction " + directionInput.value + " — dummy UI";
       }
-      var next = Math.max(0.001, parseLengthMm(depthInput.value) + step);
-      depthInput.value = formatMm(next);
-      mockDepthArrow("arrow");
     });
   }
-  syncDepthArrowLook();
 
   // Seed sample points so the table/chrome are reviewable on open.
   seedSampleRows();
