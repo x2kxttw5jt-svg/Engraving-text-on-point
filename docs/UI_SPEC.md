@@ -66,7 +66,8 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 
 - Sticky header row; table may scroll horizontally in a narrow dock, but **Text wraps** when the palette is compressed so content stays readable.
 - **Skinny dock scaling:** when the palette gets narrow (~400px / 320px / 260px), scale UI font and control heights down (container queries) so chrome doesn’t crush — prefer readable smaller type over squished 12px.
-- **Ht column floor:** Ht keeps a hard ~56px width in portrait/narrow; the table scrolls horizontally instead of letting Ht collapse into Text.
+- **Ht column floor:** Ht keeps a hard ~56px width in portrait/narrow.
+- **Font column floor:** Font stays ~132px (select + B/I). The table scrolls horizontally instead of crushing Font into Format.
 - **Rows are resizable** — drag the right-edge handle (or the Text field’s vertical resize) to grow/shrink row height; Text textarea autosizes with content.
 - Columns: `#` | Text | Ht | **Position** | **Format** | Font. (no Orientation column — Orientation is global above the table)
 - **Position** (one column): **Pos X** / **Pos Y** (from Ref) stacked, **Angle** (vs Orientation) below — labels tight to inputs. Column shows when Ref and/or Orientation apply; Pos X/Y or Angle hide until their source is set.
