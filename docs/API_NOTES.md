@@ -231,6 +231,8 @@ depth_in.setManipulator(origin, direction)
 # GUI Depth change: depth_in.expression = field; setManipulator again
 ```
 
+The `SketchText` (and its point) stay on the sketch plane. Depth is an extrude extent, not a sketch transform. Do not `sketch.move` text or points when the arrow or Depth field changes.
+
 Do not map depth to `TriadCommandInput` Z translation. Hide / lock triad Z so in-plane move cannot leave the sketch.
 
 ## Selection filters

@@ -226,12 +226,14 @@ Use Fusion’s stock **blue distance arrow** (same family as Extrude Distance) t
 | Shown when | ≥1 table row (same gate as OK/Apply). Hidden with no points |
 | Two-way | Arrow ↔ palette **Depth** field. Typed Depth is authoritative and repositions the manipulator (`setManipulator(origin, direction)`) |
 | Snap | Linear snap dropdown applies to arrow ticks; **Alt** = free. Typed Depth is not force-snapped |
-| Fast path | Arrow `inputChanged`: write Depth (cm + expression); sync palette; **no** sketch.move; **no** solid rebuild |
+| Fast path | Arrow `inputChanged`: write Depth (cm + expression); sync palette; **no** sketch.move; sketch text stays on the plane; **no** solid rebuild |
 | Settle | `mouseDragEnd` → same debounce as triad → `doExecutePreview` if Live solid preview is on |
 | Live solid preview off | Arrow and Depth field still update; solids wait for OK/Apply |
 | Multi-row | One global Depth for the session (not per row). Arrow sits on the **active** row so you can see the cut on that letter |
 
 Do **not** reuse a triad Z-translate for depth. Z on the triad is locked to the sketch plane so move cannot punch text off-plane.
+
+**Sketch text never moves when Depth changes.** The letters are sketch entities, constrained to the sketch plane (center-on-point + frame dims). Depth is only the **solid extrude/cut extent** along the normal. The blue arrow edits that extent parameter. It does not `sketch.move` the text, does not break plane constraints, and does not lift or sink the sketch point.
 
 Dummy UI: dragging is not available in HTML. Changing **Depth** or clicking the manipulator status line is the stand-in (“would drag blue depth arrow”).
 
@@ -424,7 +426,7 @@ Cancel / destroy
 | Text / font / height / flip / justify | Setup + debounced **B** | Update sketch text; then `doExecutePreview` |
 | Orient / Ref apply | Setup + **B** | Frame dims; then solid preview |
 | Depth / direction / op / target change | Debounced **B** | Solid preview only (sketch unchanged) |
-| Depth arrow tick | **A** (value only) | Write Depth + sync field; no sketch.move; no solids |
+| Depth arrow tick | **A** (value only) | Write Depth + sync field; sketch text stays put on the plane; no solids |
 | Depth arrow `mouseDragEnd` | debounce → **B** | `doExecutePreview` with new extent |
 | Theme | None | No geometry |
 | OK | **C** | `execute` final commit |
@@ -779,7 +781,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] Depth + Direction (positive / negative / symmetric) drive extrude extent
 - [ ] Stock **blue depth arrow** (`DistanceValueCommandInput`) two-way with Depth field
 - [ ] Depth arrow along sketch normal; triad Z stays plane-locked (not used for depth)
-- [ ] Depth arrow ticks update the field only; solids rebuild after settle (or on OK if live preview off)
+- [ ] Depth arrow ticks update the field only; sketch text stays on the plane; solids rebuild after settle (or on OK if live preview off)
 - [ ] Direction Positive / Negative flips the arrow; Symmetric keeps one Depth magnitude
 - [ ] Positive Join / Intersect / New Body extrusions preview and commit
 - [ ] Single point → centered text → New Body
@@ -795,7 +797,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Topic | Decision |
 |-------|----------|
 | **Operations** | **Join, Cut, Intersect, New Body via stock-like icon dropdown; New Component excluded** |
-| **Depth** | **Length field (default `1 mm`) + stock blue Extrude-style arrow (`DistanceValueCommandInput`). Arrow along sketch normal; two-way with the field. Not triad Z.** |
+| **Depth** | **Length field (default `1 mm`) + stock blue Extrude-style arrow (`DistanceValueCommandInput`). Arrow along sketch normal; two-way with the field. Changes extrude extent only — sketch text stays plane-constrained. Not triad Z.** |
 | **Direction** | **Positive / Negative / Symmetric along sketch normal** |
 | **Text angle API** | **None (retired). Do not use.** |
 | **Rotation** | **Orient vector → associative project → driving angular dim to `rectangleLines`; manipulator edits the dim** |

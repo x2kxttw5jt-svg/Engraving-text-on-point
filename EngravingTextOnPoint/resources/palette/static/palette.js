@@ -1053,7 +1053,7 @@
         depth +
         ", " +
         dir +
-        " along sketch normal — dummy UI";
+        " along sketch normal; sketch text stays on plane — dummy UI";
     }
   }
   if (depthInput) {
