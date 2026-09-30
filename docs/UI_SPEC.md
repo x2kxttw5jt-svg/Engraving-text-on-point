@@ -89,8 +89,8 @@ On palette show and on a low-frequency timer / Fusion theme change hook, re-reso
 ## Extrude block
 
 - **Operation** — Fusion Extrude–style dropdown: **icon + name** per option. Options: **Join**, **Cut**, **Intersect**, **New Body**. **Exclude New Component.** Prefer stock Extrude command icons when packaged; dummy uses SVG stand-ins.
-- **Depth** — length input (default `1 mm`); engraving cut depth or positive extrude distance.
-- **Direction** — `Positive` / `Negative` / `Symmetric` along sketch normal (supports positive Join / Intersect / New Body).
+- **Depth** — length input (default `1 mm`); engraving cut depth or positive extrude distance. In Fusion this is two-way with the stock **blue Extrude distance arrow** (`DistanceValueCommandInput`) along the sketch normal. Dummy UI: edit the field (no viewport arrow).
+- **Direction** — `Positive` / `Negative` / `Symmetric` along sketch normal (supports positive Join / Intersect / New Body). Flips the depth arrow; Symmetric is two-sided extent with one Depth value.
 - **Live solid preview** (default checked): Fusion bool row — label left, checkbox right. Controls **extrude/cut solid preview** after triad settle → auto-apply → `doExecutePreview`. Details in tooltip only (no parenthetical chrome). Sketch / triad still update live regardless.
 - **Snap** dropdowns: linear + angular increments; label hint `Alt = free`.
 - When solid preview unchecked: triad / sketch still update; skip settle `doExecutePreview`; OK/Apply commit solids.

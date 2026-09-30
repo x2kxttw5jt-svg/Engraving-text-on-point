@@ -217,6 +217,22 @@ Operations used (stock Extrude set **minus New Component**):
 
 Extent: **Depth** via `setDistanceExtent(isSymmetric, ValueInput)` or one-side extent; **Direction** = positive / negative / symmetric along sketch normal.
 
+Viewport control: **`DistanceValueCommandInput`** (stock blue Extrude arrow), not triad Z.
+
+```python
+depth_in = inputs.addDistanceValueCommandInput(
+    "depth", "Depth", adsk.core.ValueInput.createByReal(0.1)  # 1 mm in cm
+)
+# origin = active text / point on sketch plane; direction = sketch normal (flip if Negative)
+depth_in.setManipulator(origin, direction)
+# Symmetric: still one magnitude; createInput uses setDistanceExtent(True, …)
+# inputChanged: depth_cm = depth_in.value; sync palette Depth; no sketch.move; no solids
+# mouseDragEnd + debounce → doExecutePreview
+# GUI Depth change: depth_in.expression = field; setManipulator again
+```
+
+Do not map depth to `TriadCommandInput` Z translation. Hide / lock triad Z so in-plane move cannot leave the sketch.
+
 ## Selection filters
 
 - Points: `SketchPoint` (selection filter string / `SelectionEventHandler` accept).

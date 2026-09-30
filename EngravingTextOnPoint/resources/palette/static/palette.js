@@ -1040,6 +1040,33 @@
     solidPreview.addEventListener("change", syncPreviewStatus);
   }
 
+  var depthInput = document.getElementById("depth");
+  var directionInput = document.getElementById("direction");
+  function mockDepthArrow(source) {
+    var depth = depthInput ? depthInput.value : "1 mm";
+    var dir = directionInput ? directionInput.value : "positive";
+    if (statusEl) {
+      statusEl.textContent =
+        "Would drag stock blue depth arrow (" +
+        source +
+        ") — Depth " +
+        depth +
+        ", " +
+        dir +
+        " along sketch normal — dummy UI";
+    }
+  }
+  if (depthInput) {
+    depthInput.addEventListener("change", function () {
+      mockDepthArrow("field");
+    });
+  }
+  if (directionInput) {
+    directionInput.addEventListener("change", function () {
+      mockDepthArrow("direction");
+    });
+  }
+
   // Seed sample points so the table/chrome are reviewable on open.
   seedSampleRows();
   setOperation("cut");

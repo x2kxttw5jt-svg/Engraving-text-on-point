@@ -213,6 +213,28 @@ Clamp: reject / clamp height ≤ 0 (status error). Center constraint + justify/a
 7. Never permanently drop center constraint or frame dims.
 8. **Re-entrancy guard:** ignore overlapping triad/`doExecutePreview` work while a solid preview or sketch move / height write is in flight (`_busy` / single-flight flag).
 
+### Depth manipulator — stock blue arrow (`DistanceValueCommandInput`)
+
+Use Fusion’s stock **blue distance arrow** (same family as Extrude Distance) to set **engraving / extrude depth**. This is **not** the triad. The triad stays in the sketch plane (move / rotate / scale→Ht). The arrow is along the **sketch normal**.
+
+| Item | Behavior |
+|------|----------|
+| API | Session command hosts `inputs.addDistanceValueCommandInput('depth', 'Depth', ValueInput)` |
+| Look | Stock Fusion blue arrow + distance dim at the arrow |
+| Origin | Active row’s text / sketch point, lifted onto the sketch plane |
+| Direction | Sketch-plane normal. **Positive** = one way; **Negative** = flip the arrow; **Symmetric** = `isTwoSided` / symmetric extent, magnitude still one Depth value |
+| Shown when | ≥1 table row (same gate as OK/Apply). Hidden with no points |
+| Two-way | Arrow ↔ palette **Depth** field. Typed Depth is authoritative and repositions the manipulator (`setManipulator(origin, direction)`) |
+| Snap | Linear snap dropdown applies to arrow ticks; **Alt** = free. Typed Depth is not force-snapped |
+| Fast path | Arrow `inputChanged`: write Depth (cm + expression); sync palette; **no** sketch.move; **no** solid rebuild |
+| Settle | `mouseDragEnd` → same debounce as triad → `doExecutePreview` if Live solid preview is on |
+| Live solid preview off | Arrow and Depth field still update; solids wait for OK/Apply |
+| Multi-row | One global Depth for the session (not per row). Arrow sits on the **active** row so you can see the cut on that letter |
+
+Do **not** reuse a triad Z-translate for depth. Z on the triad is locked to the sketch plane so move cannot punch text off-plane.
+
+Dummy UI: dragging is not available in HTML. Changing **Depth** or clicking the manipulator status line is the stand-in (“would drag blue depth arrow”).
+
 #### Dimension inputs — Triad **or** GUI (two-way)
 
 Driving frame dimensions **and text height** must be editable from **either** the triad **or** palette/table fields.
@@ -223,6 +245,7 @@ Driving frame dimensions **and text height** must be editable from **either** th
 | **Pos Y** (Ref vertical) | Table Position **Pos Y**; **shown** when Ref dims exist; **greyed / disabled** if point already constrained | Translate handles (free points only) | `dim_v.parameter` |
 | **Angle** | Table **Angle** column; **shown** when Orient dim exists | Rotate handle | angular `dimension.parameter` |
 | **Height** | Table **Ht** column | **Unified scale** handle | `SketchText.heightParameter` |
+| **Depth** | Extrude block **Depth** | Stock **blue distance arrow** (`DistanceValueCommandInput`) | Extrude extent (cm); not a sketch dim |
 
 **Sync rules**
 
@@ -401,6 +424,8 @@ Cancel / destroy
 | Text / font / height / flip / justify | Setup + debounced **B** | Update sketch text; then `doExecutePreview` |
 | Orient / Ref apply | Setup + **B** | Frame dims; then solid preview |
 | Depth / direction / op / target change | Debounced **B** | Solid preview only (sketch unchanged) |
+| Depth arrow tick | **A** (value only) | Write Depth + sync field; no sketch.move; no solids |
+| Depth arrow `mouseDragEnd` | debounce → **B** | `doExecutePreview` with new extent |
 | Theme | None | No geometry |
 | OK | **C** | `execute` final commit |
 | Cancel | Teardown | Cancel timers; remove preview |
@@ -624,8 +649,8 @@ Any geometry-affecting message schedules a **solid** preview refresh (if **Live 
 ### Command pattern
 
 1. Toolbar → start command + show palette + arm selection.
-2. Command hosts **`TriadCommandInput`** (translate + rotate + **unified scale → height**) + Snap dropdown.
-3. Active row → triad at point; `inputChanged` → snapped matrix-move or height write (path A); re-entrancy guarded.
+2. Command hosts **`TriadCommandInput`** (translate + rotate + **unified scale → height**) + **`DistanceValueCommandInput`** (stock blue arrow → **Depth**) + Snap dropdown.
+3. Active row → triad at point; depth arrow at the same origin along the sketch normal; `inputChanged` → snapped matrix-move / height write / depth value (path A); re-entrancy guarded.
 4. `mouseDragEnd` → debounce → **auto-apply Ref/Orient dims to driving** → `doExecutePreview` (path B).
 5. Definition changes → update sketch + debounced `doExecutePreview` (dims already driving).
 6. OK → `execute` final commit only (path C).
@@ -678,7 +703,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Font dropdown | Seeded list; text input `font-family` follows selection |
 | Batch | Toggle + fields live-rewrite Text (`Prefix`+number+`Suffix`); override on manual edit |
 | Operation dropdown | Icon + name: Join / Cut / Intersect / New Body (no New Component) |
-| Depth / Direction | Depth length + Positive / Negative / Symmetric; boolean ops show Target Body |
+| Depth / Direction | Depth length + Positive / Negative / Symmetric; boolean ops show Target Body. Depth field is the stand-in for the stock **blue extrude arrow** |
 | Conditional chrome | Position column / Apply / OK stay **hidden** until conditions met |
 | Icons | Stock Fusion PNGs in place (or labeled placeholders until extracted) |
 | **OK** | Mock execute commit + close (reset UI) — **no model changes** |
@@ -690,12 +715,14 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 
 ### Phase 2 — Triad fast path + settle preview
 - `sketch_transform_frame` + `TriadCommandInput`; matrix `sketch.move` on `inputChanged`.
+- **`DistanceValueCommandInput`** stock blue arrow for Depth (normal to sketch; two-way with Depth field).
 - Snap dropdown + Alt bypass; re-entrancy guards.
 - `mouseDragEnd` → debounce → **auto-apply Ref/Orient dims to driving** → `doExecutePreview`.
 - `execute` = final commit only.
 
 ### Phase 3 — Boolean ops + depth polish
 - Join / Cut / Intersect / New Body; participant bodies; depth + direction in preview + commit; error UX.
+- Depth arrow flips with Direction; Symmetric uses two-sided extent and one magnitude.
 
 ### Phase 4 — Target body + extents
 - `participantBodies` for Join/Cut/Intersect; depth/direction in preview and commit.
@@ -750,6 +777,10 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 - [ ] Solid preview off → no solids until OK; sketch/triad still update
 - [ ] Operation dropdown shows Join / Cut / Intersect / New Body with icons; **no New Component**
 - [ ] Depth + Direction (positive / negative / symmetric) drive extrude extent
+- [ ] Stock **blue depth arrow** (`DistanceValueCommandInput`) two-way with Depth field
+- [ ] Depth arrow along sketch normal; triad Z stays plane-locked (not used for depth)
+- [ ] Depth arrow ticks update the field only; solids rebuild after settle (or on OK if live preview off)
+- [ ] Direction Positive / Negative flips the arrow; Symmetric keeps one Depth magnitude
 - [ ] Positive Join / Intersect / New Body extrusions preview and commit
 - [ ] Single point → centered text → New Body
 - [ ] Multi-point batch sequence order matches selection
@@ -764,7 +795,7 @@ Fully interactive mock palette that can be opened from the add-in **without** cr
 | Topic | Decision |
 |-------|----------|
 | **Operations** | **Join, Cut, Intersect, New Body via stock-like icon dropdown; New Component excluded** |
-| **Depth** | **Length field (default `1 mm`) — engraving cut depth or positive extrude distance** |
+| **Depth** | **Length field (default `1 mm`) + stock blue Extrude-style arrow (`DistanceValueCommandInput`). Arrow along sketch normal; two-way with the field. Not triad Z.** |
 | **Direction** | **Positive / Negative / Symmetric along sketch normal** |
 | **Text angle API** | **None (retired). Do not use.** |
 | **Rotation** | **Orient vector → associative project → driving angular dim to `rectangleLines`; manipulator edits the dim** |
