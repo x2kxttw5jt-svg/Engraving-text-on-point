@@ -680,7 +680,6 @@
     }
     syncPointsCount();
     syncCommitVisibility();
-    renderRows();
   }
 
   function seedSampleRows() {
@@ -849,6 +848,7 @@
       addRow({
         text: "PN-" + String(n).padStart(3, "0"),
       });
+      renderRows();
       if (statusEl) {
         statusEl.textContent =
           "Would place point via preselect + custom-graphics projection ghost — dummy UI";
@@ -863,6 +863,7 @@
       addRow({
         text: "PT-" + String(n).padStart(3, "0"),
       });
+      renderRows();
       if (statusEl) {
         statusEl.textContent = "Mock point selection — dummy UI";
       }
@@ -1123,6 +1124,7 @@
   syncPlacementVisibility();
   syncCommitVisibility();
   syncBatchExample();
+  renderRows();
   if (statusEl) {
     statusEl.textContent =
       "Sample points loaded for UI review — dummy UI (not Fusion geometry)";

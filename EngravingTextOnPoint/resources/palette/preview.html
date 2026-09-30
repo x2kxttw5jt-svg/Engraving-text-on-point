@@ -421,12 +421,11 @@ textarea:focus {
 }
 
 .data-table {
-  /* Prefer horizontal scroll over crushing Ht into Text when dock is skinny */
   width: 100%;
-  min-width: 400px;
+  min-width: 520px;
   border-collapse: collapse;
   background: transparent;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 .data-table th,
@@ -450,7 +449,11 @@ textarea:focus {
   border-bottom: 1px solid var(--hairline);
 }
 
-.data-table tbody tr { position: relative; min-height: 40px; }
+th[hidden],
+td[hidden],
+.is-col-hidden {
+  display: none !important;
+}
 .data-table tbody tr:hover { background: var(--bg-row-hover); }
 
 .data-table tbody tr.is-active {
@@ -675,19 +678,18 @@ input.row-dy.is-xy-locked {
 
 .data-table textarea.row-text {
   display: block;
-  min-height: var(--ctrl-h);
-  height: auto;
+  min-height: 22px;
+  height: 22px;
   resize: vertical;
-  overflow: hidden;
+  overflow: auto;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
   line-height: 1.35;
-  padding: 3px 5px;
+  padding: 2px 4px;
   font-family: inherit;
   font-weight: 400;
   font-style: normal;
-  field-sizing: content;
 }
 
 .data-table textarea.row-text.is-bold,
@@ -1010,7 +1012,7 @@ input.row-dy.is-xy-locked {
             <th class="col-idx">#</th>
             <th class="col-text">Text</th>
             <th class="col-ht">Ht</th>
-            <th class="col-place" id="th-place" title="Pos X / Pos Y from Ref · Angle vs Orientation" hidden>Position</th>
+            <th class="col-place" id="th-place" title="Pos X / Pos Y from Ref · Angle vs Orientation">Position</th>
             <th class="col-format" title="Flip · Justify · Align">Format</th>
             <th class="col-font" title="Font + Bold / Italic">Font</th>
             <th class="col-resize" aria-label="Resize"></th>
@@ -1727,7 +1729,6 @@ input.row-dy.is-xy-locked {
     }
     syncPointsCount();
     syncCommitVisibility();
-    renderRows();
   }
 
   function seedSampleRows() {
@@ -1896,6 +1897,7 @@ input.row-dy.is-xy-locked {
       addRow({
         text: "PN-" + String(n).padStart(3, "0"),
       });
+      renderRows();
       if (statusEl) {
         statusEl.textContent =
           "Would place point via preselect + custom-graphics projection ghost — dummy UI";
@@ -1910,6 +1912,7 @@ input.row-dy.is-xy-locked {
       addRow({
         text: "PT-" + String(n).padStart(3, "0"),
       });
+      renderRows();
       if (statusEl) {
         statusEl.textContent = "Mock point selection — dummy UI";
       }
@@ -2170,6 +2173,7 @@ input.row-dy.is-xy-locked {
   syncPlacementVisibility();
   syncCommitVisibility();
   syncBatchExample();
+  renderRows();
   if (statusEl) {
     statusEl.textContent =
       "Sample points loaded for UI review — dummy UI (not Fusion geometry)";
