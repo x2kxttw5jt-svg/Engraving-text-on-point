@@ -2,7 +2,7 @@
 
 ## Design intent
 
-Match Fusion’s native command dialogs (Extrude / Sketch Text density). One flat gray panel; **label column left · control column right**. Bool options use Fusion `BoolValueInput` rhythm: **name on the left, square checkbox on the right** — never web-style “☐ Label” with helper text inline. One composition: options above a data table — not a dashboard of cards.
+Match Fusion’s native command dialogs (Extrude / Sketch Text density). One flat gray panel; **label column left · control column right**. Label column ~86px; **2px** between label and control; dropdowns/inputs cap ~148px so they don’t stretch across the dock. Bool options use Fusion `BoolValueInput` rhythm: **name on the left, square checkbox on the right** — never web-style “☐ Label” with helper text inline. One composition: options above a data table — not a dashboard of cards.
 
 **Dummy UI first:** implement this spec as a fully clickable mock (fake rows, no Fusion geometry) and sign off visuals/interactions before wiring selection, manipulators, constraints, or extrude.
 
