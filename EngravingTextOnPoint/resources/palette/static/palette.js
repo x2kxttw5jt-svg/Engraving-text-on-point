@@ -528,11 +528,13 @@
           return r.id === id;
         });
         if (row) row.text = ta.value;
+        fitTextColumn();
         autosizeTextarea(ta);
       });
     });
 
     bindRowResizeHandles();
+    fitTextColumn();
 
     tbody.querySelectorAll(".format-btn, .style-btn").forEach(function (btn) {
       btn.addEventListener("click", function (e) {
@@ -614,6 +616,30 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  function fitTextColumn() {
+    var table = document.getElementById("text-table");
+    if (!table) return;
+    var probe = document.createElement("span");
+    probe.style.cssText =
+      "position:absolute;left:-9999px;top:0;white-space:pre;font-size:12px;padding:0;";
+    document.body.appendChild(probe);
+    var longest = 0;
+    rows.forEach(function (row) {
+      probe.style.fontFamily = row.font || "Arial";
+      probe.style.fontWeight = row.bold ? "700" : "400";
+      probe.style.fontStyle = row.italic ? "italic" : "normal";
+      String(row.text || "").split("\n").forEach(function (line) {
+        probe.textContent = line.length ? line : " ";
+        var w = probe.getBoundingClientRect().width;
+        if (w > longest) longest = w;
+      });
+    });
+    probe.remove();
+    var width = Math.max(64, Math.ceil(longest) + 16);
+    if (width > 280) width = 280;
+    table.style.setProperty("--text-col", width + "px");
   }
 
   function autosizeTextarea(ta) {

@@ -111,6 +111,13 @@ body {
 
 .block:last-of-type { border-bottom: none; }
 
+.section-label {
+  margin: 0 0 6px;
+  padding: 0;
+  font: 600 var(--fs) / 1.2 var(--font-ui);
+  color: var(--text);
+}
+
 .table-block {
   overflow-x: auto;
   max-width: 100%;
@@ -197,7 +204,59 @@ body {
   flex: 0 0 68px;
 }
 
+.palette-tools {
+  display: flex;
+  justify-content: flex-end;
+  position: relative;
+  height: 22px;
+  margin: -4px -4px 2px 0;
+}
 
+.gear-btn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+}
+
+.gear-btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.gear-btn:hover,
+.gear-btn[aria-expanded="true"] {
+  background: var(--bg-row-hover);
+  border-color: var(--hairline);
+}
+
+.snap-panel {
+  position: absolute;
+  top: 22px;
+  right: 0;
+  z-index: 30;
+  width: 156px;
+  padding: 8px 8px 6px;
+  background: var(--bg-panel);
+  border: 1px solid var(--input-edge);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.snap-panel .field-row > label {
+  flex-basis: 52px;
+  width: 52px;
+  min-width: 52px;
+  max-width: 52px;
+}
+
+.snap-hint {
+  margin: 4px 0 0;
+}
 
 .muted {
   color: var(--text-muted);
@@ -409,11 +468,13 @@ textarea:focus {
 }
 
 .data-table {
-  width: 100%;
-  min-width: 640px;
+  width: max-content;
+  max-width: none;
+  min-width: 0;
   border-collapse: collapse;
   background: transparent;
-  table-layout: fixed;
+  table-layout: auto;
+  --text-col: 72px;
 }
 
 .data-table th,
@@ -455,10 +516,10 @@ td[hidden],
 
 .col-idx { width: 28px; }
 .col-text {
-  width: auto;
-  min-width: 88px;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  width: var(--text-col);
+  min-width: var(--text-col);
+  max-width: var(--text-col);
+  white-space: nowrap;
 }
 /* Ht must keep a hard floor — never collapse into Text in portrait/narrow */
 .col-ht {
@@ -682,6 +743,9 @@ input.row-dy.is-xy-locked {
 
 .data-table textarea.row-text {
   display: block;
+  width: var(--text-col);
+  min-width: 0;
+  max-width: var(--text-col);
   min-height: 22px;
   height: 22px;
   resize: vertical;
@@ -704,6 +768,8 @@ input.row-dy.is-xy-locked {
 /* Batch mode: Text is display-only (no input) */
 .data-table .row-text-display {
   display: block;
+  width: var(--text-col);
+  max-width: var(--text-col);
   min-height: var(--ctrl-h);
   line-height: 1.35;
   padding: 3px 2px;
@@ -748,7 +814,7 @@ input.row-dy.is-xy-locked {
     --field-gap: 2px;
     --row-height: 24px;
   }
-  .data-table { min-width: 640px; }
+  .data-table { width: max-content; min-width: 0; }
   .col-format { width: 88px; min-width: 88px; }
   .col-font { width: 132px; min-width: 132px; }
   .col-ht { width: 56px; min-width: 56px; }
@@ -764,7 +830,7 @@ input.row-dy.is-xy-locked {
     --row-height: 22px;
     padding: 6px 6px 8px;
   }
-  .data-table { min-width: 640px; }
+  .data-table { width: max-content; min-width: 0; }
   .col-format { width: 88px; min-width: 88px; }
   .col-font { width: 132px; min-width: 132px; }
   .col-ht { width: 56px; min-width: 56px; }
@@ -779,7 +845,7 @@ input.row-dy.is-xy-locked {
     --label-w: 72px;
     --row-height: 20px;
   }
-  .data-table { min-width: 640px; }
+  .data-table { width: max-content; min-width: 0; }
   .icon-btn {
     width: 20px;
     height: 20px;
@@ -792,7 +858,7 @@ input.row-dy.is-xy-locked {
 
 /* Portrait / narrow viewport: same Ht floor + horizontal scroll */
 @media (orientation: portrait), (max-width: 420px) {
-  .data-table { min-width: 640px; }
+  .data-table { width: max-content; min-width: 0; }
   .col-ht {
     width: 56px !important;
     min-width: 56px !important;
@@ -801,7 +867,6 @@ input.row-dy.is-xy-locked {
   .col-place { width: 118px; min-width: 112px; }
   .col-font { width: 132px; min-width: 132px; }
   .col-format { width: 88px; min-width: 88px; }
-  .col-text { min-width: 80px; }
 }
 
 @media (max-width: 400px) {
@@ -843,7 +908,7 @@ input.row-dy.is-xy-locked {
   color: var(--text-muted);
 }
 
-</style>
+  </style>
 </head>
 <body>
   <!--
@@ -887,6 +952,7 @@ input.row-dy.is-xy-locked {
       </div>
     </div>
     <section class="block" aria-label="Selection">
+      <h2 class="section-label">Selection</h2>
       <div class="field-row">
         <label for="btn-points">Point(s)</label>
         <div class="control control-cluster">
@@ -929,6 +995,7 @@ input.row-dy.is-xy-locked {
     </section>
 
     <section class="block" aria-label="Extrude">
+      <h2 class="section-label">Extrude</h2>
       <div class="field-row">
         <label for="op-trigger">Operation</label>
         <div class="control">
@@ -983,6 +1050,7 @@ input.row-dy.is-xy-locked {
     </section>
 
     <section class="block" aria-label="Batch">
+      <h2 class="section-label">Batch</h2>
       <div class="field-row">
         <label for="batch-enabled">Batch sequence</label>
         <div class="control">
@@ -1020,6 +1088,7 @@ input.row-dy.is-xy-locked {
     </section>
 
     <section class="block table-block" aria-label="Text table">
+      <h2 class="section-label">Text</h2>
       <table class="data-table" id="text-table">
         <thead>
           <tr>
@@ -1069,6 +1138,8 @@ input.row-dy.is-xy-locked {
  * until their use conditions are met.
  */
 (function () {
+  if (window.__engravingPaletteReady) return;
+  window.__engravingPaletteReady = true;
   const themeSelect = document.getElementById("theme");
   const batchEnabled = document.getElementById("batch-enabled");
   const batchGrid = document.getElementById("batch-grid");
@@ -1300,7 +1371,6 @@ input.row-dy.is-xy-locked {
       if (e.key === "Escape") closeSnap();
     });
   }
-
 
   function syncPointsCount() {
     if (pointsCount) {
@@ -1590,11 +1660,13 @@ input.row-dy.is-xy-locked {
           return r.id === id;
         });
         if (row) row.text = ta.value;
+        fitTextColumn();
         autosizeTextarea(ta);
       });
     });
 
     bindRowResizeHandles();
+    fitTextColumn();
 
     tbody.querySelectorAll(".format-btn, .style-btn").forEach(function (btn) {
       btn.addEventListener("click", function (e) {
@@ -1676,6 +1748,30 @@ input.row-dy.is-xy-locked {
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  function fitTextColumn() {
+    var table = document.getElementById("text-table");
+    if (!table) return;
+    var probe = document.createElement("span");
+    probe.style.cssText =
+      "position:absolute;left:-9999px;top:0;white-space:pre;font-size:12px;padding:0;";
+    document.body.appendChild(probe);
+    var longest = 0;
+    rows.forEach(function (row) {
+      probe.style.fontFamily = row.font || "Arial";
+      probe.style.fontWeight = row.bold ? "700" : "400";
+      probe.style.fontStyle = row.italic ? "italic" : "normal";
+      String(row.text || "").split("\n").forEach(function (line) {
+        probe.textContent = line.length ? line : " ";
+        var w = probe.getBoundingClientRect().width;
+        if (w > longest) longest = w;
+      });
+    });
+    probe.remove();
+    var width = Math.max(64, Math.ceil(longest) + 16);
+    if (width > 280) width = 280;
+    table.style.setProperty("--text-col", width + "px");
   }
 
   function autosizeTextarea(ta) {
@@ -2202,6 +2298,6 @@ input.row-dy.is-xy-locked {
   };
 })();
 
-</script>
+  </script>
 </body>
 </html>
