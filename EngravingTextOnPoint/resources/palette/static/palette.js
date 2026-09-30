@@ -204,6 +204,29 @@
     }
   }
 
+  function activeRow() {
+    return rows.find(function (r) {
+      return r.id === activeRowId;
+    }) || rows[0] || null;
+  }
+
+  function updateManipStatus() {
+    if (!manipStatus) return;
+    var row = activeRow();
+    if (!rows.length) {
+      manipStatus.textContent =
+        "Angle dim (needs Orientation) · Move · Scale→Ht";
+      return;
+    }
+    var angleBit = mockOrient ? "Angle dim ✓" : "Select orientation vector";
+    var moveBit = !row
+      ? "Move"
+      : row.xyConstrained
+        ? "Move locked — point is constrained"
+        : "Move ✓";
+    manipStatus.textContent = angleBit + " · " + moveBit + " · Scale→Ht ✓";
+  }
+
   // Fusion Sketch Text–style glyphs (dummy stand-ins; swap for stock PNGs later).
   var ICONS = {
     flipH:
@@ -414,6 +437,7 @@
     if (!rows.length) {
       tbody.innerHTML =
         '<tr class="empty"><td colspan="7">Select sketch points to add rows</td></tr>';
+      updateManipStatus();
       return;
     }
     tbody.innerHTML = rows
@@ -505,6 +529,7 @@
     });
 
     bindPlacementInputs();
+    updateManipStatus();
   }
 
   function rowFromEl(el) {
@@ -707,7 +732,7 @@
 
     if (manipStatus) {
       manipStatus.textContent =
-        "Manipulators: Angle dim ✓ · Move ✓ · Scale→Ht ✓ (sample row 1)";
+        "Angle dim ✓ · Move ✓ · Scale→Ht ✓ (sample row 1)";
     }
     if (statusEl) {
       statusEl.textContent =
@@ -765,17 +790,22 @@
 
   if (btnOrient) {
     btnOrient.addEventListener("click", function () {
-      mockOrient = true;
+      mockOrient = !mockOrient;
+      if (!mockOrient) {
+        if (orientLabel) orientLabel.textContent = "Applies to all rows";
+        syncPlacementVisibility();
+        renderRows();
+        if (statusEl) {
+          statusEl.textContent = "Orientation cleared — Angle hidden — dummy UI";
+        }
+        return;
+      }
       if (orientLabel) orientLabel.textContent = "Mock vector (all rows)";
       rows.forEach(function (row) {
         if (!row.angle) row.angle = "0 deg";
       });
       syncPlacementVisibility();
       renderRows();
-      if (manipStatus) {
-        manipStatus.textContent =
-          "Manipulators: Angle dim ✓ · Move ✓ · Scale→Ht ✓";
-      }
       if (statusEl) {
         statusEl.textContent =
           "Global Orientation applies to every table row — Angle shown — dummy UI";
@@ -810,10 +840,6 @@
         statusEl.textContent =
           "Would place point via preselect + custom-graphics projection ghost — dummy UI";
       }
-      if (manipStatus) {
-        manipStatus.textContent =
-          "Manipulators: Angle ✓ · Move ✓ · Scale→Ht ✓";
-      }
     });
   }
 
@@ -826,6 +852,45 @@
       });
       if (statusEl) {
         statusEl.textContent = "Mock point selection — dummy UI";
+      }
+    });
+  }
+
+  var btnSketch = document.getElementById("btn-sketch");
+  var sketchLabel = document.getElementById("sketch-label");
+  var mockSketch = true;
+  if (sketchLabel) sketchLabel.textContent = "Sketch1 (sample)";
+  if (btnSketch) {
+    btnSketch.addEventListener("click", function () {
+      mockSketch = !mockSketch;
+      if (sketchLabel) {
+        sketchLabel.textContent = mockSketch
+          ? "Sketch1 (sample)"
+          : "Optional for Add Point";
+      }
+      if (statusEl) {
+        statusEl.textContent = mockSketch
+          ? "Add Point will use Sketch1 — dummy UI"
+          : "No sketch — Add Point would create one on picked plane — dummy UI";
+      }
+    });
+  }
+
+  var btnBody = document.getElementById("btn-body");
+  var bodyLabel = document.getElementById("body-label");
+  var mockBody = false;
+  if (btnBody) {
+    btnBody.addEventListener("click", function () {
+      mockBody = !mockBody;
+      if (bodyLabel) {
+        bodyLabel.textContent = mockBody
+          ? "Body1 (sample)"
+          : "Join / Cut / Intersect";
+      }
+      if (statusEl) {
+        statusEl.textContent = mockBody
+          ? "Target Body set — dummy UI"
+          : "Target Body cleared — dummy UI";
       }
     });
   }
@@ -853,8 +918,12 @@
     mockOrient = false;
     mockRef = false;
     mockRefDims = false;
+    mockSketch = false;
+    mockBody = false;
     if (orientLabel) orientLabel.textContent = "Applies to all rows";
     if (refLabel) refLabel.textContent = "Auto-applies Pos X/Y to free pts";
+    if (sketchLabel) sketchLabel.textContent = "Optional for Add Point";
+    if (bodyLabel) bodyLabel.textContent = "Join / Cut / Intersect";
     if (pointsCount) pointsCount.textContent = "0 selected";
     if (batchEnabled) {
       batchEnabled.checked = false;
