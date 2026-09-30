@@ -13,6 +13,40 @@
     Behavior / Fusion bridge land in Phase 1 (see docs/PLAN.md).
   -->
   <div class="palette">
+    <div class="palette-tools">
+      <button type="button" class="gear-btn" id="btn-snap" aria-label="Snap settings" title="Snap settings" aria-haspopup="dialog" aria-expanded="false" aria-controls="snap-panel">
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path fill="currentColor" fill-rule="evenodd" d="M6.7 1.1h2.6l.35 1.55c.42.12.8.3 1.16.53l1.45-.62 1.3 2.25-1.1 1.1c.1.35.15.72.15 1.09s-.05.74-.15 1.09l1.1 1.1-1.3 2.25-1.45-.62c-.36.23-.74.41-1.16.53L9.3 14.9H6.7l-.35-1.55a4.4 4.4 0 0 1-1.16-.53l-1.45.62-1.3-2.25 1.1-1.1A4.4 4.4 0 0 1 3.4 8c0-.37.05-.74.15-1.09l-1.1-1.1 1.3-2.25 1.45.62c.36-.23.74-.41 1.16-.53L6.7 1.1zM8 5.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z"/>
+        </svg>
+      </button>
+      <div class="snap-panel" id="snap-panel" role="dialog" aria-label="Snap" hidden>
+        <div class="field-row">
+          <label for="snap-linear">Linear</label>
+          <div class="control">
+            <select id="snap-linear" title="Linear snap; hold Alt to bypass">
+              <option value="off">Off</option>
+              <option value="0.1 mm">0.1 mm</option>
+              <option value="0.5 mm">0.5 mm</option>
+              <option value="1 mm" selected>1 mm</option>
+              <option value="5 mm">5 mm</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <label for="snap-angular">Angle</label>
+          <div class="control">
+            <select id="snap-angular" title="Angular snap; hold Alt to bypass">
+              <option value="off">Off</option>
+              <option value="1 deg">1°</option>
+              <option value="5 deg" selected>5°</option>
+              <option value="15 deg">15°</option>
+              <option value="45 deg">45°</option>
+            </select>
+          </div>
+        </div>
+        <p class="muted snap-hint" title="Hold Alt while dragging to bypass snap">Alt = free</p>
+      </div>
+    </div>
     <section class="block" aria-label="Selection">
       <div class="field-row">
         <label for="btn-points">Point(s)</label>
@@ -105,26 +139,6 @@
         <div class="control">
           <input type="checkbox" id="solid-preview" class="fusion-check" checked
             title="Extrude/cut preview after drag settles; sketch still updates live" />
-        </div>
-      </div>
-      <div class="field-row">
-        <label for="snap-linear">Snap</label>
-        <div class="control control-cluster">
-          <select id="snap-linear" title="Linear snap; hold Alt to bypass">
-            <option value="off">Off</option>
-            <option value="0.1 mm">0.1 mm</option>
-            <option value="0.5 mm">0.5 mm</option>
-            <option value="1 mm" selected>1 mm</option>
-            <option value="5 mm">5 mm</option>
-          </select>
-          <select id="snap-angular" title="Angular snap; hold Alt to bypass">
-            <option value="off">Off</option>
-            <option value="1 deg">1°</option>
-            <option value="5 deg" selected>5°</option>
-            <option value="15 deg">15°</option>
-            <option value="45 deg">45°</option>
-          </select>
-          <span class="muted" title="Hold Alt while dragging to bypass snap">Alt = free</span>
         </div>
       </div>
     </section>

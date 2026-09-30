@@ -70,6 +70,7 @@ body {
 }
 
 .palette {
+  position: relative;
   padding: 8px 10px 10px;
   display: flex;
   flex-direction: column;
@@ -187,6 +188,60 @@ body {
   max-width: 68px;
   min-width: 0;
   flex: 0 0 68px;
+}
+
+.palette-tools {
+  display: flex;
+  justify-content: flex-end;
+  position: relative;
+  height: 22px;
+  margin: -4px -4px 2px 0;
+}
+
+.gear-btn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+}
+
+.gear-btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.gear-btn:hover,
+.gear-btn[aria-expanded="true"] {
+  background: var(--bg-row-hover);
+  border-color: var(--hairline);
+}
+
+.snap-panel {
+  position: absolute;
+  top: 22px;
+  right: 0;
+  z-index: 30;
+  width: 156px;
+  padding: 8px 8px 6px;
+  background: var(--bg-panel);
+  border: 1px solid var(--input-edge);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.snap-panel .field-row > label {
+  flex-basis: 52px;
+  width: 52px;
+  min-width: 52px;
+  max-width: 52px;
+}
+
+.snap-hint {
+  margin: 4px 0 0;
 }
 
 .muted {

@@ -6,6 +6,8 @@
  * until their use conditions are met.
  */
 (function () {
+  if (window.__engravingPaletteReady) return;
+  window.__engravingPaletteReady = true;
   const themeSelect = document.getElementById("theme");
   const batchEnabled = document.getElementById("batch-enabled");
   const batchGrid = document.getElementById("batch-grid");
@@ -206,6 +208,35 @@
     });
     document.addEventListener("click", function () {
       closeOpMenu();
+    });
+  }
+
+  const btnSnap = document.getElementById("btn-snap");
+  const snapPanel = document.getElementById("snap-panel");
+
+  function closeSnap() {
+    if (!snapPanel || !btnSnap) return;
+    snapPanel.hidden = true;
+    btnSnap.setAttribute("aria-expanded", "false");
+  }
+
+  if (btnSnap && snapPanel) {
+    btnSnap.addEventListener("click", function (e) {
+      e.stopPropagation();
+      closeOpMenu();
+      if (snapPanel.hidden) {
+        snapPanel.hidden = false;
+        btnSnap.setAttribute("aria-expanded", "true");
+      } else {
+        closeSnap();
+      }
+    });
+    snapPanel.addEventListener("click", function (e) {
+      e.stopPropagation();
+    });
+    document.addEventListener("click", closeSnap);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeSnap();
     });
   }
 
