@@ -85,8 +85,13 @@
       </div>
       <div class="field-row">
         <label for="depth">Depth</label>
-        <div class="control">
-          <input id="depth" type="text" value="1 mm" title="Engraving / extrude depth" />
+        <div class="control control-cluster">
+          <input id="depth" type="text" value="1 mm" title="Engraving / extrude depth — sketch text stays on plane" />
+          <button type="button" class="btn depth-arrow" id="btn-depth-arrow"
+            title="Stock blue Extrude arrow. Changes cut depth only; text stays on the sketch plane."
+            aria-label="Depth arrow">
+            <span class="depth-arrow-glyph" aria-hidden="true"></span>
+          </button>
         </div>
       </div>
       <div class="field-row">

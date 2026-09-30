@@ -59,9 +59,15 @@
   let activeRowId = null;
   let rows = [];
 
-  function setHidden(el, hidden) {
-    if (!el) return;
-    el.hidden = !!hidden;
+  function setBtnSet(btn, on) {
+    if (btn) btn.classList.toggle("is-set", !!on);
+  }
+
+  function syncSelectBtnState() {
+    setBtnSet(btnRef, mockRef);
+    setBtnSet(btnOrient, mockOrient);
+    setBtnSet(document.getElementById("btn-sketch"), mockSketch);
+    setBtnSet(document.getElementById("btn-body"), mockBody);
   }
 
   /** Position cell: Pos X/Y when Ref set; Angle when Orientation set. */
@@ -224,7 +230,8 @@
       : row.xyConstrained
         ? "Move locked — point is constrained"
         : "Move ✓";
-    manipStatus.textContent = angleBit + " · " + moveBit + " · Scale→Ht ✓";
+    manipStatus.textContent =
+      angleBit + " · " + moveBit + " · Scale→Ht ✓ · Depth arrow ✓";
   }
 
   // Fusion Sketch Text–style glyphs (dummy stand-ins; swap for stock PNGs later).
@@ -738,6 +745,8 @@
       statusEl.textContent =
         "Sample points loaded for UI review — dummy UI (not Fusion geometry)";
     }
+    syncSelectBtnState();
+    syncDepthArrowLook();
   }
 
   if (btnRef) {
@@ -749,6 +758,7 @@
         syncPlacementVisibility();
         renderRows();
         if (statusEl) statusEl.textContent = "Ref cleared — Pos X/Y hidden — dummy UI";
+        setBtnSet(btnRef, false);
         return;
       }
       if (refLabel) refLabel.textContent = "Origin (auto-applied)";
@@ -759,6 +769,7 @@
         statusEl.textContent =
           "Ref selected — Pos X/Y auto-applied to free points (constrained greyed) — dummy UI";
       }
+      setBtnSet(btnRef, true);
     });
   }
 
@@ -798,6 +809,7 @@
         if (statusEl) {
           statusEl.textContent = "Orientation cleared — Angle hidden — dummy UI";
         }
+        setBtnSet(btnOrient, false);
         return;
       }
       if (orientLabel) orientLabel.textContent = "Mock vector (all rows)";
@@ -810,6 +822,7 @@
         statusEl.textContent =
           "Global Orientation applies to every table row — Angle shown — dummy UI";
       }
+      setBtnSet(btnOrient, true);
     });
   }
 
@@ -873,6 +886,7 @@
           ? "Add Point will use Sketch1 — dummy UI"
           : "No sketch — Add Point would create one on picked plane — dummy UI";
       }
+      setBtnSet(btnSketch, mockSketch);
     });
   }
 
@@ -892,6 +906,7 @@
           ? "Target Body set — dummy UI"
           : "Target Body cleared — dummy UI";
       }
+      setBtnSet(btnBody, mockBody);
     });
   }
 
@@ -940,6 +955,8 @@
       manipStatus.textContent =
         "Angle dim (needs Orientation) · Move · Scale→Ht";
     }
+    syncSelectBtnState();
+    syncDepthArrowLook();
     syncPlacementVisibility();
     syncCommitVisibility();
     syncTargetVisibility();
@@ -1042,9 +1059,28 @@
 
   var depthInput = document.getElementById("depth");
   var directionInput = document.getElementById("direction");
+  var btnDepthArrow = document.getElementById("btn-depth-arrow");
+
+  function syncDepthArrowLook() {
+    if (!btnDepthArrow || !directionInput) return;
+    btnDepthArrow.classList.toggle("is-negative", directionInput.value === "negative");
+    btnDepthArrow.classList.toggle("is-symmetric", directionInput.value === "symmetric");
+  }
+
+  function parseLengthMm(text) {
+    var n = parseFloat(String(text || "").replace(",", "."));
+    return isNaN(n) ? 1 : n;
+  }
+
+  function formatMm(n) {
+    var t = Math.round(n * 1000) / 1000;
+    return String(t) + " mm";
+  }
+
   function mockDepthArrow(source) {
     var depth = depthInput ? depthInput.value : "1 mm";
     var dir = directionInput ? directionInput.value : "positive";
+    syncDepthArrowLook();
     if (statusEl) {
       statusEl.textContent =
         "Would drag stock blue depth arrow (" +
@@ -1056,6 +1092,7 @@
         " along sketch normal; sketch text stays on plane — dummy UI";
     }
   }
+
   if (depthInput) {
     depthInput.addEventListener("change", function () {
       mockDepthArrow("field");
@@ -1066,6 +1103,19 @@
       mockDepthArrow("direction");
     });
   }
+  if (btnDepthArrow && depthInput) {
+    btnDepthArrow.addEventListener("click", function () {
+      var snapEl = document.getElementById("snap-linear");
+      var step = 1;
+      if (snapEl && snapEl.value !== "off") {
+        step = parseLengthMm(snapEl.value) || 1;
+      }
+      var next = Math.max(0.001, parseLengthMm(depthInput.value) + step);
+      depthInput.value = formatMm(next);
+      mockDepthArrow("arrow");
+    });
+  }
+  syncDepthArrowLook();
 
   // Seed sample points so the table/chrome are reviewable on open.
   seedSampleRows();
