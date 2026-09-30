@@ -59,6 +59,11 @@
   let activeRowId = null;
   let rows = [];
 
+  function setHidden(el, hidden) {
+    if (!el) return;
+    el.hidden = !!hidden;
+  }
+
   function setBtnSet(btn, on) {
     if (btn) btn.classList.toggle("is-set", !!on);
   }
