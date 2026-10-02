@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Engraving Text on Point</title>
+  <link rel="stylesheet" href="static/palette.css" />
+</head>
+<body>
+  <!--
+    Stock-like Fusion command dialog shell.
+    Bool rows: label LEFT, checkbox RIGHT (addBoolValueInput rhythm).
+    Behavior / Fusion bridge land in Phase 1 (see docs/PLAN.md).
+  -->
+  <div class="palette">
+    <div class="palette-tools">
+      <button type="button" class="gear-btn" id="btn-snap" aria-label="Snap settings" title="Snap settings" aria-haspopup="dialog" aria-expanded="false" aria-controls="snap-panel">
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path fill="currentColor" fill-rule="evenodd" d="M6.7 1.1h2.6l.35 1.55c.42.12.8.3 1.16.53l1.45-.62 1.3 2.25-1.1 1.1c.1.35.15.72.15 1.09s-.05.74-.15 1.09l1.1 1.1-1.3 2.25-1.45-.62c-.36.23-.74.41-1.16.53L9.3 14.9H6.7l-.35-1.55a4.4 4.4 0 0 1-1.16-.53l-1.45.62-1.3-2.25 1.1-1.1A4.4 4.4 0 0 1 3.4 8c0-.37.05-.74.15-1.09l-1.1-1.1 1.3-2.25 1.45.62c.36-.23.74-.41 1.16-.53L6.7 1.1zM8 5.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z"/>
+        </svg>
+      </button>
+      <div class="snap-panel" id="snap-panel" role="dialog" aria-label="Snap" hidden>
+        <div class="field-row">
+          <label for="snap-linear">Linear</label>
+          <div class="control">
+            <select id="snap-linear" title="Linear snap; hold Alt to bypass">
+              <option value="off">Off</option>
+              <option value="0.1 mm">0.1 mm</option>
+              <option value="0.5 mm">0.5 mm</option>
+              <option value="1 mm" selected>1 mm</option>
+              <option value="5 mm">5 mm</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <label for="snap-angular">Angle</label>
+          <div class="control">
+            <select id="snap-angular" title="Angular snap; hold Alt to bypass">
+              <option value="off">Off</option>
+              <option value="1 deg">1°</option>
+              <option value="5 deg" selected>5°</option>
+              <option value="15 deg">15°</option>
+              <option value="45 deg">45°</option>
+            </select>
+          </div>
+        </div>
+        <p class="muted snap-hint" title="Hold Alt while dragging to bypass snap">Alt = free</p>
+      </div>
+    </div>
+    <section class="block" aria-label="Selection">
+      <h2 class="section-label">Selection</h2>
+      <div class="field-row">
+        <label for="btn-points">Point(s)</label>
+        <div class="control control-cluster">
+          <button type="button" class="btn" id="btn-points">Select</button>
+          <button type="button" class="btn" id="btn-add-point" title="Add point at click">+ Add Point</button>
+          <span class="muted" id="points-count">0 selected</span>
+        </div>
+      </div>
+      <div class="field-row">
+        <label for="btn-ref">Ref Pt</label>
+        <div class="control control-cluster">
+          <button type="button" class="btn" id="btn-ref">Select</button>
+          <span class="muted" id="ref-label">Auto-applies Pos X/Y to free pts</span>
+        </div>
+      </div>
+      <div class="field-row">
+        <label for="btn-sketch">Sketch</label>
+        <div class="control control-cluster">
+          <button type="button" class="btn" id="btn-sketch">Select</button>
+          <span class="muted" id="sketch-label">Optional for Add Point</span>
+        </div>
+      </div>
+      <div class="field-row">
+        <label for="btn-orient">Orientation</label>
+        <div class="control control-cluster">
+          <button type="button" class="btn" id="btn-orient">Select</button>
+          <span class="muted" id="orient-label">Applies to all rows</span>
+        </div>
+      </div>
+      <div class="field-row" id="target-row" hidden>
+        <label for="btn-body">Target Body</label>
+        <div class="control control-cluster">
+          <button type="button" class="btn" id="btn-body">Select</button>
+          <span class="muted" id="body-label">Join / Cut / Intersect</span>
+        </div>
+      </div>
+      <p class="info-line" id="manip-status" role="status">
+        Angle dim (needs Orientation) · Move · Scale→Ht
+      </p>
+    </section>
+
+    <section class="block" aria-label="Extrude">
+      <h2 class="section-label">Extrude</h2>
+      <div class="field-row">
+        <label for="op-trigger">Operation</label>
+        <div class="control">
+          <div class="op-dropdown" id="op-dropdown">
+            <button type="button" class="op-trigger" id="op-trigger" aria-haspopup="listbox" aria-expanded="false" title="Extrude operation">
+              <span class="op-icon" id="op-trigger-icon" aria-hidden="true"></span>
+              <span class="op-label" id="op-trigger-label">Cut</span>
+              <span class="op-caret" aria-hidden="true">▾</span>
+            </button>
+            <ul class="op-menu" id="op-menu" role="listbox" hidden>
+              <li role="option" data-op="join" tabindex="-1">
+                <span class="op-icon op-icon-join" aria-hidden="true"></span><span>Join</span>
+              </li>
+              <li role="option" data-op="cut" tabindex="-1" aria-selected="true">
+                <span class="op-icon op-icon-cut" aria-hidden="true"></span><span>Cut</span>
+              </li>
+              <li role="option" data-op="intersect" tabindex="-1">
+                <span class="op-icon op-icon-intersect" aria-hidden="true"></span><span>Intersect</span>
+              </li>
+              <li role="option" data-op="newBody" tabindex="-1">
+                <span class="op-icon op-icon-newbody" aria-hidden="true"></span><span>New Body</span>
+              </li>
+            </ul>
+            <input type="hidden" id="operation" name="operation" value="cut" />
+          </div>
+        </div>
+      </div>
+      <div class="field-row">
+        <label for="depth">Depth</label>
+        <div class="control">
+          <input id="depth" type="text" value="1 mm" title="Engraving / extrude depth — sketch text stays on plane" />
+        </div>
+      </div>
+      <div class="field-row">
+        <label for="direction">Direction</label>
+        <div class="control">
+          <select id="direction" title="Positive or negative along sketch normal">
+            <option value="positive" selected>Positive</option>
+            <option value="negative">Negative</option>
+            <option value="symmetric">Symmetric</option>
+          </select>
+        </div>
+      </div>
+      <!-- Fusion BoolValueInput: name left, checkbox right — not “☐ label” -->
+      <div class="field-row">
+        <label for="solid-preview">Live solid preview</label>
+        <div class="control">
+          <input type="checkbox" id="solid-preview" class="fusion-check" checked
+            title="Extrude/cut preview after drag settles; sketch still updates live" />
+        </div>
+      </div>
+    </section>
+
+    <section class="block" aria-label="Batch">
+      <h2 class="section-label">Batch</h2>
+      <div class="field-row">
+        <label for="batch-enabled">Batch sequence</label>
+        <div class="control">
+          <input type="checkbox" id="batch-enabled" class="fusion-check"
+            title="Auto-fill each row Text as Prefix + number + Suffix in selection order" />
+        </div>
+      </div>
+      <div id="batch-grid" class="batch-fields" hidden>
+        <p class="batch-help muted">
+          Drives Text for each row (no Text input while on):
+          <code>Prefix</code> + padded number + <code>Suffix</code>.
+          Example: <span id="batch-example">PN-001</span>
+        </p>
+        <div class="field-row">
+          <label for="batch-prefix">Prefix</label>
+          <div class="control"><input id="batch-prefix" type="text" value="PN-" /></div>
+        </div>
+        <div class="field-row">
+          <label for="batch-suffix">Suffix</label>
+          <div class="control"><input id="batch-suffix" type="text" value="" /></div>
+        </div>
+        <div class="field-row">
+          <label for="batch-start">Start</label>
+          <div class="control"><input id="batch-start" type="number" value="1" /></div>
+        </div>
+        <div class="field-row">
+          <label for="batch-digits"># of Digits</label>
+          <div class="control"><input id="batch-digits" type="number" value="3" min="1" /></div>
+        </div>
+        <div class="field-row">
+          <label for="batch-step">Step</label>
+          <div class="control"><input id="batch-step" type="number" value="1" /></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block table-block" aria-label="Text table">
+      <h2 class="section-label">Text</h2>
+      <table class="data-table" id="text-table">
+        <thead>
+          <tr>
+            <th class="col-idx">#</th>
+            <th class="col-text">Text</th>
+            <th class="col-ht">Ht</th>
+            <th class="col-place" id="th-place" title="Pos X / Pos Y from Ref · Angle vs Orientation">Position</th>
+            <th class="col-format" title="Flip · Justify · Align">Format</th>
+            <th class="col-font" title="Font + Bold / Italic">Font</th>
+            <th class="col-resize" aria-label="Resize"></th>
+          </tr>
+        </thead>
+        <tbody id="text-tbody">
+          <tr class="empty">
+            <td colspan="7">Select sketch points to add rows</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="block footer">
+      <div class="field-row footer-theme">
+        <label for="theme">Theme</label>
+        <div class="control">
+          <select id="theme">
+            <option value="light" selected>Light</option>
+            <option value="dark">Dark</option>
+            <option value="auto">Auto</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn" id="btn-cancel">Cancel</button>
+        <button type="button" class="btn" id="btn-apply" hidden title="Commit engraving, keep palette open, reset for next">Apply</button>
+        <button type="button" class="btn btn-primary" id="btn-ok" hidden title="Commit engraving and close">OK</button>
+      </div>
+    </section>
+
+    <p class="status muted" id="status" role="status"></p>
+  </div>
+  <script src="static/palette.js"></script>
+</body>
+</html>

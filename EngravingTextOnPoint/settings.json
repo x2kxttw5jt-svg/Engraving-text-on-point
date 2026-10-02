@@ -1,0 +1,23 @@
+{
+  "theme": "light",
+  "livePreview": true,
+  "solidPreviewDebounceMs": 100,
+  "snapLinear": "1 mm",
+  "snapAngular": "5 deg",
+  "defaultHeight": "3 mm",
+  "defaultDistance": "1 mm",
+  "defaultAngle": "0 deg",
+  "defaultFlipH": false,
+  "defaultFlipV": false,
+  "defaultJustify": "center",
+  "defaultAlign": "middle",
+  "defaultFont": "Arial",
+  "batch": {
+    "enabled": false,
+    "prefix": "",
+    "suffix": "",
+    "start": 1,
+    "digits": 3,
+    "step": 1
+  }
+}

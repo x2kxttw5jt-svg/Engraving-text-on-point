@@ -1,0 +1,1769 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Engraving Text on Point — preview v16</title>
+  <style>
+/*
+ * Stock Fusion command-dialog look (Light Gray / Classic-adjacent):
+ * - One flat panel gray (no card borders, no zebra section bands)
+ * - Label column LEFT · control column RIGHT
+ * - BoolValueInput: label left, square checkbox right (not “☐ Label”)
+ * - Flat buttons / inputs; vibrant tool icons kept
+ */
+:root,
+[data-theme="light"] {
+  --bg-panel: #e8e8e8;
+  --bg-input: #ffffff;
+  --bg-header: #dcdcdc;
+  --bg-row-hover: #d4ebf7;
+  --bg-band: #e0e0e0;
+  --bg-selected: #0696d7;
+  --text: #3c3c3c;
+  --text-muted: #6e6e6e;
+  --hairline: rgba(0, 0, 0, 0.14);
+  --accent: #0696d7;
+  --accent-hover: #0076a5;
+  --input-edge: #8c8c8c;
+  --btn-face: #f0f0f0;
+  --btn-face-hover: #f7f7f7;
+  --check-face: #ffffff;
+  --label-w: 118px;
+  --row-height: 26px;
+  --fs: 12px;
+  --ctrl-h: 22px;
+  --font-ui: "Artifakt Element", "Segoe UI", system-ui, sans-serif;
+}
+
+[data-theme="dark"] {
+  --bg-panel: #2d2d2d;
+  --bg-input: #3a3a3a;
+  --bg-header: #383838;
+  --bg-row-hover: #2a4a5a;
+  --bg-band: #353535;
+  --bg-selected: #0696d7;
+  --text: #ececec;
+  --text-muted: #a8a8a8;
+  --hairline: rgba(255, 255, 255, 0.12);
+  --accent: #0696d7;
+  --accent-hover: #3db5e8;
+  --input-edge: #6a6a6a;
+  --btn-face: #3f3f3f;
+  --btn-face-hover: #4a4a4a;
+  --check-face: #2f2f2f;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  color: var(--text);
+  font: var(--fs) / 1.3 var(--font-ui);
+  background: var(--bg-panel);
+}
+
+/* Container on body so @container can restyle .palette (container ≠ self) */
+body {
+  container-type: inline-size;
+  container-name: palette;
+}
+
+.palette {
+  padding: 8px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 100vh;
+  background: var(--bg-panel);
+  font-size: var(--fs);
+  line-height: 1.3;
+  /* Fusion dialogs: no text highlight on chrome — only inside fields */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.palette input[type="text"],
+.palette input[type="number"],
+.palette textarea,
+.palette select {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/* Continuous panel — hairline between logical groups only */
+.block {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--hairline);
+  padding: 8px 2px 10px;
+}
+
+.block:last-of-type { border-bottom: none; }
+
+.table-block {
+  overflow-x: auto;
+  max-width: 100%;
+  padding-top: 6px;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 10px;
+  border-bottom: none;
+}
+
+.footer .footer-theme {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.footer .footer-theme .control { max-width: 120px; }
+
+/* —— Fusion command input row: label | control —— */
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--row-height);
+  margin-bottom: 4px;
+}
+
+.field-row:last-child { margin-bottom: 0; }
+
+.field-row > label {
+  flex: 0 0 var(--label-w);
+  width: var(--label-w);
+  min-width: var(--label-w);
+  color: var(--text);
+  line-height: var(--row-height);
+  user-select: none;
+}
+
+.field-row > .control {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.control-cluster {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.control-cluster > input[type="text"],
+.control-cluster > input[type="number"],
+.control-cluster > select {
+  width: auto;
+  min-width: 72px;
+  flex: 0 1 110px;
+}
+
+.control > input[type="text"],
+.control > input[type="number"],
+.control > select,
+.control > .op-dropdown {
+  width: 100%;
+  max-width: 240px;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 0.92em;
+}
+
+.info-line {
+  margin: 6px 0 0;
+  padding: 0 0 0 var(--label-w);
+  color: var(--text-muted);
+  font-size: 0.92em;
+  cursor: pointer;
+}
+
+/* Inputs — flat, square, Fusion-ish */
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  height: var(--ctrl-h);
+  border: 1px solid var(--input-edge);
+  background: var(--bg-input);
+  color: var(--text);
+  padding: 0 6px;
+  font: inherit;
+  border-radius: 0;
+  min-width: 0;
+  box-shadow: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* Fusion BoolValueInput checkbox (square, right-aligned in control column) */
+.fusion-check {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 14px;
+  border: 1px solid var(--input-edge);
+  border-radius: 0;
+  background: var(--check-face);
+  cursor: pointer;
+  position: relative;
+  box-shadow: none;
+  vertical-align: middle;
+}
+
+.fusion-check:hover {
+  border-color: var(--accent);
+}
+
+.fusion-check:focus {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--accent);
+  border-color: var(--accent);
+}
+
+.fusion-check:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.fusion-check:checked::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.btn {
+  height: var(--ctrl-h);
+  padding: 0 10px;
+  border: 1px solid var(--input-edge);
+  background: var(--btn-face);
+  color: var(--text);
+  border-radius: 0;
+  cursor: pointer;
+  font: inherit;
+  box-shadow: none;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--btn-face-hover);
+  border-color: var(--accent);
+}
+
+.btn:disabled { opacity: 0.45; cursor: default; }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: #0578ad;
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+/* Operation dropdown — Extrude-style */
+.op-dropdown {
+  position: relative;
+  width: 100%;
+  max-width: 240px;
+}
+
+.op-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: var(--ctrl-h);
+  padding: 0 6px;
+  border: 1px solid var(--input-edge);
+  background: var(--bg-input);
+  color: var(--text);
+  border-radius: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  box-shadow: none;
+}
+
+.op-trigger:hover,
+.op-dropdown.is-open .op-trigger {
+  border-color: var(--accent);
+}
+
+.op-trigger .op-label { flex: 1; }
+.op-caret { color: var(--text-muted); font-size: 10px; }
+
+.op-menu {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: calc(100% + 1px);
+  margin: 0;
+  padding: 2px 0;
+  list-style: none;
+  background: var(--bg-input);
+  border: 1px solid var(--input-edge);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.op-menu [role="option"] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 26px;
+  padding: 0 8px;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.op-menu [role="option"]:hover,
+.op-menu [role="option"][aria-selected="true"] {
+  background: var(--bg-row-hover);
+}
+
+.op-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Vibrant Extrude-style op glyphs (keep rich) */
+.op-icon-join,
+.op-trigger[data-op="join"] .op-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Crect x='2' y='4' width='8' height='8' rx='1' fill='%230696d7'/%3E%3Crect x='6' y='4' width='8' height='8' rx='1' fill='%233db5e8'/%3E%3C/svg%3E");
+}
+.op-icon-cut,
+.op-trigger[data-op="cut"] .op-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M2 4h12v9H2z' fill='%230696d7'/%3E%3Crect x='5' y='2' width='6' height='7' fill='%23e74c3c'/%3E%3C/svg%3E");
+}
+.op-icon-intersect,
+.op-trigger[data-op="intersect"] .op-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Crect x='2' y='3' width='8' height='8' fill='none' stroke='%23888' stroke-width='1'/%3E%3Crect x='6' y='5' width='8' height='8' fill='none' stroke='%23888' stroke-width='1'/%3E%3Crect x='6' y='5' width='4' height='6' fill='%230696d7'/%3E%3C/svg%3E");
+}
+.op-icon-newbody,
+.op-trigger[data-op="newBody"] .op-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cellipse cx='8' cy='11' rx='5' ry='2.5' fill='%23b0b0b0'/%3E%3Crect x='3' y='5' width='10' height='6' fill='%23d0d0d0'/%3E%3Cellipse cx='8' cy='5' rx='5' ry='2.5' fill='%23efefef' stroke='%23999'/%3E%3Ccircle cx='12.5' cy='3.5' r='2.3' fill='%23f1c40f'/%3E%3C/svg%3E");
+}
+
+.batch-fields {
+  margin-top: 4px;
+  padding-top: 2px;
+}
+
+.data-table {
+  /* Prefer horizontal scroll over crushing Ht into Text when dock is skinny */
+  width: 100%;
+  min-width: 400px;
+  border-collapse: collapse;
+  background: transparent;
+  table-layout: fixed;
+}
+
+.data-table th,
+.data-table td {
+  border-bottom: 1px solid var(--hairline);
+  padding: 3px 4px;
+  min-height: var(--row-height);
+  height: auto;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.data-table thead th {
+  background: var(--bg-header);
+  color: var(--text-muted);
+  font-weight: 600;
+  vertical-align: middle;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.data-table tbody tr { position: relative; min-height: 40px; }
+.data-table tbody tr:hover { background: var(--bg-row-hover); }
+
+.data-table tbody tr.is-active {
+  background: var(--bg-row-hover);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.data-table .empty td {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 16px 8px;
+}
+
+.col-idx { width: 28px; }
+.col-text { width: auto; min-width: 72px; }
+/* Ht must keep a hard floor — never collapse into Text in portrait/narrow */
+.col-ht {
+  width: 56px;
+  min-width: 56px;
+  max-width: 64px;
+  overflow-wrap: normal;
+  word-break: normal;
+  white-space: nowrap;
+}
+.col-ht input.row-ht {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+/* Trial: X / Y / Angle stacked in one Place cell */
+.col-place {
+  width: 88px;
+  min-width: 80px;
+  overflow-wrap: normal;
+  word-break: normal;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.place-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 2px 0;
+}
+
+.place-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 0.92em;
+}
+
+.place-key {
+  flex: 0 0 12px;
+  width: 12px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.place-row input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Constrained XY: mute the input only — not the whole cell */
+input.row-dx:disabled,
+input.row-dy:disabled,
+input.row-dx.is-xy-locked,
+input.row-dy.is-xy-locked {
+  opacity: 0.55;
+  color: var(--text-muted);
+  background: var(--bg-band);
+  cursor: not-allowed;
+}
+
+.col-format { width: 84px; }
+.col-font { width: 96px; min-width: 72px; }
+.col-resize { width: 10px; padding: 0 !important; }
+
+.font-stack {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 3px;
+  padding: 4px 0;
+  width: 100%;
+}
+
+.font-stack .row-font {
+  width: 100% !important;
+  min-width: 0;
+  display: block !important;
+}
+
+.font-style-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 3px;
+}
+
+.font-stack .style-btn {
+  width: var(--ctrl-h) !important;
+  height: var(--ctrl-h) !important;
+  min-width: var(--ctrl-h) !important;
+  padding: 0 !important;
+  box-sizing: border-box;
+  font: 700 0.92em/1 var(--font-ui) !important;
+  color: var(--text);
+}
+
+.font-stack .style-btn[data-key="italic"] {
+  font-style: italic !important;
+  font-weight: 600 !important;
+}
+
+.format-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.format-align-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.format-cell .icon-group {
+  display: inline-flex;
+  gap: 2px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.icon-btn {
+  width: 24px;
+  height: 24px;
+  padding: 3px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 0;
+  cursor: pointer;
+  color: #2f2f2f;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-theme="dark"] .icon-btn { color: #e8e8e8; }
+
+.icon-btn .glyph {
+  display: block;
+  width: 16px;
+  height: 16px;
+  opacity: 1;
+}
+
+.icon-btn:hover {
+  background: rgba(6, 150, 215, 0.12);
+}
+
+.icon-btn[aria-pressed="true"],
+.icon-btn[aria-checked="true"] {
+  border-color: var(--accent);
+  background: var(--bg-row-hover);
+  color: var(--text);
+}
+
+.icon-group { display: inline-flex; gap: 2px; }
+
+.data-table input,
+.data-table select,
+.data-table textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.data-table textarea.row-text {
+  display: block;
+  min-height: var(--ctrl-h);
+  height: auto;
+  resize: vertical;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.35;
+  padding: 3px 5px;
+  font-family: inherit;
+  font-weight: 400;
+  font-style: normal;
+  field-sizing: content;
+}
+
+.data-table textarea.row-text.is-bold { font-weight: 700 !important; }
+.data-table textarea.row-text.is-italic { font-style: italic !important; }
+
+.row-resize-handle {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 28px;
+  cursor: ns-resize;
+  opacity: 0.3;
+  background: linear-gradient(
+    to bottom,
+    transparent 40%,
+    var(--text-muted) 40%,
+    var(--text-muted) 45%,
+    transparent 45%,
+    transparent 55%,
+    var(--text-muted) 55%,
+    var(--text-muted) 60%,
+    transparent 60%
+  );
+}
+
+.data-table tbody tr:hover .row-resize-handle,
+.row-resize-handle:hover {
+  opacity: 0.75;
+  background-color: var(--bg-header);
+}
+
+/* Skinny dock: scale type; keep Ht width — scroll table instead of crushing */
+@container palette (max-width: 400px) {
+  .palette {
+    --fs: 11px;
+    --ctrl-h: 20px;
+    --label-w: 100px;
+    --row-height: 24px;
+  }
+  .data-table { min-width: 420px; }
+  .col-format { width: 72px; min-width: 72px; }
+  .col-font { width: 80px; min-width: 72px; }
+  .col-ht { width: 56px; min-width: 56px; }
+  .col-place { width: 80px; min-width: 76px; }
+}
+
+@container palette (max-width: 320px) {
+  .palette {
+    --fs: 10px;
+    --ctrl-h: 18px;
+    --label-w: 86px;
+    --row-height: 22px;
+    padding: 6px 6px 8px;
+  }
+  .data-table { min-width: 400px; }
+  .col-format { width: 68px; min-width: 68px; }
+  .col-font { width: 72px; min-width: 68px; }
+  .col-ht { width: 56px; min-width: 56px; }
+  .col-place { width: 76px; min-width: 72px; }
+  .info-line { padding-left: 0; }
+}
+
+@container palette (max-width: 260px) {
+  .palette {
+    --fs: 9px;
+    --ctrl-h: 17px;
+    --label-w: 72px;
+    --row-height: 20px;
+  }
+  .data-table { min-width: 380px; }
+  .icon-btn {
+    width: 20px;
+    height: 20px;
+  }
+  .icon-btn .glyph {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* Portrait / narrow viewport: same Ht floor + horizontal scroll */
+@media (orientation: portrait), (max-width: 420px) {
+  .data-table { min-width: 400px; }
+  .col-ht {
+    width: 56px !important;
+    min-width: 56px !important;
+    max-width: 64px;
+  }
+  .col-place { width: 80px; min-width: 76px; }
+  .col-text { min-width: 80px; }
+}
+
+/* Viewport fallback when container queries aren’t available */
+@media (max-width: 400px) {
+  :root, [data-theme="light"], [data-theme="dark"] {
+    --fs: 11px;
+    --ctrl-h: 20px;
+    --label-w: 100px;
+  }
+  .col-format { width: 72px; }
+  .col-font { width: 80px; }
+}
+
+@media (max-width: 320px) {
+  :root, [data-theme="light"], [data-theme="dark"] {
+    --fs: 10px;
+    --ctrl-h: 18px;
+    --label-w: 86px;
+  }
+  .info-line { padding-left: 0; }
+}
+
+@media (max-width: 260px) {
+  :root, [data-theme="light"], [data-theme="dark"] {
+    --fs: 9px;
+    --ctrl-h: 17px;
+    --label-w: 72px;
+  }
+}
+
+.actions { display: flex; gap: 6px; }
+
+.status {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: 0.92em;
+  padding: 4px 2px 6px;
+  color: var(--text-muted);
+}
+
+</style>
+</head>
+<body>
+  <!--
+    Stock-like Fusion command dialog shell.
+    Bool rows: label LEFT, checkbox RIGHT (addBoolValueInput rhythm).
+    Behavior / Fusion bridge land in Phase 1 (see docs/PLAN.md).
+  -->
+  <div class="palette">
+    <section class="block" aria-label="Selection">
+      <div class="field-row">
+        <label for="btn-points">Point(s)</label>
+        <div class="control control-cluster">
+          <button type="button" class="btn" id="btn-points">Select</button>
+          <button type="button" class="btn" id="btn-add-point" title="Add point at click">+ Add Point</button>
+          <span class="muted" id="points-count">0 selected</span>
+        </div>
+      </div>
+      <div class="field-row">
+        <label for="btn-ref">Ref Pt</label>
+        <div class="control control-cluster">
+          <button type="button" class="btn" id="btn-ref">Select</button>
+          <span class="muted" id="ref-label">Auto-applies dX/dY to free pts</span>
+        </div>
+      </div>
+      <div class="field-row">
+        <label for="btn-sketch">Sketch</label>
+        <div class="control control-cluster">
+          <button type="button" class="btn" id="btn-sketch">Select</button>
+          <span class="muted" id="sketch-label">Optional for Add Point</span>
+        </div>
+      </div>
+      <div class="field-row">
+        <label for="btn-orient">Orient</label>
+        <div class="control control-cluster">
+          <button type="button" class="btn" id="btn-orient">Select</button>
+          <span class="muted" id="orient-label">Applies to all rows</span>
+        </div>
+      </div>
+      <div class="field-row" id="target-row" hidden>
+        <label for="btn-body">Target Body</label>
+        <div class="control control-cluster">
+          <button type="button" class="btn" id="btn-body">Select</button>
+          <span class="muted" id="body-label">Join / Cut / Intersect</span>
+        </div>
+      </div>
+      <p class="info-line" id="manip-status" role="status">
+        Angle dim (needs Orient) · Move · Scale→Ht
+      </p>
+    </section>
+
+    <section class="block" aria-label="Extrude">
+      <div class="field-row">
+        <label for="op-trigger">Operation</label>
+        <div class="control">
+          <div class="op-dropdown" id="op-dropdown">
+            <button type="button" class="op-trigger" id="op-trigger" aria-haspopup="listbox" aria-expanded="false" title="Extrude operation">
+              <span class="op-icon" id="op-trigger-icon" aria-hidden="true"></span>
+              <span class="op-label" id="op-trigger-label">Cut</span>
+              <span class="op-caret" aria-hidden="true">▾</span>
+            </button>
+            <ul class="op-menu" id="op-menu" role="listbox" hidden>
+              <li role="option" data-op="join" tabindex="-1">
+                <span class="op-icon op-icon-join" aria-hidden="true"></span><span>Join</span>
+              </li>
+              <li role="option" data-op="cut" tabindex="-1" aria-selected="true">
+                <span class="op-icon op-icon-cut" aria-hidden="true"></span><span>Cut</span>
+              </li>
+              <li role="option" data-op="intersect" tabindex="-1">
+                <span class="op-icon op-icon-intersect" aria-hidden="true"></span><span>Intersect</span>
+              </li>
+              <li role="option" data-op="newBody" tabindex="-1">
+                <span class="op-icon op-icon-newbody" aria-hidden="true"></span><span>New Body</span>
+              </li>
+            </ul>
+            <input type="hidden" id="operation" name="operation" value="cut" />
+          </div>
+        </div>
+      </div>
+      <div class="field-row">
+        <label for="depth">Depth</label>
+        <div class="control">
+          <input id="depth" type="text" value="1 mm" title="Engraving / extrude depth" />
+        </div>
+      </div>
+      <div class="field-row">
+        <label for="direction">Direction</label>
+        <div class="control">
+          <select id="direction" title="Positive or negative along sketch normal">
+            <option value="positive" selected>Positive</option>
+            <option value="negative">Negative</option>
+            <option value="symmetric">Symmetric</option>
+          </select>
+        </div>
+      </div>
+      <!-- Fusion BoolValueInput: name left, checkbox right — not “☐ label” -->
+      <div class="field-row">
+        <label for="solid-preview">Live solid preview</label>
+        <div class="control">
+          <input type="checkbox" id="solid-preview" class="fusion-check" checked
+            title="Extrude/cut preview after drag settles; sketch still updates live" />
+        </div>
+      </div>
+      <div class="field-row">
+        <label for="snap-linear">Snap</label>
+        <div class="control control-cluster">
+          <select id="snap-linear" title="Linear snap; hold Alt to bypass">
+            <option value="off">Off</option>
+            <option value="0.1 mm">0.1 mm</option>
+            <option value="0.5 mm">0.5 mm</option>
+            <option value="1 mm" selected>1 mm</option>
+            <option value="5 mm">5 mm</option>
+          </select>
+          <select id="snap-angular" title="Angular snap; hold Alt to bypass">
+            <option value="off">Off</option>
+            <option value="1 deg">1°</option>
+            <option value="5 deg" selected>5°</option>
+            <option value="15 deg">15°</option>
+            <option value="45 deg">45°</option>
+          </select>
+          <span class="muted" title="Hold Alt while dragging to bypass snap">Alt = free</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" aria-label="Batch">
+      <div class="field-row">
+        <label for="batch-enabled">Batch sequence</label>
+        <div class="control">
+          <input type="checkbox" id="batch-enabled" class="fusion-check"
+            title="Fill table text with prefix / number / suffix sequence" />
+        </div>
+      </div>
+      <div id="batch-grid" class="batch-fields" hidden>
+        <div class="field-row">
+          <label for="batch-prefix">Prefix</label>
+          <div class="control"><input id="batch-prefix" type="text" value="" /></div>
+        </div>
+        <div class="field-row">
+          <label for="batch-suffix">Suffix</label>
+          <div class="control"><input id="batch-suffix" type="text" value="" /></div>
+        </div>
+        <div class="field-row">
+          <label for="batch-start">Start</label>
+          <div class="control"><input id="batch-start" type="number" value="1" /></div>
+        </div>
+        <div class="field-row">
+          <label for="batch-digits">Digits</label>
+          <div class="control"><input id="batch-digits" type="number" value="3" min="1" /></div>
+        </div>
+        <div class="field-row">
+          <label for="batch-step">Step</label>
+          <div class="control"><input id="batch-step" type="number" value="1" /></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block table-block" aria-label="Text table">
+      <table class="data-table" id="text-table">
+        <thead>
+          <tr>
+            <th class="col-idx">#</th>
+            <th class="col-text">Text</th>
+            <th class="col-ht">Ht</th>
+            <th class="col-place" id="th-place" title="dX / dY from Ref · Angle vs Orient" hidden>Place</th>
+            <th class="col-format" title="Flip · Justify · Align">Format</th>
+            <th class="col-font" title="Font + Bold / Italic">Font</th>
+            <th class="col-resize" aria-label="Resize"></th>
+          </tr>
+        </thead>
+        <tbody id="text-tbody">
+          <tr class="empty">
+            <td colspan="7">Select sketch points to add rows</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="block footer">
+      <div class="field-row footer-theme">
+        <label for="theme">Theme</label>
+        <div class="control">
+          <select id="theme">
+            <option value="light" selected>Light</option>
+            <option value="dark">Dark</option>
+            <option value="auto">Auto</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn" id="btn-cancel">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btn-ok" hidden>OK</button>
+      </div>
+    </section>
+
+    <p class="status muted" id="status" role="status"></p>
+  </div>
+  <script>
+/**
+ * Palette shell — theme + batch UI only.
+ * Fusion bridge (adsk.fusionSendData) is wired in Phase 1.
+ *
+ * Rule: unavailable controls stay hidden (not greyed/disabled)
+ * until their use conditions are met.
+ */
+(function () {
+  const themeSelect = document.getElementById("theme");
+  const batchEnabled = document.getElementById("batch-enabled");
+  const batchGrid = document.getElementById("batch-grid");
+  const solidPreview = document.getElementById("solid-preview");
+  const statusEl = document.getElementById("status");
+  const manipStatus = document.getElementById("manip-status");
+  const btnAddPoint = document.getElementById("btn-add-point");
+  const btnOrient = document.getElementById("btn-orient");
+  const orientLabel = document.getElementById("orient-label");
+  const btnRef = document.getElementById("btn-ref");
+  const refLabel = document.getElementById("ref-label");
+  const pointsCount = document.getElementById("points-count");
+  const targetRow = document.getElementById("target-row");
+  const btnOk = document.getElementById("btn-ok");
+  const thPlace = document.getElementById("th-place");
+  const tbody = document.getElementById("text-tbody");
+  const opDropdown = document.getElementById("op-dropdown");
+  const opTrigger = document.getElementById("op-trigger");
+  const opMenu = document.getElementById("op-menu");
+  const opHidden = document.getElementById("operation");
+  const opTriggerIcon = document.getElementById("op-trigger-icon");
+  const opTriggerLabel = document.getElementById("op-trigger-label");
+
+  const FONTS = ["Arial", "Artifakt Element", "Courier New", "Times New Roman"];
+  const OP_LABELS = {
+    join: "Join",
+    cut: "Cut",
+    intersect: "Intersect",
+    newBody: "New Body",
+  };
+  const OP_ICON_CLASS = {
+    join: "op-icon-join",
+    cut: "op-icon-cut",
+    intersect: "op-icon-intersect",
+    newBody: "op-icon-newbody",
+  };
+  // Boolean ops need a target body; New Body does not. New Component excluded.
+  const OPS_NEED_TARGET = { join: true, cut: true, intersect: true };
+
+  let mockOrient = false;
+  let mockRef = false;
+  let mockRefDims = false;
+  let activeRowId = null;
+  let rows = [];
+
+  function setHidden(el, hidden) {
+    if (!el) return;
+    el.hidden = !!hidden;
+  }
+
+  /** One Place cell: X/Y when Ref set; Angle when Orient set. Column shows if either applies. */
+  function syncPlacementVisibility() {
+    var showCol = mockRefDims || mockOrient;
+    setHidden(thPlace, !showCol);
+    document.querySelectorAll(".cell-place").forEach(function (td) {
+      setHidden(td, !showCol);
+    });
+    document.querySelectorAll(".place-xy").forEach(function (el) {
+      setHidden(el, !mockRefDims);
+    });
+    document.querySelectorAll(".place-angle").forEach(function (el) {
+      setHidden(el, !mockOrient);
+    });
+  }
+
+  function syncOkVisibility() {
+    setHidden(btnOk, rows.length < 1);
+  }
+
+  /** Selecting Ref auto-applies H/V dims to free (unconstrained) rows — no Apply button. */
+  function applyRefDimsToFreeRows() {
+    mockRefDims = true;
+    rows.forEach(function (row, i) {
+      if (row.xyConstrained) return;
+      if (!row.dx || row.dx === "0 mm" || row.dx === "—") {
+        row.dx = 10 + i * 8 + " mm";
+      }
+      if (!row.dy || row.dy === "0 mm" || row.dy === "—") {
+        row.dy = "5 mm";
+      }
+    });
+  }
+
+  function currentOperation() {
+    return (opHidden && opHidden.value) || "cut";
+  }
+
+  function syncTargetVisibility() {
+    setHidden(targetRow, !OPS_NEED_TARGET[currentOperation()]);
+  }
+
+  function setOperation(op) {
+    if (!OP_LABELS[op]) return;
+    if (opHidden) opHidden.value = op;
+    if (opTrigger) opTrigger.setAttribute("data-op", op);
+    if (opTriggerLabel) opTriggerLabel.textContent = OP_LABELS[op];
+    if (opTriggerIcon) {
+      opTriggerIcon.className = "op-icon " + OP_ICON_CLASS[op];
+    }
+    if (opMenu) {
+      opMenu.querySelectorAll('[role="option"]').forEach(function (li) {
+        li.setAttribute(
+          "aria-selected",
+          li.getAttribute("data-op") === op ? "true" : "false"
+        );
+      });
+    }
+    syncTargetVisibility();
+    if (statusEl) {
+      statusEl.textContent =
+        "Operation → " +
+        OP_LABELS[op] +
+        (OPS_NEED_TARGET[op]
+          ? " (Target Body shown)"
+          : " (no target body)") +
+        " — dummy UI";
+    }
+  }
+
+  function closeOpMenu() {
+    if (!opMenu || !opTrigger || !opDropdown) return;
+    opMenu.hidden = true;
+    opTrigger.setAttribute("aria-expanded", "false");
+    opDropdown.classList.remove("is-open");
+  }
+
+  function openOpMenu() {
+    if (!opMenu || !opTrigger || !opDropdown) return;
+    opMenu.hidden = false;
+    opTrigger.setAttribute("aria-expanded", "true");
+    opDropdown.classList.add("is-open");
+  }
+
+  if (opTrigger && opMenu) {
+    opTrigger.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (opMenu.hidden) openOpMenu();
+      else closeOpMenu();
+    });
+    opMenu.querySelectorAll('[role="option"]').forEach(function (li) {
+      li.addEventListener("click", function (e) {
+        e.stopPropagation();
+        setOperation(li.getAttribute("data-op"));
+        closeOpMenu();
+      });
+    });
+    document.addEventListener("click", function () {
+      closeOpMenu();
+    });
+  }
+
+  function syncPointsCount() {
+    if (pointsCount) {
+      pointsCount.textContent = rows.length + " selected";
+    }
+  }
+
+  // Fusion Sketch Text–style glyphs (dummy stand-ins; swap for stock PNGs later).
+  var ICONS = {
+    flipH:
+      '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3 L8 13 L2 13 Z" fill="#0696D7"/><path d="M14 3 L8 13 L14 13 Z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>',
+    flipV:
+      '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2 L13 8 L3 14 Z" fill="#0696D7"/><path d="M13 2 L13 14 L3 8 Z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>',
+    justifyLeft:
+      '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><path stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M3 3.5 H13 M3 6.5 H9 M3 9.5 H12 M3 12.5 H8" fill="none"/></svg>',
+    justifyCenter:
+      '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><path stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M3 3.5 H13 M5 6.5 H11 M3.5 9.5 H12.5 M6 12.5 H10" fill="none"/></svg>',
+    justifyRight:
+      '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><path stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M3 3.5 H13 M7 6.5 H13 M4 9.5 H13 M8 12.5 H13" fill="none"/></svg>',
+    alignTop:
+      '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><path stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M2.5 3 H13.5"/><rect x="4" y="5" width="3.2" height="8" rx="0.4" fill="currentColor"/><rect x="8.8" y="5" width="3.2" height="5.5" rx="0.4" fill="currentColor"/></svg>',
+    alignMiddle:
+      '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><path stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M2.5 8 H13.5"/><rect x="4" y="3.5" width="3.2" height="9" rx="0.4" fill="currentColor"/><rect x="8.8" y="5" width="3.2" height="6" rx="0.4" fill="currentColor"/></svg>',
+    alignBottom:
+      '<svg class="glyph" viewBox="0 0 16 16" aria-hidden="true"><path stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M2.5 13 H13.5"/><rect x="4" y="3" width="3.2" height="8" rx="0.4" fill="currentColor"/><rect x="8.8" y="5.5" width="3.2" height="5.5" rx="0.4" fill="currentColor"/></svg>',
+  };
+
+  function iconToggle(iconKey, pressed, title, dataKey) {
+    return (
+      '<button type="button" class="icon-btn format-btn" data-key="' +
+      dataKey +
+      '" aria-pressed="' +
+      (pressed ? "true" : "false") +
+      '" title="' +
+      title +
+      '">' +
+      ICONS[iconKey] +
+      "</button>"
+    );
+  }
+
+  function iconRadio(iconKey, checked, title, dataKey, dataVal) {
+    return (
+      '<button type="button" class="icon-btn format-btn" data-key="' +
+      dataKey +
+      '" data-val="' +
+      dataVal +
+      '" aria-checked="' +
+      (checked ? "true" : "false") +
+      '" role="radio" title="' +
+      title +
+      '">' +
+      ICONS[iconKey] +
+      "</button>"
+    );
+  }
+
+  /**
+   * Format cell — Fusion Sketch Text feel:
+   *   row 1: Flip H | Flip V
+   *   row 2: Justify L | C | R
+   *   row 3: Align T | M | B
+   * Active = accent blue border (not greyed).
+   */
+  function formatCellHtml(row) {
+    return (
+      '<span class="format-cell" aria-label="Flip justify align">' +
+      '<span class="icon-group icon-group-flip" data-group="flip" title="Flip">' +
+      iconToggle("flipH", row.flipH, "Flip horizontal", "flipH") +
+      iconToggle("flipV", row.flipV, "Flip vertical", "flipV") +
+      "</span>" +
+      '<span class="format-align-stack" title="Justify / Align">' +
+      '<span class="icon-group" role="radiogroup" data-group="justify">' +
+      iconRadio(
+        "justifyLeft",
+        row.justify === "left",
+        "Justify left",
+        "justify",
+        "left"
+      ) +
+      iconRadio(
+        "justifyCenter",
+        row.justify === "center",
+        "Justify center",
+        "justify",
+        "center"
+      ) +
+      iconRadio(
+        "justifyRight",
+        row.justify === "right",
+        "Justify right",
+        "justify",
+        "right"
+      ) +
+      "</span>" +
+      '<span class="icon-group" role="radiogroup" data-group="align">' +
+      iconRadio("alignTop", row.align === "top", "Align top", "align", "top") +
+      iconRadio(
+        "alignMiddle",
+        row.align === "middle",
+        "Align middle",
+        "align",
+        "middle"
+      ) +
+      iconRadio(
+        "alignBottom",
+        row.align === "bottom",
+        "Align bottom",
+        "align",
+        "bottom"
+      ) +
+      "</span>" +
+      "</span>" +
+      "</span>"
+    );
+  }
+
+  function fontOptions(selected) {
+    return FONTS.map(function (f) {
+      return (
+        '<option value="' +
+        f +
+        '" style="font-family:' +
+        f +
+        '"' +
+        (f === selected ? " selected" : "") +
+        ">" +
+        f +
+        "</option>"
+      );
+    }).join("");
+  }
+
+  /**
+   * Single Place cell: stacked X / Y / Angle (trial layout).
+   * X/Y greyed when point already constrained; fields hide until Ref / Orient.
+   */
+  function placeCellHtml(row) {
+    var locked = !!row.xyConstrained;
+    var showCol = mockRefDims || mockOrient;
+    var xyTitle = locked
+      ? "Point is constrained — XY placement locked"
+      : "Offset from Ref";
+    return (
+      '<td class="col-place cell-place"' +
+      (showCol ? "" : " hidden") +
+      ">" +
+      '<div class="place-stack">' +
+      '<label class="place-xy place-row"' +
+      (mockRefDims ? "" : " hidden") +
+      '><span class="place-key">X</span>' +
+      '<input type="text" class="row-dx' +
+      (locked ? " is-xy-locked" : "") +
+      '" value="' +
+      escapeHtml(row.dx) +
+      '" title="' +
+      xyTitle +
+      '"' +
+      (locked ? " disabled" : "") +
+      " /></label>" +
+      '<label class="place-xy place-row"' +
+      (mockRefDims ? "" : " hidden") +
+      '><span class="place-key">Y</span>' +
+      '<input type="text" class="row-dy' +
+      (locked ? " is-xy-locked" : "") +
+      '" value="' +
+      escapeHtml(row.dy) +
+      '" title="' +
+      xyTitle +
+      '"' +
+      (locked ? " disabled" : "") +
+      " /></label>" +
+      '<label class="place-angle place-row"' +
+      (mockOrient ? "" : " hidden") +
+      '><span class="place-key">∠</span>' +
+      '<input type="text" class="row-angle" value="' +
+      escapeHtml(row.angle) +
+      '" title="Rotation vs Orient" /></label>' +
+      "</div></td>"
+    );
+  }
+
+  function renderRows() {
+    if (!tbody) return;
+    if (!rows.length) {
+      tbody.innerHTML =
+        '<tr class="empty"><td colspan="7">Select sketch points to add rows</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows
+      .map(function (row, i) {
+        var active = row.id === activeRowId ? " is-active" : "";
+        return (
+          '<tr class="data-row' +
+          active +
+          '" data-id="' +
+          row.id +
+          '">' +
+          '<td class="col-idx">' +
+          (i + 1) +
+          "</td>" +
+          '<td class="col-text"><textarea class="row-text' +
+          (row.bold ? " is-bold" : "") +
+          (row.italic ? " is-italic" : "") +
+          '" rows="1" style="font-family:' +
+          row.font +
+          '">' +
+          escapeHtml(row.text) +
+          "</textarea></td>" +
+          '<td class="col-ht"><input type="text" class="row-ht" value="' +
+          row.height +
+          '" /></td>' +
+          placeCellHtml(row) +
+          '<td class="col-format">' +
+          formatCellHtml(row) +
+          "</td>" +
+          '<td class="col-font">' +
+          fontCellHtml(row) +
+          "</td>" +
+          '<td class="col-resize" aria-hidden="true"><span class="row-resize-handle" title="Drag to resize row"></span></td>' +
+          "</tr>"
+        );
+      })
+      .join("");
+
+    tbody.querySelectorAll(".data-row").forEach(function (tr) {
+      tr.addEventListener("click", function (e) {
+        if (e.target.closest("button, input, select, textarea")) return;
+        activeRowId = tr.getAttribute("data-id");
+        renderRows();
+      });
+    });
+
+    tbody.querySelectorAll("textarea.row-text").forEach(function (ta) {
+      autosizeTextarea(ta);
+      ta.addEventListener("input", function () {
+        var tr = ta.closest("tr");
+        var id = tr && tr.getAttribute("data-id");
+        var row = rows.find(function (r) {
+          return r.id === id;
+        });
+        if (row) row.text = ta.value;
+        autosizeTextarea(ta);
+      });
+    });
+
+    bindRowResizeHandles();
+
+    tbody.querySelectorAll(".format-btn, .style-btn").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var tr = btn.closest("tr");
+        var id = tr && tr.getAttribute("data-id");
+        var row = rows.find(function (r) {
+          return r.id === id;
+        });
+        if (!row) return;
+        var key = btn.getAttribute("data-key");
+        if (btn.getAttribute("aria-pressed") !== null) {
+          row[key] = btn.getAttribute("aria-pressed") !== "true";
+          renderRows();
+          return;
+        }
+        var val = btn.getAttribute("data-val");
+        if (key && val) {
+          row[key] = val;
+          renderRows();
+        }
+      });
+    });
+
+    tbody.querySelectorAll(".row-font").forEach(function (sel) {
+      sel.addEventListener("change", function () {
+        var tr = sel.closest("tr");
+        var id = tr && tr.getAttribute("data-id");
+        var row = rows.find(function (r) {
+          return r.id === id;
+        });
+        if (!row) return;
+        row.font = sel.value;
+        applyTextPreview(tr, row);
+      });
+    });
+
+    bindPlacementInputs();
+  }
+
+  function rowFromEl(el) {
+    var tr = el && el.closest("tr");
+    var id = tr && tr.getAttribute("data-id");
+    return rows.find(function (r) {
+      return r.id === id;
+    });
+  }
+
+  function bindPlacementInputs() {
+    [
+      { sel: ".row-dx", key: "dx", label: "dX", xyOnly: true },
+      { sel: ".row-dy", key: "dy", label: "dY", xyOnly: true },
+      { sel: ".row-angle", key: "angle", label: "Angle" },
+      { sel: ".row-ht", key: "height", label: "Ht" },
+    ].forEach(function (spec) {
+      tbody.querySelectorAll(spec.sel).forEach(function (inp) {
+        inp.addEventListener("change", function () {
+          var row = rowFromEl(inp);
+          if (!row) return;
+          if (spec.xyOnly && row.xyConstrained) return;
+          row[spec.key] = inp.value;
+          if (statusEl) {
+            statusEl.textContent =
+              "Would set " +
+              spec.label +
+              " from table and sync triad — dummy UI (" +
+              inp.value +
+              ")";
+          }
+        });
+      });
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function autosizeTextarea(ta) {
+    if (!ta) return;
+    ta.style.height = "auto";
+    var next = Math.max(24, ta.scrollHeight);
+    var tr = ta.closest("tr");
+    var minH = tr && parseInt(tr.style.minHeight || tr.dataset.minHeight || "0", 10);
+    if (minH && next < minH - 8) next = minH - 8;
+    ta.style.height = next + "px";
+  }
+
+  /** Drag handle on each row — resize row height; text area grows with it. */
+  function bindRowResizeHandles() {
+    tbody.querySelectorAll(".row-resize-handle").forEach(function (handle) {
+      handle.addEventListener("mousedown", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var tr = handle.closest("tr");
+        if (!tr) return;
+        var startY = e.clientY;
+        var startH = tr.getBoundingClientRect().height;
+        function onMove(ev) {
+          var h = Math.max(36, startH + (ev.clientY - startY));
+          tr.style.height = h + "px";
+          tr.dataset.minHeight = String(h);
+          var ta = tr.querySelector("textarea.row-text");
+          if (ta) {
+            ta.style.minHeight = Math.max(24, h - 12) + "px";
+          }
+        }
+        function onUp() {
+          document.removeEventListener("mousemove", onMove);
+          document.removeEventListener("mouseup", onUp);
+        }
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+      });
+    });
+  }
+
+  /** Mirror Font / Bold / Italic onto the Text cell (same live preview as font). */
+  function applyTextPreview(tr, row) {
+    var textInput = tr && tr.querySelector(".row-text");
+    if (!textInput || !row) return;
+    textInput.style.fontFamily = row.font || "Arial";
+    textInput.classList.toggle("is-bold", !!row.bold);
+    textInput.classList.toggle("is-italic", !!row.italic);
+    if (textInput.tagName === "TEXTAREA") autosizeTextarea(textInput);
+  }
+
+  function fontCellHtml(row) {
+    // Font on top; B and I side-by-side underneath.
+    return (
+      '<div class="font-stack">' +
+      '<select class="row-font" title="Font">' +
+      fontOptions(row.font) +
+      "</select>" +
+      '<div class="font-style-row">' +
+      '<button type="button" class="icon-btn style-btn" data-key="bold" aria-pressed="' +
+      (row.bold ? "true" : "false") +
+      '" title="Bold">B</button>' +
+      '<button type="button" class="icon-btn style-btn" data-key="italic" aria-pressed="' +
+      (row.italic ? "true" : "false") +
+      '" title="Italic">I</button>' +
+      "</div>" +
+      "</div>"
+    );
+  }
+
+  function addRow(partial) {
+    var id = "r" + (rows.length + 1) + "-" + Date.now().toString(36);
+    var row = Object.assign(
+      {
+        id: id,
+        text: "PN-001",
+        height: "3 mm",
+        dx: "0 mm",
+        dy: "0 mm",
+        xyConstrained: false,
+        angle: "0 deg",
+        flipH: false,
+        flipV: false,
+        justify: "center",
+        align: "middle",
+        bold: false,
+        italic: false,
+        font: "Arial",
+      },
+      partial || {}
+    );
+    rows.push(row);
+    activeRowId = row.id;
+    if (mockRef) applyRefDimsToFreeRows();
+    syncPointsCount();
+    syncOkVisibility();
+    renderRows();
+  }
+
+  function seedSampleRows() {
+    mockOrient = true;
+    mockRef = true;
+    mockRefDims = true;
+
+    if (orientLabel) orientLabel.textContent = "XY construction (all rows)";
+    if (refLabel) refLabel.textContent = "Origin (sample)";
+
+    rows = [];
+    addRow({
+      text: "PN-001",
+      height: "3 mm",
+      dx: "12 mm",
+      dy: "5 mm",
+      xyConstrained: false,
+      angle: "0 deg",
+      justify: "center",
+      align: "middle",
+      bold: false,
+      italic: false,
+      font: "Arial",
+    });
+    addRow({
+      text: "PN-002",
+      height: "4 mm",
+      dx: "28 mm",
+      dy: "5 mm",
+      xyConstrained: false,
+      angle: "15 deg",
+      flipH: true,
+      justify: "left",
+      align: "middle",
+      bold: true,
+      italic: false,
+      font: "Artifakt Element",
+    });
+    addRow({
+      text: "REV A",
+      height: "2.5 mm",
+      dx: "—",
+      dy: "—",
+      xyConstrained: true,
+      angle: "-5 deg",
+      flipV: true,
+      justify: "center",
+      align: "top",
+      bold: false,
+      italic: true,
+      font: "Courier New",
+    });
+    activeRowId = rows[0].id;
+    syncPlacementVisibility();
+    renderRows();
+
+    if (manipStatus) {
+      manipStatus.textContent =
+        "Manipulators: Angle dim ✓ · Move ✓ · Scale→Ht ✓ (sample row 1)";
+    }
+    if (statusEl) {
+      statusEl.textContent =
+        "Sample points loaded for UI review — dummy UI (not Fusion geometry)";
+    }
+  }
+
+  if (btnRef) {
+    btnRef.addEventListener("click", function () {
+      mockRef = !mockRef;
+      if (!mockRef) {
+        mockRefDims = false;
+        if (refLabel) refLabel.textContent = "Auto-applies dX/dY to free pts";
+        syncPlacementVisibility();
+        renderRows();
+        if (statusEl) statusEl.textContent = "Ref cleared — dX/dY hidden — dummy UI";
+        return;
+      }
+      if (refLabel) refLabel.textContent = "Origin (auto-applied)";
+      applyRefDimsToFreeRows();
+      syncPlacementVisibility();
+      renderRows();
+      if (statusEl) {
+        statusEl.textContent =
+          "Ref selected — dX/dY auto-applied to free points (constrained greyed) — dummy UI";
+      }
+    });
+  }
+
+  function mockTriadSettled(dx, dy, angle) {
+    var row = rows.find(function (r) {
+      return r.id === activeRowId;
+    });
+    if (mockRef && row && !row.xyConstrained) {
+      mockRefDims = true;
+      row.dx = dx;
+      row.dy = dy;
+    }
+    if (mockOrient && row) {
+      row.angle = angle;
+    }
+    syncPlacementVisibility();
+    renderRows();
+    if (statusEl) {
+      statusEl.textContent =
+        "Would auto-apply Ref dims to driving (after debounce), sync table dX/dY/Angle, reset scale factor, then doExecutePreview — dummy UI (dX=" +
+        dx +
+        ", dY=" +
+        dy +
+        ", Angle=" +
+        angle +
+        ", Ht via unified scale)";
+    }
+  }
+
+  if (btnOrient) {
+    btnOrient.addEventListener("click", function () {
+      mockOrient = true;
+      if (orientLabel) orientLabel.textContent = "Mock vector (all rows)";
+      rows.forEach(function (row) {
+        if (!row.angle) row.angle = "0 deg";
+      });
+      syncPlacementVisibility();
+      renderRows();
+      if (manipStatus) {
+        manipStatus.textContent =
+          "Manipulators: Angle dim ✓ · Move ✓ · Scale→Ht ✓";
+      }
+      if (statusEl) {
+        statusEl.textContent =
+          "Global Orient applies to every table row — Angle column shown — dummy UI";
+      }
+    });
+  }
+
+  if (manipStatus) {
+    manipStatus.style.cursor = "pointer";
+    manipStatus.title =
+      "Click to mock debounce → auto-apply driving / scale→Ht → preview";
+    manipStatus.addEventListener("click", function () {
+      mockTriadSettled(
+        mockRef ? "12 mm" : "—",
+        mockRef ? "5 mm" : "—",
+        mockOrient ? "15 deg" : "—"
+      );
+      if (statusEl && !mockRef && !mockOrient) {
+        statusEl.textContent =
+          "Would set heightParameter from triad unified scale (×1.2 → 3.6 mm), reset factor to 1.0, then doExecutePreview — dummy UI";
+      }
+    });
+  }
+
+  if (btnAddPoint) {
+    btnAddPoint.addEventListener("click", function () {
+      var n = rows.length + 1;
+      addRow({
+        text: "PN-" + String(n).padStart(3, "0"),
+      });
+      if (statusEl) {
+        statusEl.textContent =
+          "Would place point via preselect + custom-graphics projection ghost — dummy UI";
+      }
+      if (manipStatus) {
+        manipStatus.textContent =
+          "Manipulators: Angle ✓ · Move ✓ · Scale→Ht ✓";
+      }
+    });
+  }
+
+  var btnPoints = document.getElementById("btn-points");
+  if (btnPoints) {
+    btnPoints.addEventListener("click", function () {
+      var n = rows.length + 1;
+      addRow({
+        text: "PT-" + String(n).padStart(3, "0"),
+      });
+      if (statusEl) {
+        statusEl.textContent = "Mock point selection — dummy UI";
+      }
+    });
+  }
+
+  function applyTheme(mode) {
+    let resolved = mode;
+    if (mode === "auto") {
+      const prefersDark =
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches;
+      resolved = prefersDark ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", resolved);
+  }
+
+  applyTheme(themeSelect.value || "light");
+
+  themeSelect.addEventListener("change", function () {
+    applyTheme(themeSelect.value);
+  });
+
+  batchEnabled.addEventListener("change", function () {
+    batchGrid.hidden = !batchEnabled.checked;
+  });
+
+  function syncPreviewStatus() {
+    if (!statusEl || rows.length) return;
+    statusEl.textContent = solidPreview && solidPreview.checked
+      ? ""
+      : "Solid preview off — sketch still updates; OK will create solids";
+  }
+
+  if (solidPreview) {
+    solidPreview.addEventListener("change", syncPreviewStatus);
+  }
+
+  // Seed sample points so the table/chrome are reviewable on open.
+  seedSampleRows();
+  setOperation("cut");
+  syncPlacementVisibility();
+  syncOkVisibility();
+  if (statusEl) {
+    statusEl.textContent =
+      "Sample points loaded for UI review — dummy UI (not Fusion geometry)";
+  }
+
+  window.fusionJavaScriptHandler = {
+    handle: function (action, data) {
+      try {
+        if (action === "setTheme") {
+          const payload = typeof data === "string" ? JSON.parse(data) : data;
+          if (payload.mode) {
+            themeSelect.value = payload.mode;
+            applyTheme(payload.mode);
+          }
+        }
+      } catch (e) {
+        return "ERROR: " + e.message;
+      }
+      return "OK";
+    },
+  };
+})();
+
+</script>
+</body>
+</html>
